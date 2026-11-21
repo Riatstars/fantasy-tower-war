@@ -1,0 +1,133 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "HeadlessChrome/157.0.0.0"
+time: "2026-11-21 20:59:44"
+checks:
+  - id: boots
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: pass
+    evidence:
+      - "evidence/play.png"
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Look: tactile tabletop diorama *(provisional)*. Mood: a war game on a table, warm and toy-like. Little stone keeps on a parchment-and-green-felt map; each level adds a visible storey and a bigger banner. Troops are tiny pawn figures marching single file along a rope-like link. Palette: player royal blue, rival crimson, neutral grey stone, ground parchment and felt, accent gold for level-ups; shadows cool, lights warm. Detail on keeps and banners; the map behind is quiet. Signature: links drawn as taut ropes pinned between keeps that sag when cut. Every figure drawn, no emoji, no plain circles."
+  - id: L2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "References: Galcon, Mushroom Wars (the send-and-conquer loop); Tentacle Wars (persistent links)."
+  - id: L3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "View: 2D · Camera: fixed top-down, portrait phone layout, the whole map in view."
+  - id: F1
+    result: pass
+    evidence: "index.html:382"
+    item: "Drag to link two keeps; swipe to cut a link"
+  - id: F2
+    result: pass
+    evidence: "index.html:283"
+    item: "Troops generate periodically; keeps level 1→3 by troop count; level sets max links (1/2/3) and generation speed"
+  - id: F3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Pawns march along links; hitting an enemy keep reduces its garrison and takes it at zero; hitting your own reinforces"
+  - id: F4
+    result: pass
+    evidence: "index.html:321"
+    item: "Opposing marches on the same link fight where they meet *(guessed)*"
+  - id: F5
+    result: pass
+    evidence: "index.html:281"
+    item: "Neutral keeps hold a garrison and don't generate *(guessed)*"
+  - id: F6
+    result: pass
+    evidence: "index.html:242"
+    item: "One AI rival that expands, attacks weak keeps and defends *(provisional)*"
+  - id: F7
+    result: pass
+    evidence: "index.html:830"
+    item: "5 maps with a map-select ladder, win/lose screens, restart"
+  - id: F8
+    result: not_run
+    mark: not assessed
+    why: "banner-flag burst on capture, gold level-up sparks (index.html:292), rope grow and sag are drawn; the sounds cannot be heard by the check"
+    evidence: "index.html:226"
+    item: "Juice: banner pop on capture, level-up flourish, rope snap and sag, marching sounds"
+  - id: S1
+    result: pass
+    evidence: "index.html:283"
+    item: "troop generation · in the slice"
+  - id: S2
+    result: pass
+    evidence: "evidence/figures.png"
+    item: "tower levels (max 3) · in the slice"
+  - id: S3
+    result: pass
+    evidence: "index.html:382"
+    item: "connections / links · in the slice"
+  - id: M1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "You start with one blue level-1 keep, its troop count ticking up; grey neutral keeps sit nearby with small garrisons."
+  - id: M2
+    result: pass
+    evidence: "index.html:716"
+    item: "A pulsing hint shows a drag to the nearest neutral; you drag, a rope snaps between them, and pawns march."
+  - id: M3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "The garrison counts down, hits zero, and flips blue with a banner pop."
+  - id: M4
+    result: pass
+    evidence: "index.html:292"
+    item: "Your first keep passes the threshold and grows to level 2 — it can now hold a second rope; you link another neutral."
+  - id: M5
+    result: pass
+    evidence: "evidence/play.png"
+    item: "The red rival, far off, is doing the same: the race for the middle is on."
+  - id: C1
+    result: pass
+    evidence: "index.html:245"
+    item: "Map 1 is a gentle race for neutrals."
+  - id: C2
+    result: pass
+    evidence: "index.html:265"
+    item: "From map 2 the rival attacks your thinnest keep, and you must cut and reroute ropes to defend."
+  - id: C3
+    result: pass
+    evidence: "index.html:879"
+    item: "A loss restarts that map."
+  - id: C4
+    result: pass
+    evidence: "config.js:39"
+    item: "Later maps add more keeps, a stronger rival start and a faster rival *(provisional)*."
+measures:
+  - id: step-time
+    value: 2.000
+    unit: ms
+    by: browser
+    detail: "mean 0.030 ms, slowest 2.000 ms, 506 steps"

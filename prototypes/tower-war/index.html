@@ -1,0 +1,962 @@
+<!doctype html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Is building and rerouting links, as towers grow 1→3, a fun tug-of-war for a 2–3 minute map? -->
+<!-- Date: 2026-11-21 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tower War</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1d3a2a; overflow: hidden; touch-action: none;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body { font-variant-numeric: tabular-nums; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script src="config.js"></script>
+<script>
+'use strict';
+// Tower War: drag a rope from your keep to another keep and your troops march along it.
+// Keeps generate troops on a tick, level up 1→3 by troop count, and the level is how many
+// ropes a keep can hold. Take every keep on the map to win.
+
+// ---- Built to be checked ----------------------------------------------------------------
+const params = new URLSearchParams(location.search);
+const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
+const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
+const W = 720, H = 1280;        // logical size: a portrait phone table
+const PIXEL = false;
+const FONT = 'Georgia, "Palatino Linotype", "Book Antiqua", serif';
+const TITLE = 'Tower War';
+const CONTROLS = [
+  'Drag from your keep to another keep: send troops',
+  'Swipe across one of your ropes: cut it',
+  'More troops = higher level = more ropes (max 3)',
+  'Keys: Tab pick keep, Up/Down pick target,',
+  'Space tie rope, X cut its ropes, P pause, M mute',
+];
+const clock = window.GAME_CLOCK || { now: () => performance.now() / 1000 }; // a check may inject one
+const CHEAP = params.get('render') === 'cheap';
+let seed;
+function rng() { // mulberry32; every gameplay random call reads this, never Math.random
+  seed = (seed + 0x6D2B79F5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), seed | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function hash(n) { // decoration noise only (never gameplay): a fixed value per integer
+  let t = Math.imul(n ^ 0x9E3779B9, 0x85EBCA6B); t ^= t >>> 13; t = Math.imul(t, 0xC2B2AE35); t ^= t >>> 16;
+  return (t >>> 0) / 4294967296;
+}
+const events = [];
+
+// ---- Palette (tabletop diorama) -----------------------------------------------------------
+const COL = {
+  felt: '#2f5a3c', feltDark: '#1d3a2a', parch: '#e9dcbc', parchDark: '#cdb98d', ink: '#5b4630',
+  gold: '#e3b544', goldDark: '#9a7420',
+  owner: ['#8d8a86', '#2f5fc9', '#c23a37'],        // neutral stone, player royal blue, rival crimson
+  ownerLight: ['#c9c4bb', '#7aa2f0', '#f07a6e'],
+  ownerDark: ['#55524f', '#1c3a82', '#7c1d1f'],
+  stoneLit: '#d9ccb2', stone: '#b8ab95', stoneShade: '#837f8c', mortar: '#7a6f61',
+  rope: '#9b6a36', ropeDark: '#5f3d18',
+  shadow: 'rgba(20,30,60,0.28)',
+};
+
+// ---- Screen ---------------------------------------------------------------------------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let viewScale = 1;
+function fit() {
+  const k = Math.min(innerWidth / W, innerHeight / H);
+  const r = k * (devicePixelRatio || 1);
+  viewScale = k;
+  canvas.width = Math.round(W * r); canvas.height = Math.round(H * r);
+  canvas.style.width = Math.round(W * k) + 'px'; canvas.style.height = Math.round(H * k) + 'px';
+  canvas.style.marginTop = Math.max(0, Math.floor((innerHeight - H * k) / 2)) + 'px';
+  ctx.setTransform(r, 0, 0, r, 0, 0); ctx.imageSmoothingEnabled = true;
+  bgCache = null;
+}
+let bgCache = null, bgFor = -2;
+addEventListener('resize', fit);
+function clear(c) { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); }
+function text(s, x, y, size, c, align = 'center', weight = '') {
+  ctx.fillStyle = c; ctx.font = `${weight} ${size}px ${FONT}`; ctx.textAlign = align;
+  ctx.textBaseline = 'middle'; ctx.fillText(s, x, y);
+}
+function textShadowed(s, x, y, size, c, align = 'center', weight = 'bold') {
+  text(s, x + 2, y + 2, size, 'rgba(0,0,0,0.35)', align, weight); text(s, x, y, size, c, align, weight);
+}
+
+// ---- Input: keys by position, pointer (touch and mouse) ---------------------------------
+const down = new Set(), hit = new Set();
+const pressed = code => hit.has(code);
+addEventListener('keydown', e => {
+  startAudio();
+  if (!e.repeat) { down.add(e.code); hit.add(e.code); }
+  if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => down.delete(e.code));
+addEventListener('blur', () => down.clear());
+
+// Pointer events are queued and handled on the fixed step, never in the handler.
+const pointerQ = [];
+function toLogical(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
+}
+canvas.addEventListener('pointerdown', e => { startAudio(); e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  pointerQ.push({ type: 'down', ...toLogical(e) }); });
+canvas.addEventListener('pointermove', e => { pointerQ.push({ type: 'move', ...toLogical(e) }); });
+canvas.addEventListener('pointerup', e => { pointerQ.push({ type: 'up', ...toLogical(e) }); });
+canvas.addEventListener('pointercancel', e => { pointerQ.push({ type: 'up', ...toLogical(e) }); });
+
+// ---- Audio --------------------------------------------------------------------------------
+let audio = null, muted = false;
+function startAudio() {
+  if (!audio) {
+    const ac = window.GAME_AUDIO || new (window.AudioContext || window.webkitAudioContext)();
+    const out = ac.createGain(); out.gain.value = muted ? 0 : tune.volume;
+    out.connect(ac.destination); audio = { ac, out };
+  }
+  if (audio.ac.state === 'suspended') audio.ac.resume();
+}
+function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; }
+addEventListener('tune', () => setMuted(muted));
+function tone(freq, dur, type = 'square', vol = 0.3, slide = 0) {
+  if (!audio || muted) return;
+  const t = audio.ac.currentTime, o = audio.ac.createOscillator(), g = audio.ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audio.out); o.start(t); o.stop(t + dur);
+}
+function thud(vol = 0.15) { // a soft drum tap: filtered noise burst
+  if (!audio || muted) return;
+  const ac = audio.ac, n = Math.floor(ac.sampleRate * 0.06), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (hash(i * 7 + 3) * 2 - 1) * (1 - i / n);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = b; f.type = 'lowpass'; f.frequency.value = 600; g.gain.value = vol;
+  s.connect(f).connect(g).connect(audio.out); s.start();
+}
+const sfx = {
+  rope() { tone(220, 0.08, 'triangle', 0.25, 300); tone(660, 0.12, 'sine', 0.12); },
+  cut() { tone(500, 0.15, 'sawtooth', 0.1, -380); },
+  capture(o) { const b = o === 1 ? 392 : 262; tone(b, 0.12, 'square', 0.12); setTimeout(() => tone(b * 1.5, 0.22, 'square', 0.12), 90); },
+  level() { tone(523, 0.1, 'triangle', 0.2); setTimeout(() => tone(784, 0.18, 'triangle', 0.2), 80); setTimeout(() => tone(1046, 0.25, 'sine', 0.12), 160); },
+  clash() { thud(0.08); },
+  win() { [392, 494, 587, 784].forEach((f, i) => setTimeout(() => tone(f, 0.3, 'triangle', 0.22), i * 140)); },
+  lose() { [330, 262, 196].forEach((f, i) => setTimeout(() => tone(f, 0.4, 'sawtooth', 0.12), i * 200)); },
+  no() { tone(140, 0.12, 'square', 0.12); },
+};
+let marchTick = 0;
+
+// ---- Progress (per-player convenience; the game works without it) --------------------------
+let unlocked = 1;
+try { unlocked = Math.max(1, Math.min(MAPS.length, Number(localStorage.getItem('towerwar.unlocked')) || 1)); } catch (_) {}
+function saveUnlocked() { try { localStorage.setItem('towerwar.unlocked', String(unlocked)); } catch (_) {} }
+
+// ---- The game state -------------------------------------------------------------------------
+let scene, state, mapIndex = 0, selectIndex = 0;
+function levelOf(troops) { return troops >= tune.lv3_at ? 3 : troops >= tune.lv2_at ? 2 : 1; }
+function reset() { startMap(mapIndex); }
+function startMap(i) {
+  seed = (Number(params.get('seed')) || CONFIG.seed) + i * 101;
+  mapIndex = i;
+  const m = MAPS[i];
+  const keeps = m.keeps.map((k, id) => {
+    const troops = k[2] === 1 ? tune.player_start : k[2] === 2 ? m.rival : k[3];
+    return { id, x: k[0], y: k[1], owner: k[2], troops, level: levelOf(troops), gen: 0,
+      flash: 0, pop: 0, bannerOwner: k[2], wobble: hash(id + i * 31) * 6.28 };
+  });
+  state = {
+    t: 0, score: 0, gained: '', keeps, links: [], pawns: [], dead: [], fx: [], floats: [],
+    drag: null, swipe: null, linkedOnce: false, cutOnce: false, captured: 0, msg: '', msgT: 0,
+    aiT: 1.5, sel: 0, tgt: 0, kbUsed: false, endT: 0, ended: false,
+  };
+  state.sel = keeps.findIndex(k => k.owner === 1);
+  state.tgt = nearestTarget(keeps[state.sel], 0, 1);
+  bgCache = null;
+}
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function linksFrom(k) { return state.links.filter(l => l.from === k); }
+function hasLink(a, b) { return state.links.some(l => l.from === a && l.to === b); }
+function canLink(a, b) {
+  if (!a || !b || a === b || a.owner === 0) return 'no';
+  if (dist(a, b) > tune.link_range) return 'range';
+  if (hasLink(a, b)) return 'dup';
+  if (linksFrom(a).length >= a.level) return 'slots';
+  return 'ok';
+}
+function addLink(a, b) {
+  state.links.push({ from: a, to: b, owner: a.owner, timer: tune.send_interval * 0.5, grow: 0, age: 0 });
+  if (a.owner === 1) { sfx.rope(); state.linkedOnce = true; events.push({ type: 'link', from: a.id, to: b.id }); }
+}
+function cutLink(l, at = 0.5) {
+  const i = state.links.indexOf(l); if (i < 0) return;
+  state.links.splice(i, 1);
+  state.dead.push({ ax: l.from.x, ay: l.from.y, bx: l.to.x, by: l.to.y, at, age: 0, owner: l.owner });
+  if (l.owner === 1) { sfx.cut(); events.push({ type: 'cut', from: l.from.id, to: l.to.id }); }
+}
+function keepAt(x, y) {
+  let best = null, bd = tune.keep_radius;
+  for (const k of state.keeps) { const d = Math.hypot(k.x - x, k.y - y + 20); if (d < bd) { bd = d; best = k; } }
+  return best;
+}
+function nearestTarget(src, skip, dir) {
+  // index of the next keep (not src) in range, by distance order, stepping dir from current
+  const list = state.keeps.filter(k => k !== src && dist(k, src) <= tune.link_range).sort((a, b) => dist(a, src) - dist(b, src));
+  if (!list.length) return -1;
+  const cur = list.findIndex(k => k.id === skip);
+  const n = cur < 0 ? 0 : (cur + dir + list.length) % list.length;
+  return list[n].id;
+}
+function say(msg) { state.msg = msg; state.msgT = 2.4; }
+function burst(x, y, color, n, speed, kind = 'bit') {
+  for (let i = 0; i < n; i++) {
+    const a = rng() * 6.283, s = speed * (0.4 + rng() * 0.8);
+    state.fx.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - speed * 0.4, life: 0.6 + rng() * 0.5, age: 0, color, kind, rot: rng() * 6 });
+  }
+}
+
+function capture(k, owner) {
+  const prev = k.owner;
+  k.owner = owner; k.troops = 1; k.level = 1; k.pop = 1; k.flash = 1;
+  for (const l of linksFrom(k).slice()) cutLink(l, 0.15);
+  burst(k.x, k.y - 60, COL.owner[owner], 26, 260, 'flag');
+  burst(k.x, k.y - 60, COL.gold, 10, 200, 'bit');
+  sfx.capture(owner);
+  state.floats.push({ x: k.x, y: k.y - 120, s: owner === 1 ? 'Taken!' : prev === 1 ? 'Lost!' : 'Seized', c: COL.owner[owner], age: 0 });
+  if (owner === 1) state.captured++;
+  events.push({ type: 'capture', keep: k.id, from: prev, to: owner });
+}
+
+// ---- The rival -------------------------------------------------------------------------------
+function incomingThreat(k) { // enemy troops marching at k
+  let n = 0; for (const p of state.pawns) if (p.to === k && p.owner !== k.owner) n++; return n;
+}
+function aiThink() {
+  const m = MAPS[mapIndex];
+  const mine = state.keeps.filter(k => k.owner === 2);
+  const graceOver = mapIndex > 0 || state.t > tune.ai_grace;
+  for (const k of mine) {
+    // drop ropes that are no longer worth it
+    for (const l of linksFrom(k).slice()) {
+      const tg = l.to;
+      if (tg.owner === 2 && incomingThreat(tg) < tg.troops * 0.5 && l.age > 2) cutLink(l);
+      else if (tg.owner === 1 && tg.troops > k.troops + 12 && rng() < 0.5) cutLink(l);
+      else if (incomingThreat(k) > k.troops + 2 && k.troops < 4) cutLink(l);
+    }
+  }
+  for (const k of mine.sort((a, b) => b.troops - a.troops)) {
+    if (linksFrom(k).length >= k.level) continue;
+    if (k.troops < tune.ai_min_send && incomingThreat(k) === 0) continue;
+    let best = null, bs = 0;
+    for (const t of state.keeps) {
+      if (canLink(k, t) !== 'ok') continue;
+      const d = dist(k, t) / 25;
+      let s = 0;
+      if (t.owner === 2) { const th = incomingThreat(t); if (th >= t.troops - 2 && th > 0) s = 80 - d; }
+      else if (t.owner === 0) { s = 52 - t.troops * 2 - d + (k.troops > t.troops ? 10 : -15); }
+      else if (t.owner === 1 && graceOver) {
+        if (k.troops * m.aggro > t.troops + 4) s = 40 - t.troops * 1.5 - d + m.aggro * 22;
+      }
+      s += rng() * 6;
+      if (s > bs) { bs = s; best = t; }
+    }
+    if (best) addLink(k, best);
+  }
+}
+
+// ---- Simulation ---------------------------------------------------------------------------------
+function simulate(dt) {
+  state.t += dt;
+  // generation (periodic) and levels
+  for (const k of state.keeps) {
+    k.flash = Math.max(0, k.flash - dt * 2); k.pop = Math.max(0, k.pop - dt * 1.6);
+    if (k.owner !== 0) {
+      k.gen += dt;
+      if (k.gen >= tune.gen_interval) {
+        k.gen -= tune.gen_interval;
+        if (k.troops < tune.troop_cap) k.troops = Math.min(tune.troop_cap, k.troops + [0, tune.gen_l1, tune.gen_l2, tune.gen_l3][k.level]);
+      }
+    }
+    const lv = levelOf(k.troops);
+    if (lv > k.level && k.owner !== 0) {
+      k.pop = 1;
+      if (k.owner === 1) {
+        sfx.level(); burst(k.x, k.y - 70, COL.gold, 16, 170, 'spark');
+        state.floats.push({ x: k.x, y: k.y - 130, s: `Level ${lv}: ${lv} ropes`, c: COL.gold, age: 0 });
+        events.push({ type: 'level', keep: k.id, level: lv });
+      }
+    }
+    k.level = lv;
+    const ls = linksFrom(k);
+    while (ls.length > k.level) cutLink(ls.pop(), 0.2); // dropped a level: the newest rope falls
+  }
+  // ropes send pawns
+  for (const l of state.links) {
+    l.age += dt; l.grow = Math.min(1, l.grow + dt * 5);
+    l.timer += dt;
+    if (l.timer >= tune.send_interval && l.grow >= 1) {
+      l.timer -= tune.send_interval;
+      if (l.from.troops >= 1) {
+        l.from.troops -= 1;
+        state.pawns.push({ from: l.from, to: l.to, owner: l.owner, d: 0, len: dist(l.from, l.to), sx: l.from.x, sy: l.from.y, tx: l.to.x, ty: l.to.y, ph: rng() * 6 });
+      }
+    } else if (l.timer > tune.send_interval) l.timer = tune.send_interval;
+  }
+  // pawns march
+  for (const p of state.pawns) p.d += tune.pawn_speed * dt;
+  // opposing pawns on the same pair of keeps fight where they meet
+  const P = state.pawns;
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i]; if (p.dead) continue;
+    for (let j = i + 1; j < P.length; j++) {
+      const q = P[j]; if (q.dead || q.owner === p.owner) continue;
+      if (p.from === q.to && p.to === q.from && p.d + q.d >= p.len) {
+        p.dead = q.dead = true;
+        const f = p.d / p.len;
+        const x = p.sx + (p.tx - p.sx) * f, y = p.sy + (p.ty - p.sy) * f;
+        burst(x, y, '#d8c8a0', 5, 70, 'dust'); sfx.clash();
+        break;
+      }
+    }
+  }
+  // arrivals
+  for (const p of P) {
+    if (p.dead || p.d < p.len) continue;
+    p.dead = true;
+    const k = p.to;
+    k.flash = 0.6;
+    if (k.owner === p.owner) k.troops = Math.min(tune.troop_cap + 40, k.troops + 1);
+    else if (k.troops >= 1) { k.troops -= 1; if (rng() < 0.4) burst(k.x, k.y - 30, '#d8c8a0', 2, 60, 'dust'); }
+    else capture(k, p.owner);
+  }
+  state.pawns = P.filter(p => !p.dead);
+  if (state.pawns.length) { marchTick -= dt; if (marchTick <= 0) { marchTick = 0.45; thud(0.035); } }
+  // fx
+  for (const d of state.dead) d.age += dt;
+  state.dead = state.dead.filter(d => d.age < 0.9);
+  for (const f of state.fx) { f.age += dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 420 * dt; f.vx *= 0.98; f.rot += dt * 8; }
+  state.fx = state.fx.filter(f => f.age < f.life);
+  for (const f of state.floats) f.age += dt;
+  state.floats = state.floats.filter(f => f.age < 1.6);
+  state.msgT = Math.max(0, state.msgT - dt);
+  // rival
+  state.aiT -= dt;
+  if (state.aiT <= 0) { state.aiT = MAPS[mapIndex].think * (0.8 + rng() * 0.4); aiThink(); }
+  // ends
+  const owners = state.keeps.map(k => k.owner);
+  const mineN = owners.filter(o => o === 1).length;
+  if (!state.ended) {
+    if (mineN === state.keeps.length) {
+      state.ended = true; state.endT = 0; state.win = true;
+      if (mapIndex + 1 >= unlocked && mapIndex + 1 < MAPS.length) { unlocked = mapIndex + 2; saveUnlocked(); }
+      sfx.win(); events.push({ type: 'win', map: mapIndex });
+      state.gained = mapIndex + 1 >= MAPS.length ? 'Every map is yours!' : 'Map won!';
+    } else if (mineN === 0 && !state.pawns.some(p => p.owner === 1)) {
+      state.ended = true; state.endT = 0; state.win = false;
+      sfx.lose(); events.push({ type: 'lose', map: mapIndex });
+      state.gained = 'Your keeps have fallen';
+    }
+  } else {
+    state.endT += dt;
+    if (state.endT > 1.2) { scene = state.win ? 'results' : 'over'; state.drag = null; }
+  }
+}
+
+// ---- Player input in play -------------------------------------------------------------------
+function segHit(ax, ay, bx, by, cx, cy, dx, dy) { // returns t along AB where CD crosses it, or -1
+  const r1 = bx - ax, r2 = by - ay, s1 = dx - cx, s2 = dy - cy;
+  const den = r1 * s2 - r2 * s1; if (Math.abs(den) < 1e-6) return -1;
+  const t = ((cx - ax) * s2 - (cy - ay) * s1) / den, u = ((cx - ax) * r2 - (cy - ay) * r1) / den;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : -1;
+}
+const UI = { pause: { x: 650, y: 52, r: 30 }, mute: { x: 584, y: 52, r: 30 } };
+function inBtn(b, p) { return Math.hypot(b.x - p.x, b.y - p.y) < b.r + 6; }
+function playPointer(ev) {
+  if (ev.type === 'down') {
+    if (inBtn(UI.pause, ev)) { scene = 'pause'; return; }
+    if (inBtn(UI.mute, ev)) { setMuted(!muted); return; }
+    const k = keepAt(ev.x, ev.y);
+    if (k && k.owner === 1) state.drag = { from: k, x: ev.x, y: ev.y };
+    else state.swipe = { x: ev.x, y: ev.y, trail: [{ x: ev.x, y: ev.y, age: 0 }] };
+  } else if (ev.type === 'move') {
+    if (state.drag) {
+      // dragging across your own ropes from a keep never cuts them; just follow the finger
+      state.drag.x = ev.x; state.drag.y = ev.y;
+    } else if (state.swipe) {
+      const s = state.swipe;
+      for (const l of state.links.slice()) {
+        if (l.owner !== 1) continue;
+        const t = segHit(l.from.x, l.from.y - 30, l.to.x, l.to.y - 30, s.x, s.y, ev.x, ev.y);
+        if (t >= 0) { cutLink(l, t); state.cutOnce = true; }
+      }
+      s.x = ev.x; s.y = ev.y; s.trail.push({ x: ev.x, y: ev.y, age: 0 });
+    }
+  } else if (ev.type === 'up') {
+    if (state.drag) {
+      const a = state.drag.from, b = keepAt(ev.x, ev.y);
+      if (b && b !== a) {
+        const why = canLink(a, b);
+        if (why === 'ok') addLink(a, b);
+        else { sfx.no(); say(why === 'slots' ? `Level ${a.level} keep: only ${a.level} rope${a.level > 1 ? 's' : ''}. Grow it or cut one.` : why === 'range' ? 'Too far for a rope' : 'Already roped'); }
+      }
+      state.drag = null;
+    }
+    if (state.swipe) state.swipe.done = true;
+  }
+}
+function playKeys() {
+  const mine = state.keeps.filter(k => k.owner === 1);
+  if (!mine.length) return;
+  let src = state.keeps[state.sel];
+  if (!src || src.owner !== 1) { src = mine[0]; state.sel = src.id; state.tgt = nearestTarget(src, -1, 1); }
+  if (pressed('Tab') || pressed('ArrowRight') || pressed('ArrowLeft')) {
+    state.kbUsed = true;
+    const i = mine.indexOf(src), n = (i + (pressed('ArrowLeft') ? -1 : 1) + mine.length) % mine.length;
+    src = mine[n]; state.sel = src.id; state.tgt = nearestTarget(src, -1, 1);
+  }
+  if (pressed('ArrowDown') || pressed('ArrowUp')) { state.kbUsed = true; state.tgt = nearestTarget(src, state.tgt, pressed('ArrowUp') ? -1 : 1); }
+  if (pressed('Space') || pressed('Enter')) {
+    state.kbUsed = true;
+    const b = state.keeps[state.tgt];
+    const why = canLink(src, b);
+    if (why === 'ok') addLink(src, b); else { sfx.no(); say(why === 'slots' ? 'No free rope: grow the keep or cut one (X)' : 'Cannot rope that keep'); }
+  }
+  if (pressed('KeyX')) { state.kbUsed = true; for (const l of linksFrom(src).slice()) { cutLink(l); state.cutOnce = true; } }
+}
+
+// ---- Drawing: the table ---------------------------------------------------------------------
+function buildBackground() {
+  const c = document.createElement('canvas'), s = 2;
+  c.width = W * s; c.height = H * s;
+  const g = c.getContext('2d'); g.scale(s, s);
+  // felt with a soft weave
+  g.fillStyle = COL.felt; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 2200; i++) {
+    g.fillStyle = hash(i) > 0.5 ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.05)';
+    g.fillRect(hash(i * 3 + 1) * W, hash(i * 5 + 2) * H, 2, 2);
+  }
+  // the parchment map sheet, with a torn edge
+  const m = 26, top = 104, bot = H - 70;
+  const pts = [];
+  const edge = (x0, y0, x1, y1, n, base) => { for (let i = 0; i < n; i++) { const f = i / n; pts.push([x0 + (x1 - x0) * f + (hash(base + i) - 0.5) * 7, y0 + (y1 - y0) * f + (hash(base + i + 500) - 0.5) * 7]); } };
+  edge(m, top, W - m, top, 40, 10); edge(W - m, top, W - m, bot, 60, 100); edge(W - m, bot, m, bot, 40, 200); edge(m, bot, m, top, 60, 300);
+  g.save(); g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 24; g.shadowOffsetY = 8;
+  g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath();
+  g.fillStyle = COL.parch; g.fill(); g.restore();
+  g.save(); g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.clip();
+  const rg = g.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 760);
+  rg.addColorStop(0, 'rgba(255,248,225,0.5)'); rg.addColorStop(1, 'rgba(150,110,60,0.35)');
+  g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(120,85,40,${0.03 + hash(i + 9000) * 0.05})`; g.beginPath(); g.arc(hash(i * 7) * W, hash(i * 11) * H, 1 + hash(i * 13) * 3, 0, 6.3); g.fill(); }
+  const map = MAPS[mapIndex] || MAPS[0];
+  // ink contour hills
+  g.strokeStyle = 'rgba(91,70,48,0.18)'; g.lineWidth = 1.5;
+  for (let h = 0; h < 6; h++) {
+    const cx = 80 + hash(h * 17 + mapIndex * 3) * 560, cy = 200 + hash(h * 23 + mapIndex * 5) * 880;
+    for (let r = 1; r <= 3; r++) { g.beginPath(); g.ellipse(cx, cy, 30 * r + 10, 18 * r + 6, hash(h) * 3, 0, 6.3); g.stroke(); }
+  }
+  // the river, in blue ink
+  if (map.river) {
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    [[34, 'rgba(70,110,150,0.25)'], [22, 'rgba(90,140,180,0.45)'], [3, 'rgba(240,250,255,0.5)']].forEach(([w, c]) => {
+      g.strokeStyle = c; g.lineWidth = w; g.beginPath();
+      map.river.forEach((p, i) => { if (!i) g.moveTo(p[0], p[1]); else { const q = map.river[i - 1]; g.quadraticCurveTo(q[0], q[1], (q[0] + p[0]) / 2, (q[1] + p[1]) / 2); } });
+      const L = map.river[map.river.length - 1]; g.lineTo(L[0], L[1]); g.stroke();
+    });
+  }
+  // little ink trees, kept off the keeps
+  for (let i = 0; i < 46; i++) {
+    const x = 50 + hash(i * 41 + mapIndex * 7) * 620, y = 140 + hash(i * 43 + mapIndex * 11) * 1040;
+    if (map.keeps.some(k => Math.hypot(k[0] - x, k[1] - y) < 95)) continue;
+    g.fillStyle = 'rgba(70,95,55,0.30)'; g.strokeStyle = 'rgba(60,50,35,0.45)'; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(x, y - 16); g.lineTo(x - 8, y); g.lineTo(x + 8, y); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 5); g.stroke();
+  }
+  // compass rose in a corner
+  g.save(); g.translate(W - 86, bot - 70); g.strokeStyle = 'rgba(91,70,48,0.5)'; g.fillStyle = 'rgba(91,70,48,0.35)';
+  g.beginPath(); g.arc(0, 0, 26, 0, 6.3); g.stroke();
+  for (let i = 0; i < 4; i++) { g.rotate(Math.PI / 2); g.beginPath(); g.moveTo(0, -34); g.lineTo(6, 0); g.lineTo(-6, 0); g.closePath(); g.fill(); }
+  g.restore();
+  g.restore();
+  // a wooden table rim
+  const wood = g.createLinearGradient(0, 0, 0, 96);
+  wood.addColorStop(0, '#4a2f19'); wood.addColorStop(1, '#6b4426');
+  g.fillStyle = wood; g.fillRect(0, 0, W, 96);
+  g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, 92, W, 4);
+  for (let i = 0; i < 18; i++) { g.strokeStyle = 'rgba(30,15,5,0.25)'; g.beginPath(); g.moveTo(0, 8 + i * 5); g.bezierCurveTo(240, 4 + i * 5 + hash(i) * 6, 480, 10 + i * 5, W, 6 + i * 5); g.stroke(); }
+  return c;
+}
+function drawTable() {
+  if (!bgCache || bgFor !== mapIndex) { bgCache = buildBackground(); bgFor = mapIndex; }
+  ctx.drawImage(bgCache, 0, 0, W, H);
+}
+
+// ---- Drawing: figures ---------------------------------------------------------------------------
+function drawKeep(x, y, owner, level, opts = {}) {
+  const t = opts.t || 0, pop = opts.pop || 0, flash = opts.flash || 0, wob = opts.wobble || 0;
+  const sc = (opts.scale || 1) * (1 + pop * 0.18 * Math.sin(pop * 9));
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+  // shadow on the table (cool)
+  ctx.fillStyle = COL.shadow; ctx.beginPath(); ctx.ellipse(8, 6, 50 + level * 4, 16, 0, 0, 6.3); ctx.fill();
+  const tiers = [[46, 40], [34, 30], [24, 24]];
+  let base = 0, topY = 0;
+  for (let i = 0; i < level; i++) {
+    const [hw, h] = tiers[i];
+    const y0 = base, y1 = base - h;
+    // body: lit left, cool shade right
+    const gr = ctx.createLinearGradient(-hw, 0, hw, 0);
+    gr.addColorStop(0, COL.stoneLit); gr.addColorStop(0.55, COL.stone); gr.addColorStop(1, COL.stoneShade);
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.moveTo(-hw, y0); ctx.ellipse(0, y0, hw, hw * 0.32, 0, Math.PI, 0, true); ctx.lineTo(hw, y1); ctx.ellipse(0, y1, hw, hw * 0.32, 0, 0, Math.PI, false); ctx.closePath(); ctx.fill();
+    // brick courses
+    ctx.strokeStyle = 'rgba(90,80,70,0.45)'; ctx.lineWidth = 1;
+    for (let r = 1; r < 3; r++) { const yy = y0 - (h * r) / 3; ctx.beginPath(); ctx.ellipse(0, yy, hw, hw * 0.32, 0, 0.15, Math.PI - 0.15); ctx.stroke();
+      for (let b = -2; b <= 2; b++) { const bx = b * hw * 0.38 + (r % 2 ? hw * 0.19 : 0); if (Math.abs(bx) < hw - 4) { ctx.beginPath(); ctx.moveTo(bx, yy + hw * 0.3 * Math.sqrt(1 - (bx / hw) ** 2)); ctx.lineTo(bx, yy + hw * 0.3 * Math.sqrt(1 - (bx / hw) ** 2) + h / 3); ctx.stroke(); } } }
+    // painted owner band
+    ctx.strokeStyle = COL.owner[owner]; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.ellipse(0, y0 - h * 0.18, hw - 1, (hw - 1) * 0.32, 0, 0.1, Math.PI - 0.1); ctx.stroke();
+    // top deck with crenellations
+    ctx.fillStyle = '#9d927f'; ctx.beginPath(); ctx.ellipse(0, y1, hw, hw * 0.32, 0, 0, 6.3); ctx.fill();
+    ctx.fillStyle = '#7d7466'; ctx.beginPath(); ctx.ellipse(0, y1 + 1, hw * 0.78, hw * 0.24, 0, 0, 6.3); ctx.fill();
+    const n = 7 + i;
+    for (let c = 0; c < n; c++) { const a = (c + 0.5) / n * Math.PI; const cx = Math.cos(a) * hw * 0.92, cy = y1 - Math.sin(a) * hw * 0.3;
+      ctx.fillStyle = '#a89c87'; ctx.fillRect(cx - 3.5, cy - 8, 7, 7); }
+    for (let c = 0; c < n; c++) {
+      const a = Math.PI + (c + 0.5) / n * Math.PI; // the front half
+      const cx = Math.cos(a) * hw * 0.92, cy = y1 - Math.sin(a) * hw * 0.3;
+      ctx.fillStyle = c / n > 0.45 ? COL.stoneLit : COL.stoneShade;
+      ctx.fillRect(cx - 4, cy - 9, 8, 9);
+      ctx.strokeStyle = 'rgba(70,60,50,0.5)'; ctx.strokeRect(cx - 4, cy - 9, 8, 9);
+    }
+    // an arched door on the ground tier, a window on the upper ones
+    ctx.fillStyle = '#3b2d22';
+    if (i === 0) { ctx.beginPath(); ctx.moveTo(-8, y0 + hw * 0.3 - 1); ctx.lineTo(-8, y0 - 14); ctx.arc(0, y0 - 14, 8, Math.PI, 0); ctx.lineTo(8, y0 + hw * 0.3 - 1); ctx.closePath(); ctx.fill(); }
+    else { ctx.beginPath(); ctx.moveTo(-4, y0 - 6); ctx.lineTo(-4, y0 - 14); ctx.arc(0, y0 - 14, 4, Math.PI, 0); ctx.lineTo(4, y0 - 6); ctx.closePath(); ctx.fill(); }
+    base = y1 - 4; topY = y1;
+  }
+  // flagpole and banner
+  const poleH = 34 + level * 6;
+  ctx.strokeStyle = '#4a3420'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, topY - 2); ctx.lineTo(0, topY - poleH); ctx.stroke();
+  ctx.fillStyle = COL.gold; ctx.beginPath(); ctx.arc(0, topY - poleH - 2, 3.5, 0, 6.3); ctx.fill();
+  const bw = 22 + level * 6, bh = 14 + level * 3, fy = topY - poleH + 2;
+  const wave = k => Math.sin(t * 5 + wob + k * 2.2) * (2 + level * 0.5);
+  if (owner === 0) { // a tattered neutral pennant
+    ctx.fillStyle = '#ece6d6'; ctx.strokeStyle = '#8c8578'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(1, fy); ctx.quadraticCurveTo(bw * 0.5, fy + wave(0.5), bw * 0.8, fy + 4 + wave(1));
+    ctx.lineTo(bw * 0.55, fy + 7 + wave(0.8)); ctx.lineTo(bw * 0.7, fy + 10 + wave(1)); ctx.quadraticCurveTo(bw * 0.4, fy + 12 + wave(0.4), 1, fy + 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    ctx.fillStyle = COL.owner[owner]; ctx.strokeStyle = COL.ownerDark[owner]; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(1, fy);
+    ctx.quadraticCurveTo(bw * 0.5, fy + wave(0.5), bw, fy + wave(1));
+    ctx.lineTo(bw - 7, fy + bh / 2 + wave(1)); ctx.lineTo(bw, fy + bh + wave(1));
+    ctx.quadraticCurveTo(bw * 0.5, fy + bh + wave(0.5), 1, fy + bh); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // emblem: a little tower for you, a crown for the rival
+    ctx.fillStyle = level === 3 ? COL.gold : COL.ownerLight[owner];
+    const ex = bw * 0.42, ey = fy + bh / 2 + wave(0.4);
+    if (owner === 1) { ctx.fillRect(ex - 4, ey - 3, 8, 7); ctx.fillRect(ex - 5, ey - 6, 3, 3); ctx.fillRect(ex - 1.5, ey - 6, 3, 3); ctx.fillRect(ex + 2, ey - 6, 3, 3); }
+    else { ctx.beginPath(); ctx.moveTo(ex - 6, ey + 4); ctx.lineTo(ex - 6, ey - 4); ctx.lineTo(ex - 3, ey); ctx.lineTo(ex, ey - 6); ctx.lineTo(ex + 3, ey); ctx.lineTo(ex + 6, ey - 4); ctx.lineTo(ex + 6, ey + 4); ctx.closePath(); ctx.fill(); }
+    if (level === 3) { ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1, fy + bh); ctx.quadraticCurveTo(bw * 0.5, fy + bh + wave(0.5), bw, fy + bh + wave(1)); ctx.stroke(); }
+  }
+  // warm hit-flash
+  if (flash > 0) { ctx.globalAlpha = flash * 0.5; ctx.fillStyle = '#fff2c8'; ctx.beginPath(); ctx.ellipse(0, -30, 54, 50, 0, 0, 6.3); ctx.fill(); ctx.globalAlpha = 1; }
+  ctx.restore();
+}
+function drawPawn(x, y, owner, t, s = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  const bob = Math.abs(Math.sin(t * 10)) * 2;
+  ctx.fillStyle = 'rgba(20,30,60,0.3)'; ctx.beginPath(); ctx.ellipse(1, 1, 7, 2.6, 0, 0, 6.3); ctx.fill();
+  ctx.translate(0, -bob);
+  const c = COL.owner[owner], d = COL.ownerDark[owner], l = COL.ownerLight[owner];
+  ctx.lineWidth = 1.2; ctx.strokeStyle = d;
+  // base and body: a game pawn
+  ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(0, 0, 6.5, 2.6, 0, 0, 6.3); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-5, 0); ctx.quadraticCurveTo(-2, -6, -2.5, -10); ctx.lineTo(2.5, -10); ctx.quadraticCurveTo(2, -6, 5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = l; ctx.beginPath(); ctx.arc(0, -13, 4, 0, 6.3); ctx.fill(); ctx.stroke();
+  if (owner === 1) { // round helm with a plume, and a raised spear
+    ctx.fillStyle = COL.gold; ctx.beginPath(); ctx.moveTo(-1, -17); ctx.quadraticCurveTo(3, -23, 6, -20); ctx.quadraticCurveTo(3, -19, 1, -16); ctx.fill();
+    ctx.strokeStyle = '#5a4127'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(6, -2); ctx.lineTo(6, -22); ctx.stroke();
+    ctx.fillStyle = '#d5d9e0'; ctx.beginPath(); ctx.moveTo(6, -26); ctx.lineTo(8, -21); ctx.lineTo(4, -21); ctx.closePath(); ctx.fill();
+  } else { // horned helm and a square shield
+    ctx.fillStyle = '#efe5cf'; ctx.strokeStyle = '#6b5a45'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-3, -15); ctx.quadraticCurveTo(-8, -17, -7, -22); ctx.quadraticCurveTo(-5, -18, -2, -17); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3, -15); ctx.quadraticCurveTo(8, -17, 7, -22); ctx.quadraticCurveTo(5, -18, 2, -17); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = d; ctx.strokeStyle = '#2b0d0d'; ctx.fillRect(-9, -9, 6, 7); ctx.strokeRect(-9, -9, 6, 7);
+  }
+  ctx.restore();
+}
+function ropePath(ax, ay, bx, by, sag) {
+  ctx.beginPath(); ctx.moveTo(ax, ay);
+  ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by);
+}
+function drawRope(ax, ay, bx, by, owner, t, alpha = 1, sag = 0) {
+  ctx.save(); ctx.globalAlpha = alpha; ctx.lineCap = 'round';
+  ropePath(ax, ay, bx, by, sag); ctx.strokeStyle = COL.owner[owner]; ctx.globalAlpha = alpha * 0.35; ctx.lineWidth = 13; ctx.stroke();
+  ctx.globalAlpha = alpha;
+  ropePath(ax, ay + 3, bx, by + 3, sag); ctx.strokeStyle = 'rgba(20,30,60,0.25)'; ctx.lineWidth = 6; ctx.stroke();
+  ropePath(ax, ay, bx, by, sag); ctx.strokeStyle = COL.rope; ctx.lineWidth = 8; ctx.stroke();
+  // the twist, scrolling toward the target
+  ctx.setLineDash([5, 5]); ctx.lineDashOffset = -t * 40; ctx.strokeStyle = COL.ropeDark; ctx.lineWidth = 8; ctx.stroke();
+  ctx.setLineDash([]); ctx.strokeStyle = 'rgba(255,230,180,0.35)'; ctx.lineWidth = 1.5; ropePath(ax, ay - 1.5, bx, by - 1.5, sag); ctx.stroke();
+  ctx.restore();
+}
+function drawPin(x, y, owner) {
+  ctx.fillStyle = COL.ownerDark[owner]; ctx.beginPath(); ctx.arc(x, y + 1, 6, 0, 6.3); ctx.fill();
+  ctx.fillStyle = COL.gold; ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.3); ctx.fill();
+  ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.arc(x - 1.5, y - 1.5, 1.6, 0, 6.3); ctx.fill();
+}
+function drawPlaque(k) {
+  const x = k.x, y = k.y + 36, n = Math.floor(k.troops);
+  const w = 30 + String(n).length * 11;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; roundRect(x - w / 2 + 2, y - 14 + 3, w, 30, 9); ctx.fill();
+  ctx.fillStyle = k.owner === 0 ? '#6f6b66' : COL.ownerDark[k.owner]; roundRect(x - w / 2, y - 14, w, 30, 9); ctx.fill();
+  ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.stroke();
+  text(String(n), x, y + 1, 23, '#fff8e6', 'center', 'bold');
+  if (k.owner !== 0) { // rope slots: filled for each rope tied, hollow for each free one
+    const used = linksFrom(k).length;
+    for (let i = 0; i < k.level; i++) {
+      const sx = x + (i - (k.level - 1) / 2) * 16, sy = y + 26;
+      ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, 6.3);
+      ctx.fillStyle = i < used ? COL.gold : 'rgba(40,30,20,0.55)'; ctx.fill();
+      ctx.strokeStyle = COL.goldDark; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawFx() {
+  for (const f of state.fx) {
+    const a = 1 - f.age / f.life; ctx.globalAlpha = a;
+    if (f.kind === 'flag') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.fillStyle = f.color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(9, 3); ctx.lineTo(0, 7); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else if (f.kind === 'spark') { ctx.strokeStyle = f.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f.x - 4, f.y); ctx.lineTo(f.x + 4, f.y); ctx.moveTo(f.x, f.y - 4); ctx.lineTo(f.x, f.y + 4); ctx.stroke(); }
+    else if (f.kind === 'dust') { ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(f.x, f.y, 3 + f.age * 8, 0, 6.3); ctx.fill(); }
+    else { ctx.fillStyle = f.color; ctx.fillRect(f.x - 2, f.y - 2, 4, 4); }
+  }
+  ctx.globalAlpha = 1;
+  for (const f of state.floats) {
+    ctx.globalAlpha = Math.min(1, 2 * (1 - f.age / 1.6));
+    textShadowed(f.s, f.x, f.y - f.age * 30, 24, f.c);
+  }
+  ctx.globalAlpha = 1;
+}
+function iconPause(b, on) {
+  ctx.fillStyle = 'rgba(30,18,8,0.55)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.3); ctx.fill();
+  ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#f3e6c4';
+  if (on) { ctx.beginPath(); ctx.moveTo(b.x - 7, b.y - 11); ctx.lineTo(b.x + 11, b.y); ctx.lineTo(b.x - 7, b.y + 11); ctx.closePath(); ctx.fill(); }
+  else { ctx.fillRect(b.x - 9, b.y - 11, 6, 22); ctx.fillRect(b.x + 3, b.y - 11, 6, 22); }
+}
+function iconMute(b) {
+  ctx.fillStyle = 'rgba(30,18,8,0.55)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.3); ctx.fill();
+  ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#f3e6c4'; ctx.beginPath(); ctx.moveTo(b.x - 13, b.y - 5); ctx.lineTo(b.x - 7, b.y - 5); ctx.lineTo(b.x + 1, b.y - 12); ctx.lineTo(b.x + 1, b.y + 12); ctx.lineTo(b.x - 7, b.y + 5); ctx.lineTo(b.x - 13, b.y + 5); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#f3e6c4'; ctx.lineWidth = 2.5;
+  if (muted) { ctx.beginPath(); ctx.moveTo(b.x + 5, b.y - 7); ctx.lineTo(b.x + 15, b.y + 7); ctx.moveTo(b.x + 15, b.y - 7); ctx.lineTo(b.x + 5, b.y + 7); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.arc(b.x + 2, b.y, 7, -0.8, 0.8); ctx.stroke(); ctx.beginPath(); ctx.arc(b.x + 2, b.y, 13, -0.8, 0.8); ctx.stroke(); }
+}
+
+// ---- Drawing: play ------------------------------------------------------------------------------
+function drawWorld() {
+  drawTable();
+  const t = state.t, lift = 30; // ropes tie to the keep's waist
+  // live ropes
+  for (const l of state.links) {
+    const ax = l.from.x, ay = l.from.y - lift, ex = l.from.x + (l.to.x - l.from.x) * l.grow, ey = l.from.y - lift + (l.to.y - l.from.y) * l.grow;
+    drawRope(ax, ay, ex, ey, l.owner, t);
+  }
+  // cut ropes sag and fall
+  for (const d of state.dead) {
+    const a = 1 - d.age / 0.9, sag = 10 + d.age * 120, cx = d.ax + (d.bx - d.ax) * d.at, cy = d.ay - lift + (d.by - d.ay) * d.at;
+    drawRope(d.ax, d.ay - lift, cx, cy + sag, d.owner, t, a, sag * 0.4);
+    drawRope(d.bx, d.by - lift, cx, cy + sag, d.owner, t, a, sag * 0.4);
+  }
+  // drag preview
+  if (state.drag) {
+    const a = state.drag.from, b = keepAt(state.drag.x, state.drag.y);
+    const why = b && b !== a ? canLink(a, b) : 'none';
+    ctx.save(); ctx.setLineDash([8, 10]); ctx.strokeStyle = 'rgba(91,70,48,0.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(a.x, a.y - lift, tune.link_range, 0, 6.3); ctx.stroke(); ctx.restore();
+    const tx = why === 'ok' ? b.x : state.drag.x, ty = why === 'ok' ? b.y - lift : state.drag.y;
+    drawRope(a.x, a.y - lift, tx, ty, 1, t, why === 'ok' ? 1 : 0.55, 0);
+    if (why !== 'ok' && why !== 'none') { ctx.strokeStyle = '#c23a37'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(tx - 10, ty - 10); ctx.lineTo(tx + 10, ty + 10); ctx.moveTo(tx + 10, ty - 10); ctx.lineTo(tx - 10, ty + 10); ctx.stroke(); }
+    if (why === 'ok') { ctx.strokeStyle = COL.gold; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(b.x, b.y + 4, 58, 20, 0, 0, 6.3); ctx.stroke(); }
+  }
+  // keyboard selection
+  if (state.kbUsed) {
+    const s = state.keeps[state.sel], g = state.keeps[state.tgt];
+    if (s) { ctx.strokeStyle = COL.gold; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.x, s.y + 4, 60, 21, 0, 0, 6.3); ctx.stroke(); }
+    if (g) { ctx.save(); ctx.setLineDash([6, 6]); ctx.strokeStyle = '#fff3c4'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(g.x, g.y + 4, 60, 21, 0, 0, 6.3); ctx.stroke(); ctx.restore(); }
+  }
+  // keeps and pawns in depth order (pawns sorted with keeps by y)
+  const items = [];
+  for (const k of state.keeps) items.push({ y: k.y, k });
+  for (const p of state.pawns) { const f = p.d / p.len; items.push({ y: p.sy + (p.ty - p.sy) * f, p, f }); }
+  items.sort((a, b) => a.y - b.y);
+  for (const it of items) {
+    if (it.k) { const k = it.k; drawKeep(k.x, k.y, k.owner, k.level, { t, pop: k.pop, flash: k.flash, wobble: k.wobble, scale: 1.25 }); }
+    else { const p = it.p, f = it.f; drawPawn(p.sx + (p.tx - p.sx) * f, p.sy + (p.ty - p.sy) * f - lift + 14, p.owner, t + p.ph, 1.45); }
+  }
+  for (const l of state.links) { drawPin(l.from.x, l.from.y - lift, l.owner); if (l.grow >= 1) drawPin(l.to.x, l.to.y - lift, l.owner); }
+  for (const k of state.keeps) drawPlaque(k);
+  // swipe trail
+  if (state.swipe) {
+    const tr = state.swipe.trail; for (const p of tr) p.age += 1 / 60;
+    ctx.strokeStyle = 'rgba(255,250,235,0.8)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    for (let i = 1; i < tr.length; i++) { ctx.globalAlpha = Math.max(0, 1 - tr[i].age * 3); ctx.beginPath(); ctx.moveTo(tr[i - 1].x, tr[i - 1].y); ctx.lineTo(tr[i].x, tr[i].y); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    if (state.swipe.done && tr.every(p => p.age > 0.35)) state.swipe = null;
+  }
+  drawFx();
+  // first-minute hint: drag from your keep to the nearest grey keep
+  if (!state.linkedOnce) {
+    const me = state.keeps.find(k => k.owner === 1);
+    const tg = me && state.keeps.filter(k => k.owner === 0 && dist(k, me) <= tune.link_range).sort((a, b) => dist(a, me) - dist(b, me))[0];
+    if (me && tg) {
+      const f = (t * 0.6) % 1, hx = me.x + (tg.x - me.x) * f, hy = me.y - lift + (tg.y - me.y) * f;
+      ctx.save(); ctx.setLineDash([4, 10]); ctx.strokeStyle = 'rgba(227,181,68,0.9)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(me.x, me.y - lift); ctx.lineTo(hx, hy); ctx.stroke(); ctx.restore();
+      drawFinger(hx, hy);
+      ctx.strokeStyle = `rgba(227,181,68,${1 - f})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(tg.x, tg.y + 4, 40 + f * 30, 14 + f * 10, 0, 0, 6.3); ctx.stroke();
+    }
+  }
+}
+function drawFinger(x, y) { // a drawn pointing hand for the hint
+  ctx.save(); ctx.translate(x + 6, y + 6); ctx.rotate(-0.4);
+  ctx.fillStyle = '#f7e2c6'; ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 2;
+  roundRect(-4, 0, 9, 22, 4); ctx.fill(); ctx.stroke();
+  roundRect(-10, 16, 24, 22, 8); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-3, 22); ctx.lineTo(-3, 28); ctx.moveTo(4, 22); ctx.lineTo(4, 28); ctx.stroke();
+  ctx.restore();
+}
+function drawHUD() {
+  const m = MAPS[mapIndex];
+  textShadowed(`Map ${mapIndex + 1}: ${m.name}`, 26, 34, 26, '#f3e6c4', 'left');
+  // strength bar: every troop on the table, by side
+  const sum = [0, 0, 0];
+  for (const k of state.keeps) sum[k.owner] += k.troops;
+  for (const p of state.pawns) sum[p.owner] += 1;
+  const tot = sum[0] + sum[1] + sum[2] || 1, bx = 26, by = 58, bw = 500, bh = 14;
+  let x = bx;
+  roundRect(bx - 2, by - 2, bw + 4, bh + 4, 6); ctx.fillStyle = '#2b1a0c'; ctx.fill();
+  for (const o of [1, 0, 2]) { const w = bw * sum[o] / tot; ctx.fillStyle = COL.owner[o]; ctx.fillRect(x, by, w, bh); x += w; }
+  text(`You ${Math.floor(sum[1])}`, bx + 6, by + 30, 22, COL.ownerLight[1], 'left', 'bold');
+  text(`Rival ${Math.floor(sum[2])}`, bx + bw - 6, by + 30, 22, COL.ownerLight[2], 'right', 'bold');
+  iconMute(UI.mute); iconPause(UI.pause, false);
+  // bottom strip: what to do now
+  let hint = '';
+  if (state.msgT > 0) hint = state.msg;
+  else if (!state.linkedOnce) hint = 'Drag from your blue keep to a grey keep';
+  else if (!state.cutOnce && state.t > 20 && mapIndex === 0) hint = 'Swipe across a rope to cut it and reroute';
+  else if (mapIndex === 0 && state.t < 40) hint = 'More troops: level up, more ropes (max 3)';
+  if (hint) {
+    ctx.font = `bold 22px ${FONT}`; const w = ctx.measureText(hint).width + 40;
+    ctx.fillStyle = 'rgba(40,25,12,0.82)'; roundRect(W / 2 - w / 2, H - 58, w, 42, 12); ctx.fill();
+    ctx.strokeStyle = COL.gold; ctx.lineWidth = 1.5; ctx.stroke();
+    text(hint, W / 2, H - 37, 22, '#f8edd0', 'center', 'bold');
+  }
+}
+
+// ---- Menus ----------------------------------------------------------------------------------------
+function panel(x, y, w, h) {
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; roundRect(x + 4, y + 6, w, h, 18); ctx.fill();
+  ctx.fillStyle = COL.parch; roundRect(x, y, w, h, 18); ctx.fill();
+  ctx.strokeStyle = COL.goldDark; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = 'rgba(91,70,48,0.35)'; ctx.lineWidth = 1.5; roundRect(x + 10, y + 10, w - 20, h - 20, 12); ctx.stroke();
+}
+function button(label, x, y, w, h, primary) {
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; roundRect(x - w / 2 + 3, y - h / 2 + 4, w, h, 14); ctx.fill();
+  ctx.fillStyle = primary ? COL.owner[1] : '#7b5a37'; roundRect(x - w / 2, y - h / 2, w, h, 14); ctx.fill();
+  ctx.strokeStyle = COL.gold; ctx.lineWidth = 2.5; ctx.stroke();
+  text(label, x, y + 1, 28, '#fff8e6', 'center', 'bold');
+  return { x: x - w / 2, y: y - h / 2, w, h };
+}
+function inRect(r, p) { return r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; }
+let menuBtns = {};
+function lastUp() { let u = null; for (const e of pointerQ) if (e.type === 'up') u = e; return u; }
+
+// ---- Scenes -----------------------------------------------------------------------------------------
+const scenes = {
+  figures: {
+    update(dt) { state.t += dt; },
+    draw() {
+      clear(COL.felt);
+      ctx.fillStyle = COL.parch; roundRect(20, 20, W - 40, H - 40, 18); ctx.fill();
+      text('Figures', W / 2, 70, 40, COL.ink, 'center', 'bold');
+      const t = state.t;
+      const row = (y, items) => items.forEach((it, i) => { const x = (i + 0.5) * W / items.length; it.d(x, y); text(it.n, x, y + 78, 20, COL.ink); });
+      row(300, [
+        { n: 'Your keep Lv1', d: (x, y) => drawKeep(x, y, 1, 1, { t }) },
+        { n: 'Your keep Lv2', d: (x, y) => drawKeep(x, y, 1, 2, { t }) },
+        { n: 'Your keep Lv3', d: (x, y) => drawKeep(x, y, 1, 3, { t }) },
+      ]);
+      row(620, [
+        { n: 'Rival keep Lv1', d: (x, y) => drawKeep(x, y, 2, 1, { t }) },
+        { n: 'Rival keep Lv3', d: (x, y) => drawKeep(x, y, 2, 3, { t }) },
+        { n: 'Neutral keep', d: (x, y) => drawKeep(x, y, 0, 2, { t }) },
+      ]);
+      row(900, [
+        { n: 'Your pawn', d: (x, y) => drawPawn(x, y, 1, t, 3.2) },
+        { n: 'Rival pawn', d: (x, y) => drawPawn(x, y, 2, t, 3.2) },
+      ]);
+      drawRope(120, 1100, 600, 1100, 1, t); drawPin(120, 1100, 1); drawPin(600, 1100, 1);
+      text('Rope (yours)', W / 2, 1150, 20, COL.ink);
+    },
+  },
+  title: {
+    update() {
+      const u = lastUp();
+      if (pressed('Enter') || pressed('Space') || u) { selectIndex = unlocked - 1; scene = 'select'; }
+    },
+    draw() {
+      mapIndex = 0; drawTable();
+      const t = clock.now();
+      drawRope(200, 520, 520, 440, 1, t); drawPin(200, 520, 1); drawPin(520, 440, 1);
+      drawKeep(200, 550, 1, 3, { t }); drawKeep(520, 470, 2, 2, { t });
+      drawPawn(310, 528, 1, t, 1.6); drawPawn(400, 507, 1, t + 1, 1.6);
+      panel(70, 140, 580, 170);
+      textShadowed(TITLE, W / 2, 210, 76, COL.owner[1]);
+      text('Rope your keeps. Take the table.', W / 2, 272, 26, COL.ink, 'center', 'italic');
+      panel(50, 650, 620, 330);
+      CONTROLS.forEach((c, i) => text(c, W / 2, 705 + i * 52, 23, COL.ink));
+      button('Tap or Enter to start', W / 2, 1080, 440, 84, true);
+    },
+  },
+  select: {
+    update() {
+      if (pressed('ArrowUp') || pressed('ArrowLeft')) selectIndex = Math.max(0, selectIndex - 1);
+      if (pressed('ArrowDown') || pressed('ArrowRight')) selectIndex = Math.min(unlocked - 1, selectIndex + 1);
+      if (pressed('Enter') || pressed('Space')) { startMap(selectIndex); scene = 'play'; return; }
+      const u = lastUp();
+      if (u) for (let i = 0; i < MAPS.length; i++) if (i < unlocked && inRect(menuBtns['m' + i], u)) { startMap(i); scene = 'play'; return; }
+    },
+    draw() {
+      mapIndex = 0; drawTable();
+      panel(60, 130, 600, 110); textShadowed('Choose a map', W / 2, 186, 48, COL.ink);
+      // the ladder: medallions on a dotted ink road
+      const pos = i => ({ x: i % 2 ? 470 : 250, y: 1040 - i * 175 });
+      ctx.save(); ctx.setLineDash([6, 10]); ctx.strokeStyle = COL.ink; ctx.lineWidth = 3; ctx.beginPath();
+      MAPS.forEach((_, i) => { const p = pos(i); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }); ctx.stroke(); ctx.restore();
+      MAPS.forEach((m, i) => {
+        const p = pos(i), open = i < unlocked, sel = i === selectIndex;
+        if (sel) { ctx.strokeStyle = COL.gold; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(p.x, p.y, 62, 0, 6.3); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(p.x + 3, p.y + 5, 52, 0, 6.3); ctx.fill();
+        ctx.fillStyle = open ? (i < unlocked - 1 ? COL.owner[1] : '#7b5a37') : '#8d8a86'; ctx.beginPath(); ctx.arc(p.x, p.y, 52, 0, 6.3); ctx.fill();
+        ctx.strokeStyle = COL.gold; ctx.lineWidth = 3; ctx.stroke();
+        if (open) text(String(i + 1), p.x, p.y + 2, 44, '#fff8e6', 'center', 'bold');
+        else { // drawn padlock
+          ctx.strokeStyle = '#efe7d5'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(p.x, p.y - 8, 12, Math.PI, 0); ctx.stroke();
+          ctx.fillStyle = '#efe7d5'; roundRect(p.x - 18, p.y - 8, 36, 28, 5); ctx.fill();
+          ctx.fillStyle = '#6f6b66'; ctx.beginPath(); ctx.arc(p.x, p.y + 4, 4, 0, 6.3); ctx.fill();
+        }
+        const lx = i % 2 ? p.x - 80 : p.x + 80;
+        ctx.font = `bold 26px ${FONT}`; const tw = ctx.measureText(m.name).width + 24;
+        ctx.fillStyle = 'rgba(233,220,188,0.92)'; roundRect(i % 2 ? lx - tw : lx, p.y - 22, tw, 44, 10); ctx.fill();
+        text(m.name, i % 2 ? lx - 12 : lx + 12, p.y + 1, 26, open ? COL.ink : '#8a8070', i % 2 ? 'right' : 'left', 'bold');
+        menuBtns['m' + i] = { x: p.x - 56, y: p.y - 56, w: 112, h: 112 };
+      });
+      text('Tap a map, or arrows and Enter', W / 2, 1180, 22, '#f3e6c4');
+    },
+  },
+  play: {
+    update(dt) {
+      if (pressed('KeyP') || pressed('Escape')) { scene = 'pause'; return; }
+      for (const ev of pointerQ) { playPointer(ev); if (scene !== 'play') return; }
+      playKeys();
+      simulate(dt);
+    },
+    draw() { drawWorld(); drawHUD(); },
+  },
+  pause: {
+    update() {
+      const u = lastUp();
+      if (pressed('KeyP') || pressed('Escape') || (u && inRect(menuBtns.resume, u))) { scene = 'play'; return; }
+      if (pressed('KeyR') || (u && inRect(menuBtns.restart, u))) { startMap(mapIndex); scene = 'play'; return; }
+      if (u && inRect(menuBtns.maps, u)) { selectIndex = mapIndex; scene = 'select'; }
+    },
+    draw() {
+      scenes.play.draw(); ctx.fillStyle = 'rgba(15,10,5,0.5)'; ctx.fillRect(0, 0, W, H);
+      panel(110, 420, 500, 440); textShadowed('Paused', W / 2, 490, 54, COL.ink);
+      menuBtns.resume = button('Resume (P)', W / 2, 590, 380, 76, true);
+      menuBtns.restart = button('Restart map (R)', W / 2, 690, 380, 76, false);
+      menuBtns.maps = button('Map select', W / 2, 790, 380, 76, false);
+    },
+  },
+  over: {
+    update() {
+      const u = lastUp();
+      if (pressed('KeyR') || pressed('Enter') || pressed('Space') || (u && inRect(menuBtns.retry, u))) { startMap(mapIndex); scene = 'play'; return; }
+      if (u && inRect(menuBtns.maps, u)) { selectIndex = mapIndex; scene = 'select'; }
+    },
+    draw() {
+      scenes.play.draw(); ctx.fillStyle = 'rgba(40,5,5,0.45)'; ctx.fillRect(0, 0, W, H);
+      panel(90, 420, 540, 420);
+      textShadowed(state.gained || 'Defeat', W / 2, 500, 42, COL.owner[2]);
+      text(`Held out ${fmtTime(state.t)} · took ${state.captured} keep${state.captured === 1 ? '' : 's'}`, W / 2, 560, 24, COL.ink);
+      menuBtns.retry = button('Try again (R)', W / 2, 660, 380, 76, true);
+      menuBtns.maps = button('Map select', W / 2, 760, 380, 76, false);
+    },
+  },
+  results: {
+    update() {
+      const u = lastUp(), last = mapIndex + 1 >= MAPS.length;
+      if (pressed('Enter') || pressed('Space') || (u && inRect(menuBtns.next, u))) { startMap(last ? mapIndex : mapIndex + 1); scene = 'play'; return; }
+      if (u && inRect(menuBtns.maps, u)) { selectIndex = Math.min(unlocked - 1, mapIndex + 1); scene = 'select'; }
+    },
+    draw() {
+      scenes.play.draw(); ctx.fillStyle = 'rgba(10,20,40,0.4)'; ctx.fillRect(0, 0, W, H);
+      const last = mapIndex + 1 >= MAPS.length;
+      panel(90, 420, 540, 420);
+      textShadowed(state.gained || 'Victory', W / 2, 500, 46, COL.owner[1]);
+      text(`${MAPS[mapIndex].name} in ${fmtTime(state.t)} · took ${state.captured} keeps`, W / 2, 560, 24, COL.ink);
+      menuBtns.next = button(last ? 'Play it again' : 'Next map (Enter)', W / 2, 660, 380, 76, true);
+      menuBtns.maps = button('Map select', W / 2, 760, 380, 76, false);
+    },
+  },
+};
+function fmtTime(s) { const m = Math.floor(s / 60), r = Math.floor(s % 60); return `${m}:${String(r).padStart(2, '0')}`; }
+
+// ---- Loop: fixed step, frame time clamped ---------------------------------------------
+function step() {
+  if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
+  scenes[scene].update(STEP); hit.clear(); pointerQ.length = 0;
+}
+let last, acc = 0, ALPHA = 1;
+function tick() {
+  const now = clock.now();
+  acc += Math.min(now - last, 0.25); last = now;
+  while (acc >= STEP) { step(); acc -= STEP; }
+  ALPHA = acc / STEP;
+  drawFrame();
+}
+function drawFrame() { const keep = mapIndex; scenes[scene].draw(); if (scene === 'title' || scene === 'select') { mapIndex = keep; } }
+function frame() { tick(); requestAnimationFrame(frame); }
+function timer() { if (document.visibilityState === 'visible' && clock.now() - last > 0.1) tick(); }
+
+// ---- What a check can read and drive (?manual=1 stops the loop; players never see it) ----
+window.game = {
+  get scene() { return scene; },
+  get state() { return state; },
+  press(code) { hit.add(code); },
+  hold(code, on) { on ? down.add(code) : down.delete(code); },
+  get events() { return events; },
+  step(n = 1, draw = true, alpha = 1) {
+    for (let i = 0; i < n; i++) step();
+    if (draw) { ALPHA = alpha; drawFrame(); }
+  },
+};
+
+fit();
+reset();
+scene = params.get('scene') || 'title';
+last = clock.now();
+if (params.get('manual') === '1') drawFrame();
+else { requestAnimationFrame(frame); setInterval(timer, 50); }
+</script>
+</body>
+</html>

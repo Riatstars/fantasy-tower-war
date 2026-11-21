@@ -1,0 +1,23 @@
+L1	pass	evidence/play.png	stone keeps with storeys per level and banners on a torn parchment sheet over green felt, pawns marching single file on ropes, blue/crimson/grey roles, gold accents; rope sag on cut at index.html:202
+L2	pass	evidence/play.png	send-and-conquer loop with persistent rope links; no look taken from the references
+L3	pass	evidence/play.png	2D fixed top-down, portrait 720x1280, whole map in view
+F1	pass	index.html:382	pointer down on own keep starts a drag, release on a keep ties a rope; swipe elsewhere cuts crossed ropes (index.html:397)
+F2	pass	index.html:283	periodic generation tick by level, levelOf thresholds, excess ropes drop on level loss (index.html:299)
+F3	pass	evidence/play.png	arrivals reinforce own or reduce garrison and capture at zero (index.html:330); play.png shows a keep taken
+F4	pass	index.html:321	opposing pawns between the same two keeps cancel where they meet with a dust puff
+F5	pass	index.html:281	generation only for owned keeps; neutrals keep their garrison
+F6	pass	index.html:242	rival expands to neutrals, scores your weakest keeps, reinforces threatened keeps, drops useless ropes; play.png shows it seizing a neutral
+F7	pass	index.html:830	5 maps in config.js MAPS, map-select ladder with locks, over (index.html:890) and results (index.html:905) screens, restart in pause
+F8	not_assessed	index.html:226	banner-flag burst on capture, gold level-up sparks (index.html:292), rope grow and sag are drawn; the sounds cannot be heard by the check
+S1	pass	index.html:283	troop generation built for real
+S2	pass	evidence/figures.png	levels 1-3 drawn as storeys; level sets rope slots (canLink index.html:188)
+S3	pass	index.html:382	ropes tied, sending, cut, slot dots under each plaque
+M1	pass	evidence/play.png	one blue keep with ticking count, grey neutrals with 6-12 garrisons
+M2	pass	index.html:716	pulsing dotted path with a drawn hand to the nearest neutral until the first rope
+M3	pass	evidence/play.png	neutral captured, flipped blue with flag burst and Taken!
+M4	pass	index.html:292	crossing lv2_at 15 pops the keep, shows "Level 2: 2 ropes", opens a second slot
+M5	pass	evidence/play.png	rival already roping and seizing a neutral in the first seconds
+C1	pass	index.html:245	map 1: rival may not target your keeps for ai_grace 40 s, aggro 0.3, think 3.0
+C2	pass	index.html:265	from map 2 grace is off and the rival scores your thinnest keeps highest
+C3	pass	index.html:879	loss screen restarts the same map
+C4	pass	config.js:39	maps grow 7→11 keeps, rival think 3.0→1.4 s, aggro 0.3→1.0, more and stronger rival keeps
