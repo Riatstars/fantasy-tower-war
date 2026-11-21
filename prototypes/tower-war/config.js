@@ -21,12 +21,15 @@ window.CONFIG = {
   // ---- Ropes and marching ----
   send_interval: { value: 0.6, min: 0.1, max: 2, step: 0.05 },  // seconds between pawns sent down one rope
   pawn_speed: { value: 110, min: 30, max: 400, step: 5 },       // px per second along a rope
+  send_costs_troops: { value: 0, min: 0, max: 1, step: 1 },     // 0: sending is free, a keep only loses troops when attacked; 1: each pawn sent costs 1 troop
+  rope_lane: { value: 8, min: 0, max: 20, step: 1 },            // px: two ropes between the same keeps run side by side this far apart
   link_range: { value: 470, min: 150, max: 1400, step: 10 },    // longest rope, px (logical 720x1280)
   keep_radius: { value: 52, min: 30, max: 90, step: 1 },        // touch radius of a keep, px
 
   // ---- Rival AI (per-map numbers are in MAPS below) ----
   ai_min_send: { value: 6, min: 1, max: 30, step: 1 },          // rival keeps hold this many before sending
-  ai_grace: { value: 40, min: 0, max: 120, step: 5 },           // seconds on map 1 before the rival may hit you
+  ai_grace: { value: 60, min: 0, max: 180, step: 5 },           // seconds on map 1 before the rival may hit you
+  ai_think_scale: { value: 1.8, min: 0.3, max: 4, step: 0.1 },  // multiplies every map's rival think time: higher = slower rival
 
   // ---- Start ----
   player_start: { value: 10, min: 1, max: 60, step: 1 },        // troops in your first keep

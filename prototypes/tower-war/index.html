@@ -176,13 +176,18 @@ function startMap(i) {
   state = {
     t: 0, score: 0, gained: '', keeps, links: [], pawns: [], dead: [], fx: [], floats: [],
     drag: null, swipe: null, linkedOnce: false, cutOnce: false, captured: 0, msg: '', msgT: 0,
-    aiT: 1.5, sel: 0, tgt: 0, kbUsed: false, endT: 0, ended: false,
+    aiT: 3, sel: 0, tgt: 0, kbUsed: false, endT: 0, ended: false,
   };
   state.sel = keeps.findIndex(k => k.owner === 1);
   state.tgt = nearestTarget(keeps[state.sel], 0, 1);
   bgCache = null;
 }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function lane(a, b) { // two ropes tied both ways between the same keeps run side by side, each on its own right
+  if (!state.links.some(l => l.from === b && l.to === a)) return { ox: 0, oy: 0 };
+  const d = dist(a, b) || 1, k = tune.rope_lane;
+  return { ox: -(b.y - a.y) / d * k, oy: (b.x - a.x) / d * k };
+}
 function linksFrom(k) { return state.links.filter(l => l.from === k); }
 function hasLink(a, b) { return state.links.some(l => l.from === a && l.to === b); }
 function canLink(a, b) {
@@ -262,6 +267,7 @@ function aiThink() {
       let s = 0;
       if (t.owner === 2) { const th = incomingThreat(t); if (th >= t.troops - 2 && th > 0) s = 80 - d; }
       else if (t.owner === 0) { s = 52 - t.troops * 2 - d + (k.troops > t.troops ? 10 : -15); }
+      else if (t.owner === 1 && hasLink(t, k)) { s = 46 - d; } // rope back at a keep roping us: the marches meet mid-way
       else if (t.owner === 1 && graceOver) {
         if (k.troops * m.aggro > t.troops + 4) s = 40 - t.troops * 1.5 - d + m.aggro * 22;
       }
@@ -304,8 +310,9 @@ function simulate(dt) {
     l.timer += dt;
     if (l.timer >= tune.send_interval && l.grow >= 1) {
       l.timer -= tune.send_interval;
-      if (l.from.troops >= 1) {
-        l.from.troops -= 1;
+      const cost = tune.send_costs_troops >= 1;
+      if (!cost || l.from.troops >= 1) {
+        if (cost) l.from.troops -= 1;
         state.pawns.push({ from: l.from, to: l.to, owner: l.owner, d: 0, len: dist(l.from, l.to), sx: l.from.x, sy: l.from.y, tx: l.to.x, ty: l.to.y, ph: rng() * 6 });
       }
     } else if (l.timer > tune.send_interval) l.timer = tune.send_interval;
@@ -322,7 +329,8 @@ function simulate(dt) {
         p.dead = q.dead = true;
         const f = p.d / p.len;
         const x = p.sx + (p.tx - p.sx) * f, y = p.sy + (p.ty - p.sy) * f;
-        burst(x, y, '#d8c8a0', 5, 70, 'dust'); sfx.clash();
+        burst(x, y - 20, '#d8c8a0', 6, 80, 'dust'); burst(x, y - 20, COL.gold, 3, 120, 'spark'); sfx.clash();
+        events.push({ type: 'clash' });
         break;
       }
     }
@@ -349,7 +357,7 @@ function simulate(dt) {
   state.msgT = Math.max(0, state.msgT - dt);
   // rival
   state.aiT -= dt;
-  if (state.aiT <= 0) { state.aiT = MAPS[mapIndex].think * (0.8 + rng() * 0.4); aiThink(); }
+  if (state.aiT <= 0) { state.aiT = MAPS[mapIndex].think * tune.ai_think_scale * (0.8 + rng() * 0.4); aiThink(); }
   // ends
   const owners = state.keeps.map(k => k.owner);
   const mineN = owners.filter(o => o === 1).length;
@@ -667,7 +675,8 @@ function drawWorld() {
   const t = state.t, lift = 30; // ropes tie to the keep's waist
   // live ropes
   for (const l of state.links) {
-    const ax = l.from.x, ay = l.from.y - lift, ex = l.from.x + (l.to.x - l.from.x) * l.grow, ey = l.from.y - lift + (l.to.y - l.from.y) * l.grow;
+    const o = lane(l.from, l.to);
+    const ax = l.from.x + o.ox, ay = l.from.y - lift + o.oy, ex = ax + (l.to.x - l.from.x) * l.grow, ey = ay + (l.to.y - l.from.y) * l.grow;
     drawRope(ax, ay, ex, ey, l.owner, t);
   }
   // cut ropes sag and fall
@@ -696,13 +705,13 @@ function drawWorld() {
   // keeps and pawns in depth order (pawns sorted with keeps by y)
   const items = [];
   for (const k of state.keeps) items.push({ y: k.y, k });
-  for (const p of state.pawns) { const f = p.d / p.len; items.push({ y: p.sy + (p.ty - p.sy) * f, p, f }); }
+  for (const p of state.pawns) { const f = p.d / p.len; items.push({ y: p.sy + (p.ty - p.sy) * f, p, f, o: lane(p.from, p.to) }); }
   items.sort((a, b) => a.y - b.y);
   for (const it of items) {
     if (it.k) { const k = it.k; drawKeep(k.x, k.y, k.owner, k.level, { t, pop: k.pop, flash: k.flash, wobble: k.wobble, scale: 1.25 }); }
-    else { const p = it.p, f = it.f; drawPawn(p.sx + (p.tx - p.sx) * f, p.sy + (p.ty - p.sy) * f - lift + 14, p.owner, t + p.ph, 1.45); }
+    else { const p = it.p, f = it.f; drawPawn(p.sx + (p.tx - p.sx) * f + it.o.ox, p.sy + (p.ty - p.sy) * f - lift + 14 + it.o.oy, p.owner, t + p.ph, 1.45); }
   }
-  for (const l of state.links) { drawPin(l.from.x, l.from.y - lift, l.owner); if (l.grow >= 1) drawPin(l.to.x, l.to.y - lift, l.owner); }
+  for (const l of state.links) { const o = lane(l.from, l.to); drawPin(l.from.x + o.ox, l.from.y - lift + o.oy, l.owner); if (l.grow >= 1) drawPin(l.to.x + o.ox, l.to.y - lift + o.oy, l.owner); }
   for (const k of state.keeps) drawPlaque(k);
   // swipe trail
   if (state.swipe) {

@@ -5,6 +5,11 @@ make a tower war where each tower generate troops and sending them to other towe
 
 1. Sending: about sending troop, its a mobile game so you drag on the screen connecting two tower to send troop, troop will generate periodically and tower will level up, have more connection when they have more troop, max is level 3
 
+After play: Cần làm rõ những điểm sau, 
+After play: 1, tôi muốn lượng troop được gửi đi và không làm giảm giá trị của tower, tower chỉ giảm giá trị khi bị tấn công, 
+After play: 2, đối thủ chơi đang hơi nhanh, gây cảm giác bị áp đảo,
+After play: 3, cho phép hai tower đang gửi quân đấu tranh với nhau, quân sẽ đụng độ và giết nhau khi gặp nhau ở giữa đường đi
+
 **Pitch:** Drag rope-links between keeps to march troops along them, grow towers to level 3 to open more links, and take every keep on the map before the rival takes yours.
 
 **Genre:** tower-war / real-time conquest (like Galcon, Mushroom Wars) *(inferred (strong))*
@@ -30,7 +35,7 @@ Map 1 is a gentle race for neutrals. From map 2 the rival attacks your thinnest 
 
 ## Core loop
 - Keeps generate troops over time; more troops raise the level (max 3), which allows more outgoing links and faster generation.
-- Drag to link one of your keeps to another; troops march along it, draining an enemy or neutral garrison, or reinforcing your own.
+- Drag to link one of your keeps to another; troops march along it without emptying the sender (a keep only loses troops when attacked), draining an enemy or neutral garrison, or reinforcing your own.
 - A garrison at zero flips to the attacker; cut and reroute links as the front shifts.
 - Take every keep to win the map; lose all of yours and it restarts.
 
@@ -41,10 +46,10 @@ Map 1 is a gentle race for neutrals. From map 2 the rival attacks your thinnest 
 ## Features
 - [x] Drag to link two keeps; swipe to cut a link
 - [x] Troops generate periodically; keeps level 1→3 by troop count; level sets max links (1/2/3) and generation speed
-- [x] Pawns march along links; hitting an enemy keep reduces its garrison and takes it at zero; hitting your own reinforces
-- [x] Opposing marches on the same link fight where they meet *(guessed)*
+- [x] Sending is free: pawns march along links and the sender keeps its troops; hitting an enemy keep reduces its garrison and takes it at zero; hitting your own reinforces
+- [x] Two keeps roping each other: their ropes run side by side and the marches clash and kill each other where they meet; the rival ropes back at a keep that ropes it
 - [x] Neutral keeps hold a garrison and don't generate *(guessed)*
-- [x] One AI rival that expands, attacks weak keeps and defends *(provisional)*
+- [x] One AI rival that expands, attacks weak keeps and defends, at a calmer pace (thinks 1.8x slower, leaves you alone for the first 60 s of map 1)
 - [x] 5 maps with a map-select ladder, win/lose screens, restart
 - [ ] Juice: banner pop on capture, level-up flourish, rope snap and sag, marching sounds
 

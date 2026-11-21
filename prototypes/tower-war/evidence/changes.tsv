@@ -1,0 +1,1 @@
+iteration 1	free sending (send_costs_troops 0); rival slower (ai_think_scale 1.8, ai_grace 40->60, first think 3s); opposing ropes run side by side, marches clash mid-way, rival ropes back at an attacker	errors: none	prototypes/tower-war/evidence/iteration-1-play.png
