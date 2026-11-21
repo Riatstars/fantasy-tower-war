@@ -9,12 +9,19 @@ After play: Cần làm rõ những điểm sau,
 After play: 1, tôi muốn lượng troop được gửi đi và không làm giảm giá trị của tower, tower chỉ giảm giá trị khi bị tấn công, 
 After play: 2, đối thủ chơi đang hơi nhanh, gây cảm giác bị áp đảo,
 After play: 3, cho phép hai tower đang gửi quân đấu tranh với nhau, quân sẽ đụng độ và giết nhau khi gặp nhau ở giữa đường đi
+After play: thêm 1 chỉnh sửa nhỏ, bản máy tính thì phải dùng chuột trái để cắt liên kiết
+After play: tôi đã nhầm, khi cắt phải bấm chuột phải, khi nối bấm chuột trái và làm cho bấm box của tower to hơn để dễ thao tác
+After play: để tránh việc không thể kết thúc ván, cần add thêm 2 chức năng sau
+After play: 1, không giới hạn độ dài của các connection, 
+After play: 2, khi giá trị của các tower đã đầy, tầm 60 điểm là max, khi tower nhận thêm lính đồng mình thì sẽ chuyển tiếp các lính đồng minh đó sang các connection tiếp theo, chứ không để những lính đến khi giá trị max bị biến mất
+After play: cần không để cho 2 keep đồng minh có thể nối ngược vào nhau
+After play: tốc độ generate của keep đang nhanh quá, làm cho lượng troop đối phương vào rất nhiều nhưng không làm giảm giá trị của keep được
 
 **Pitch:** Drag rope-links between keeps to march troops along them, grow towers to level 3 to open more links, and take every keep on the map before the rival takes yours.
 
 **Genre:** tower-war / real-time conquest (like Galcon, Mushroom Wars) *(inferred (strong))*
 
-**Controls:** drag from your tower to another to connect them; troops then flow along the link. Swipe across a link to cut it *(guessed)*. Touch first; mouse works the same.
+**Controls:** drag from your tower to another to connect them; troops then flow along the link. Swipe across a link to cut it *(guessed)*. On a computer: left mouse drags to tie; right-click on a rope, or right-drag across it, cuts it. Keeps have a large click/touch area.
 
 **Question:** Is building and rerouting links, as towers grow 1→3, a fun tug-of-war for a 2–3 minute map?
 
@@ -50,6 +57,9 @@ Map 1 is a gentle race for neutrals. From map 2 the rival attacks your thinnest 
 - [x] Two keeps roping each other: their ropes run side by side and the marches clash and kill each other where they meet; the rival ropes back at a keep that ropes it
 - [x] Neutral keeps hold a garrison and don't generate *(guessed)*
 - [x] One AI rival that expands, attacks weak keeps and defends, at a calmer pace (thinks 1.8x slower, leaves you alone for the first 60 s of map 1)
+- [x] Ropes have no length limit: any keep can rope any keep on the map
+- [x] Two allied keeps can't rope each other both ways (a rope back to an ally that already ropes you is refused)
+- [x] A full keep (60 troops) relays arriving ally pawns down its own ropes, in turn, instead of losing them
 - [x] 5 maps with a map-select ladder, win/lose screens, restart
 - [ ] Juice: banner pop on capture, level-up flourish, rope snap and sag, marching sounds
 

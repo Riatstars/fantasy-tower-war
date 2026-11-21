@@ -1,1 +1,5 @@
 iteration 1	free sending (send_costs_troops 0); rival slower (ai_think_scale 1.8, ai_grace 40->60, first think 3s); opposing ropes run side by side, marches clash mid-way, rival ropes back at an attacker	errors: none	prototypes/tower-war/evidence/iteration-1-play.png
+iteration 2	computer: left mouse ties ropes, right-click or right-drag cuts them (touch still swipes); keep click area 52->78 px, centred on the keep body; swipe cut follows side-by-side lanes	errors: none	prototypes/tower-war/evidence/iteration-2-play.png
+iteration 2	ropes unlimited (link_range 470->2000); full keep (troop_cap 60) relays arriving allies down its ropes in turn	errors: none	prototypes/tower-war/evidence/iteration-2-relay.png
+iteration 2	allied keeps cannot rope each other both ways (canLink reverse)	errors: none	prototypes/tower-war/evidence/iteration-2-noreverse.png
+iteration 2	slower generation: gen_interval 1.0 -> 2.5 s (balance, no shot)	errors: none	-

@@ -33,8 +33,8 @@ const PIXEL = false;
 const FONT = 'Georgia, "Palatino Linotype", "Book Antiqua", serif';
 const TITLE = 'Tower War';
 const CONTROLS = [
-  'Drag from your keep to another keep: send troops',
-  'Swipe across one of your ropes: cut it',
+  'Left-drag from your keep to another: send troops',
+  'Cut a rope: right-click it or right-drag across',
   'More troops = higher level = more ropes (max 3)',
   'Keys: Tab pick keep, Up/Down pick target,',
   'Space tie rope, X cut its ropes, P pause, M mute',
@@ -108,9 +108,12 @@ function toLogical(e) {
   const r = canvas.getBoundingClientRect();
   return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
 }
+canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => { startAudio(); e.preventDefault();
+  // on a computer: left button ties ropes, right button cuts them; other buttons do nothing
+  if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
   try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-  pointerQ.push({ type: 'down', ...toLogical(e) }); });
+  pointerQ.push({ type: 'down', mouse: e.pointerType === 'mouse', btn: e.button, ...toLogical(e) }); });
 canvas.addEventListener('pointermove', e => { pointerQ.push({ type: 'move', ...toLogical(e) }); });
 canvas.addEventListener('pointerup', e => { pointerQ.push({ type: 'up', ...toLogical(e) }); });
 canvas.addEventListener('pointercancel', e => { pointerQ.push({ type: 'up', ...toLogical(e) }); });
@@ -194,6 +197,7 @@ function canLink(a, b) {
   if (!a || !b || a === b || a.owner === 0) return 'no';
   if (dist(a, b) > tune.link_range) return 'range';
   if (hasLink(a, b)) return 'dup';
+  if (b.owner === a.owner && hasLink(b, a)) return 'reverse'; // two allied keeps never rope each other both ways
   if (linksFrom(a).length >= a.level) return 'slots';
   return 'ok';
 }
@@ -209,7 +213,7 @@ function cutLink(l, at = 0.5) {
 }
 function keepAt(x, y) {
   let best = null, bd = tune.keep_radius;
-  for (const k of state.keeps) { const d = Math.hypot(k.x - x, k.y - y + 20); if (d < bd) { bd = d; best = k; } }
+  for (const k of state.keeps) { const d = Math.hypot(k.x - x, k.y - y - tune.keep_hit_lift); if (d < bd) { bd = d; best = k; } }
   return best;
 }
 function nearestTarget(src, skip, dir) {
@@ -228,6 +232,15 @@ function burst(x, y, color, n, speed, kind = 'bit') {
   }
 }
 
+function forward(k, p, out) { // relay an ally pawn that reached a full keep onto its next rope, in turn
+  const ls = linksFrom(k).filter(l => l.grow >= 1);
+  const onward = ls.filter(l => l.to !== p.from);
+  const pick = onward.length ? onward : ls;
+  if (!pick.length) return; // no rope out: the keep is full and the pawn has nowhere to go
+  k.fwd = (k.fwd || 0) + 1;
+  const l = pick[k.fwd % pick.length];
+  out.push({ from: k, to: l.to, owner: p.owner, d: 0, len: dist(k, l.to), sx: k.x, sy: k.y, tx: l.to.x, ty: l.to.y, ph: p.ph });
+}
 function capture(k, owner) {
   const prev = k.owner;
   k.owner = owner; k.troops = 1; k.level = 1; k.pop = 1; k.flash = 1;
@@ -336,16 +349,20 @@ function simulate(dt) {
     }
   }
   // arrivals
+  const relay = [];
   for (const p of P) {
     if (p.dead || p.d < p.len) continue;
     p.dead = true;
     const k = p.to;
     k.flash = 0.6;
-    if (k.owner === p.owner) k.troops = Math.min(tune.troop_cap + 40, k.troops + 1);
+    if (k.owner === p.owner) {
+      if (k.troops < tune.troop_cap) k.troops = Math.min(tune.troop_cap, k.troops + 1);
+      else forward(k, p, relay); // a full keep passes the ally on down its own ropes
+    }
     else if (k.troops >= 1) { k.troops -= 1; if (rng() < 0.4) burst(k.x, k.y - 30, '#d8c8a0', 2, 60, 'dust'); }
     else capture(k, p.owner);
   }
-  state.pawns = P.filter(p => !p.dead);
+  state.pawns = P.filter(p => !p.dead).concat(relay);
   if (state.pawns.length) { marchTick -= dt; if (marchTick <= 0) { marchTick = 0.45; thud(0.035); } }
   // fx
   for (const d of state.dead) d.age += dt;
@@ -392,8 +409,20 @@ function playPointer(ev) {
     if (inBtn(UI.pause, ev)) { scene = 'pause'; return; }
     if (inBtn(UI.mute, ev)) { setMuted(!muted); return; }
     const k = keepAt(ev.x, ev.y);
-    if (k && k.owner === 1) state.drag = { from: k, x: ev.x, y: ev.y };
-    else state.swipe = { x: ev.x, y: ev.y, trail: [{ x: ev.x, y: ev.y, age: 0 }] };
+    const cutOnly = ev.mouse && ev.btn === 2, tieOnly = ev.mouse && ev.btn === 0;
+    if (!cutOnly && k && k.owner === 1) state.drag = { from: k, x: ev.x, y: ev.y };
+    else if (tieOnly) { if (!k) say('Right mouse cuts a rope'); }
+    else {
+      // a left click (or tap) right on one of your ropes cuts it; dragging across ropes cuts every one crossed
+      for (const l of state.links.slice()) {
+        if (l.owner !== 1) continue;
+        const o = lane(l.from, l.to), ax = l.from.x + o.ox, ay = l.from.y - 30 + o.oy, bx = l.to.x + o.ox, by = l.to.y - 30 + o.oy;
+        const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1;
+        const t = Math.max(0, Math.min(1, ((ev.x - ax) * vx + (ev.y - ay) * vy) / L2));
+        if (t > 0.1 && t < 0.9 && Math.hypot(ax + vx * t - ev.x, ay + vy * t - ev.y) < tune.cut_click_radius) { cutLink(l, t); state.cutOnce = true; }
+      }
+      state.swipe = { x: ev.x, y: ev.y, trail: [{ x: ev.x, y: ev.y, age: 0 }] };
+    }
   } else if (ev.type === 'move') {
     if (state.drag) {
       // dragging across your own ropes from a keep never cuts them; just follow the finger
@@ -402,7 +431,8 @@ function playPointer(ev) {
       const s = state.swipe;
       for (const l of state.links.slice()) {
         if (l.owner !== 1) continue;
-        const t = segHit(l.from.x, l.from.y - 30, l.to.x, l.to.y - 30, s.x, s.y, ev.x, ev.y);
+        const o = lane(l.from, l.to);
+        const t = segHit(l.from.x + o.ox, l.from.y - 30 + o.oy, l.to.x + o.ox, l.to.y - 30 + o.oy, s.x, s.y, ev.x, ev.y);
         if (t >= 0) { cutLink(l, t); state.cutOnce = true; }
       }
       s.x = ev.x; s.y = ev.y; s.trail.push({ x: ev.x, y: ev.y, age: 0 });
@@ -413,7 +443,7 @@ function playPointer(ev) {
       if (b && b !== a) {
         const why = canLink(a, b);
         if (why === 'ok') addLink(a, b);
-        else { sfx.no(); say(why === 'slots' ? `Level ${a.level} keep: only ${a.level} rope${a.level > 1 ? 's' : ''}. Grow it or cut one.` : why === 'range' ? 'Too far for a rope' : 'Already roped'); }
+        else { sfx.no(); say(why === 'slots' ? `Level ${a.level} keep: only ${a.level} rope${a.level > 1 ? 's' : ''}. Grow it or cut one.` : why === 'range' ? 'Too far for a rope' : why === 'reverse' ? 'That keep already ropes this one' : 'Already roped'); }
       }
       state.drag = null;
     }
@@ -435,7 +465,7 @@ function playKeys() {
     state.kbUsed = true;
     const b = state.keeps[state.tgt];
     const why = canLink(src, b);
-    if (why === 'ok') addLink(src, b); else { sfx.no(); say(why === 'slots' ? 'No free rope: grow the keep or cut one (X)' : 'Cannot rope that keep'); }
+    if (why === 'ok') addLink(src, b); else { sfx.no(); say(why === 'slots' ? 'No free rope: grow the keep or cut one (X)' : why === 'reverse' ? 'That keep already ropes this one' : 'Cannot rope that keep'); }
   }
   if (pressed('KeyX')) { state.kbUsed = true; for (const l of linksFrom(src).slice()) { cutLink(l); state.cutOnce = true; } }
 }
@@ -690,7 +720,7 @@ function drawWorld() {
     const a = state.drag.from, b = keepAt(state.drag.x, state.drag.y);
     const why = b && b !== a ? canLink(a, b) : 'none';
     ctx.save(); ctx.setLineDash([8, 10]); ctx.strokeStyle = 'rgba(91,70,48,0.5)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(a.x, a.y - lift, tune.link_range, 0, 6.3); ctx.stroke(); ctx.restore();
+    if (tune.link_range < 1500) { ctx.beginPath(); ctx.arc(a.x, a.y - lift, tune.link_range, 0, 6.3); ctx.stroke(); } ctx.restore();
     const tx = why === 'ok' ? b.x : state.drag.x, ty = why === 'ok' ? b.y - lift : state.drag.y;
     drawRope(a.x, a.y - lift, tx, ty, 1, t, why === 'ok' ? 1 : 0.55, 0);
     if (why !== 'ok' && why !== 'none') { ctx.strokeStyle = '#c23a37'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(tx - 10, ty - 10); ctx.lineTo(tx + 10, ty + 10); ctx.moveTo(tx + 10, ty - 10); ctx.lineTo(tx - 10, ty + 10); ctx.stroke(); }
@@ -761,7 +791,7 @@ function drawHUD() {
   let hint = '';
   if (state.msgT > 0) hint = state.msg;
   else if (!state.linkedOnce) hint = 'Drag from your blue keep to a grey keep';
-  else if (!state.cutOnce && state.t > 20 && mapIndex === 0) hint = 'Swipe across a rope to cut it and reroute';
+  else if (!state.cutOnce && state.t > 20 && mapIndex === 0) hint = 'Right-click a rope (or swipe on touch) to cut it';
   else if (mapIndex === 0 && state.t < 40) hint = 'More troops: level up, more ropes (max 3)';
   if (hint) {
     ctx.font = `bold 22px ${FONT}`; const w = ctx.measureText(hint).width + 40;

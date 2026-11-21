@@ -8,11 +8,11 @@ window.CONFIG = {
   volume: { value: 0.5, min: 0, max: 1, step: 0.05 },
 
   // ---- Troop generation (periodic) ----
-  gen_interval: { value: 1.0, min: 0.3, max: 3, step: 0.1 },   // seconds between generation ticks
+  gen_interval: { value: 2.5, min: 0.3, max: 6, step: 0.1 },   // seconds between generation ticks (2.5 s: 0.4 / 0.8 / 1.2 troops per s at Lv1/2/3, below one rope's 1.67 per s)
   gen_l1: { value: 1, min: 0, max: 5, step: 1 },                // troops added per tick at level 1
   gen_l2: { value: 2, min: 0, max: 6, step: 1 },                // troops added per tick at level 2
   gen_l3: { value: 3, min: 0, max: 8, step: 1 },                // troops added per tick at level 3
-  troop_cap: { value: 60, min: 20, max: 200, step: 5 },         // a keep stops generating at this many troops
+  troop_cap: { value: 60, min: 20, max: 200, step: 5 },         // a full keep: stops generating, and ally pawns arriving are relayed down its ropes
 
   // ---- Tower levels (max 3); level = max ropes a keep can hold ----
   lv2_at: { value: 15, min: 2, max: 60, step: 1 },              // troops needed for level 2
@@ -23,8 +23,10 @@ window.CONFIG = {
   pawn_speed: { value: 110, min: 30, max: 400, step: 5 },       // px per second along a rope
   send_costs_troops: { value: 0, min: 0, max: 1, step: 1 },     // 0: sending is free, a keep only loses troops when attacked; 1: each pawn sent costs 1 troop
   rope_lane: { value: 8, min: 0, max: 20, step: 1 },            // px: two ropes between the same keeps run side by side this far apart
-  link_range: { value: 470, min: 150, max: 1400, step: 10 },    // longest rope, px (logical 720x1280)
-  keep_radius: { value: 52, min: 30, max: 90, step: 1 },        // touch radius of a keep, px
+  cut_click_radius: { value: 14, min: 4, max: 40, step: 1 },   // px: a left click or tap this close to your rope cuts it
+  link_range: { value: 2000, min: 150, max: 2000, step: 10 },  // longest rope, px (logical 720x1280); 1500+ means no limit (the table's diagonal is ~1470)
+  keep_radius: { value: 78, min: 30, max: 120, step: 1 },       // click/touch radius of a keep, px
+  keep_hit_lift: { value: 35, min: 0, max: 80, step: 1 },       // px: the click circle is centred this far above the keep's base, on its body
 
   // ---- Rival AI (per-map numbers are in MAPS below) ----
   ai_min_send: { value: 6, min: 1, max: 30, step: 1 },          // rival keeps hold this many before sending
