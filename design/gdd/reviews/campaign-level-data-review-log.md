@@ -155,3 +155,16 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/campaign-level-data.md f7fc5e0aae3d61502bb9d763cc4b5d99085d28c8
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the bottom-edge fix since the entry above, not a full review. Prompted by an independent verification of the re-review by session my-game-tower-war-bb (two read-only checkers), which found that adding keep_hit_lift to both B2/B6 bounds loosened the bottom bound (y 1,237 / 1,177) so a keep's plaque and slot dots could leave the table or sit under the bottom strip.
+Blocking items: 0 | Recommended: 0 (the 12 recommendations in the NEEDS REVISION entry above stand)
+Summary: User decision 2026-11-22, "both circles": the top bound uses the lifted touch circle, the bottom bound the base circle (plaque at +36 px, slot dots at about +62 px, Level HUD rules 3–4). B2 is now 113 ≤ y ≤ 1,202 and B6 213 / 1,142, with a shipped shrink for either band. longest_rope's ceiling becomes 1,226 px (F1, dist row, worked extremes, AC5, AC6: 0.286 / 0.314 / 0.629 / 0.572 s); 1,258 px is kept as a safe upper bound in Rope Links, Level State and the registry, as F1 now states. Added AC9 y 1,203, AC9b (B6), rule 8 "two runtime adjustments", and the registry constant keep_hit_lift. Level HUD H1 (bottom bound 1,142, l.129/158/216, AC9) is sent to its owner, session my-game-tower-war-39. The Status header now reads Approved.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md fcfd5fe6c825941bed921e5841d726da93dcfd01
+Reviewed-Content-Hash: design/registry/entities.yaml f349f8571decf84eced82f5cbf4e70e179e0a719
+Reviewed-Content-Hash: design/gdd/level-hud.md 446e95c4c1b7f7cfc29ac8195f13a1841593d0d6

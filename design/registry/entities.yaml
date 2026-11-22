@@ -398,7 +398,7 @@ formulas:
       - dist
     output_range: [156, 1258]
     expression: "max over keep pairs of dist(k_i, k_j); R3 holds when send_interval >= longest_rope / (speed_min * (pawns_per_rope_max - 1))"
-    notes: "Measured per level by the loader to enforce Rope Links invariant R3. Green Vale: 810 to 932 px, needing send_interval >= 0.189 to 0.217 s; the longest legal rope (diagonal of the Campaign B2 box, sqrt((720 - 2r)^2 + (1280 - 2r)^2)) is 1258 px at keep_hit_radius 78 and needs 0.293 s at speed_min 110. A level that fails is Rejected, never clamped."
+    notes: "Measured per level by the loader to enforce Rope Links invariant R3. Green Vale: 810 to 932 px, needing send_interval >= 0.189 to 0.217 s; the longest legal rope (diagonal of the Campaign B2 box, sqrt((720 - 2r)^2 + (1280 - 2r - keep_hit_lift)^2)) is 1226 px at keep_hit_radius 78 and keep_hit_lift 35 and needs 0.286 s at speed_min 110. The range ceiling 1258 is the pre-lift diagonal (before 2026-11-22), kept as a safe upper bound because Rope Links and Level State quote it. A level that fails is Rejected, never clamped."
     added: 2026-11-22
     revised: 2026-11-22
   - name: min_spacing
@@ -655,6 +655,18 @@ constants:
     value: 78
     unit: px
     notes: "Touch area radius per level (Touch & Mouse Input F1b): max(keep_hit_radius, min(touch_radius_setting, smallest_spacing / 2)). Equals keep_hit_radius with no accessibility setting. Only Input's hit test reads it; F6, R2, I2, B2, B6 and longest_rope use keep_hit_radius."
+    added: 2026-11-22
+    revised: ""
+  - name: keep_hit_lift
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+      - design/gdd/campaign-level-data.md
+      - design/gdd/level-hud.md
+    value: 35
+    unit: px
+    notes: "How far above the keep's base the touch circle is centred (Touch & Mouse Input F1, range 0 to keep_hit_radius, I3). Campaign Level Data B2 and B6 use it for the top bound only (the touch circle); the bottom bound uses the base circle, which holds the plaque and slot dots."
     added: 2026-11-22
     revised: ""
   - name: cut_tap_radius_touch

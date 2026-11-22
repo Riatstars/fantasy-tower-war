@@ -1,6 +1,6 @@
 # Troop Marching & Clashes
 
-> **Status**: In Review (revised 2026-11-22, pending re-review)
+> **Status**: Approved (2026-11-22, lean /design-review; see its review log)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
