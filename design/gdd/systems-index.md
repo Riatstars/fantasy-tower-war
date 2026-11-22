@@ -59,22 +59,22 @@ Brief paragraph per system (balanced density):
 | 1 | Troop Generation | Gameplay | MVP | Designed | design/gdd/troop-generation.md | Keep Levels (level input; cycle resolved by per-step order) |
 | 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | Designed | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft) |
 | 3 | Touch & Mouse Input | Core | MVP | Designed | design/gdd/touch-mouse-input.md | — |
-| 4 | Save & Progress | Persistence | MVP | Not Started | — | — |
-| 5 | Keep Levels | Gameplay | MVP | Not Started | — | Troop Generation |
+| 4 | Save & Progress | Persistence | MVP | Designed | design/gdd/save-progress.md | Campaign Level Data (soft: id validation) |
+| 5 | Keep Levels | Gameplay | MVP | Designed | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
 | 6 | Rope Links | Gameplay | MVP | Not Started | — | Keep Levels, Touch & Mouse Input |
 | 7 | Troop Marching & Clashes | Gameplay | MVP | Not Started | — | Rope Links, Keep Levels, Troop Generation |
-| 8 | Level State & Match Flow (inferred) | Core | MVP | Not Started | — | Troop Marching & Clashes, Screen Flow & Scene Manager |
+| 8 | Level State & Match Flow (inferred) | Core | MVP | Not Started | — | Troop Marching & Clashes, Screen Flow & Scene Manager, Save & Progress |
 | 9 | Rival AI | Gameplay | MVP | Not Started | — | Rope Links, Troop Marching & Clashes, Keep Levels, Level State & Match Flow |
 | 10 | Campaign Level Data (inferred) | Progression | MVP | Not Started | — | Keep Levels, Rival AI, Level State & Match Flow, Touch & Mouse Input (soft: keep spacing rule I2) |
 | 11 | World Map & Regions | Progression | MVP | Not Started | — | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager |
 | 12 | Level HUD (inferred) | UI | MVP | Not Started | — | Keep Levels, Rope Links, Level State & Match Flow, Touch & Mouse Input (soft) |
-| 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow |
-| 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | — |
+| 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress (soft: messages) |
+| 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | Save & Progress (settings file, Delete progress) |
 | 15 | Currencies & Economy | Economy | Vertical Slice | Not Started | — | Save & Progress |
 | 16 | Audio | Audio | Vertical Slice | Not Started | — | Settings |
-| 17 | Stars & Rewards | Progression | Vertical Slice | Not Started | — | Level State & Match Flow, Currencies & Economy, World Map & Regions |
+| 17 | Stars & Rewards | Progression | Vertical Slice | Not Started | — | Level State & Match Flow, Currencies & Economy, World Map & Regions, Save & Progress |
 | 18 | Feedback & Juice | UI | Vertical Slice | Not Started | — | Troop Marching & Clashes, Keep Levels, Rope Links, Audio |
-| 19 | Tutorial & Onboarding | Meta | Vertical Slice | Not Started | — | Touch & Mouse Input, Rope Links, Level HUD, Campaign Level Data |
+| 19 | Tutorial & Onboarding | Meta | Vertical Slice | Not Started | — | Touch & Mouse Input, Rope Links, Level HUD, Campaign Level Data, Save & Progress (soft: first-run flag) |
 | 20 | Mobile Platform Integration | Meta | Vertical Slice | Not Started | — | Screen Flow & Scene Manager, Save & Progress, Settings |
 | 21 | Unit Roster & Stats | Gameplay | Alpha | Not Started | — | Troop Marching & Clashes, Keep Levels |
 | 22 | Factions | Gameplay | Alpha | Not Started | — | Unit Roster & Stats, Troop Generation, Keep Levels |
@@ -254,10 +254,10 @@ depends on.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 3 |
+| Design docs started | 5 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 3/13 |
+| MVP systems designed | 5/13 |
 | Vertical Slice systems designed | 0/7 |
 
 ---

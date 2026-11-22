@@ -169,7 +169,7 @@ More troops → higher level → faster generation → more troops. This is a po
 - **If a keep is captured on the step it would have beaten**: the beat resolves for the old owner first; then capture sets `troops` to 1 and resets the timer for the new owner.
 - **If `troops` is at `troop_cap` and an allied pawn arrives**: generation does not absorb it; Rope Links relays it onward (or it is lost if the keep has no outgoing rope).
 - **If enemy pawns bring a Full keep below `troop_cap`**: the timer was still running, so the next beat can come within one `gen_interval`, not a full one.
-- **If a keep's `troops` drop below a level threshold**: the next beat uses the lower level's `gen_amount`; the timer is unchanged.
+- **If a keep's `troops` drop below its level's drop point** (Keep Levels' threshold minus its margin): the next beat uses the lower level's `gen_amount`; the timer is unchanged.
 - **If `gen_interval` is changed while a game runs** (tuning panel): the timer keeps its value. If it already exceeds the new interval, one beat fires on the next step and the timer loses `gen_interval`. At most one beat fires per step, which is safe because `gen_interval` ≥ 0.3 s is far longer than one step.
 - **If the game is paused**: no timer advances. On resume the timers continue where they stopped.
 - **If a keep is neutral**: it never reverts to neutral after capture, so there is no transition into the Neutral state during play.

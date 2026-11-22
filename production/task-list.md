@@ -4,11 +4,11 @@
 > Đánh dấu `[x]` khi xong. **(bạn)** = chỉ bạn quyết hoặc làm được.
 
 ## A. Dọn dẹp và việc dở dang
-- [ ] **Commit** toàn bộ thay đổi chưa lưu: CLAUDE.md, `project.yaml`, `project.godot`, `technical-preferences.md`, `VERSION.md`, `game-brief.md`, `game-concept.md`, 3 GDD, `systems-index.md`, registry, `docs/consistency-failures.md`, file này
+- [x] **Commit** (4cad5aa, 2026-11-22) · còn lại sau đó: save-progress.md, systems-index, active.md, task-list: CLAUDE.md, `project.yaml`, `project.godot`, `technical-preferences.md`, `VERSION.md`, `game-brief.md`, `game-concept.md`, 3 GDD, `systems-index.md`, registry, `docs/consistency-failures.md`, file này
 - [ ] Ghi `production/project-stage-report.md` (đã đồng ý, chưa ghi)
 - [ ] Cập nhật `design/gdd/game-concept.md` theo phạm vi mới: các tộc, thẻ lính, vàng, kim cương; bỏ IAP và quảng cáo; xóa câu hỏi phạm vi cũ
 - [ ] Cập nhật `design/game-brief.md`: chuyển IAP và quảng cáo sang Out of scope
-- [ ] Đổi git remote: `origin` vẫn trỏ về repo template (`git remote rename origin template`, rồi `git remote add origin <repo của bạn>`) **(bạn)**
+- [x] Đổi git remote: origin = https://github.com/Riatstars/fantasy-tower-war (đã push main 2026-11-22); template = repo framework
 
 ## B. Môi trường Godot
 - [ ] Cài Godot 4.7.x và export templates **(bạn)**
@@ -31,8 +31,8 @@
 - [ ] `/design-review design/gdd/touch-mouse-input.md`
 
 ## E. GDD còn lại cho MVP (10/13), theo thứ tự thiết kế
-- [ ] 4. Save & Progress
-- [ ] 5. Keep Levels (ghi thứ tự trong một bước với Troop Generation)
+- [x] 4. Save & Progress (GDD viết 2026-11-22, chờ /design-review)
+- [x] 5. Keep Levels (GDD viết 2026-11-22, chờ /design-review)
 - [ ] 6. Rope Links (dùng F6 của Touch & Mouse Input)
 - [ ] 7. Troop Marching & Clashes (định nghĩa hợp đồng `UnitStats`)
 - [ ] 8. Level State & Match Flow

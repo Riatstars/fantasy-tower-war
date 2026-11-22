@@ -52,7 +52,7 @@ desktop would behave like two different games.
 11. **UI controls** (buttons, level nodes, overlay buttons) are handled by Menus & Screens through the engine's standard UI controls and must work with touch and with the mouse separately from keyboard focus. Input's gestures are for the Level playfield, plus the global keys in rule 12.
 12. **Keyboard fallback** (desktop and automated tests; it never replaces touch on a phone): Tab, Left and Right select one of the player's keeps; Up and Down select a target keep; Space or Enter ties the selected pair (after F6, like a release); X cuts the selected keep's ropes; P opens Pause; M mutes; Esc is Back: Input emits `back_pressed` and Screen Flow listens for it. The keyboard produces the same `tie_released` and cut events as the pointer, so Rope Links sees one kind of event.
 13. **Back is not a gesture.** The phone's Back button and the iOS back swipe arrive from Mobile Platform Integration straight to Screen Flow. Only Esc on a computer is produced here, as the event `back_pressed`.
-14. **Target resolution (F6).** When a tie is released or previewed over a keep, and another keep lies nearer to the origin within `align_tolerance` degrees of the same direction, the nearer keep becomes the target. It applies to every owner. If the nearer keep cannot be tied, Rope Links refuses the tie; it never moves on to the farther keep.
+14. **Target resolution (F6).** When a tie is released or previewed over a keep, and another keep lies nearer to the origin within `align_tolerance` degrees of the same direction and within `keep_hit_radius` of the straight line, the nearer keep becomes the target. It applies to every owner. If the nearer keep cannot be tied, Rope Links refuses the tie; it never moves on to the farther keep.
 15. Input identifies events by their type and never by `device == 0` (Godot 4.7 changed device ids for mouse and keyboard).
 
 ### States and Transitions
@@ -163,7 +163,7 @@ The keep_spacing formula is defined as:
 
 The target_resolution formula is defined as:
 
-`target = nearest-to-origin keep k among all keeps other than the origin with |angle_diff(bearing(origin, k), bearing(origin, hit))| ≤ align_tolerance and dist(origin, k) ≤ dist(origin, hit)`; if no keep other than `hit` qualifies, `target = hit`.
+`target = nearest-to-origin keep k among all keeps other than the origin with |angle_diff(bearing(origin, k), bearing(origin, hit))| ≤ align_tolerance and dist_to_line(k, origin→hit) ≤ keep_hit_radius and dist(origin, k) ≤ dist(origin, hit)`; if no keep other than `hit` qualifies, `target = hit`.
 
 `bearing(origin, k)` is the direction in degrees from the origin keep `origin` to keep `k`; `angle_diff` is the smallest difference between two bearings (wrapping at ±180°). `hit` is the keep found under the pointer by F1 (or the keyboard's selected target). If two keeps are equally near, the lower id wins. The rule applies to every owner (the player's, neutral and the rival's) and to the keyboard path. Rope Links then judges the target; if it is not legal, the tie is refused and does not move on to a farther keep.
 
@@ -173,8 +173,9 @@ The target_resolution formula is defined as:
 | origin | keep | | calculated | The keep the drag started from |
 | hit | keep | | calculated (F1) | The keep under the pointer on release, or on the preview |
 | align_tolerance | float, degrees | 0–15 (baseline 5, from the player's own rule) | data file | How far off the same direction still counts |
+| keep_hit_radius | float, px | 48–120 (baseline 78) | data file (F1) | Also the most a nearer keep may sit off the straight line origin→hit and still count as "in the way" (decided 2026-11-22) |
 
-**Output Range:** one keep. The result is never farther from the origin than `hit`.
+**Output Range:** one keep. The result is never farther from the origin than `hit`, and never more than `keep_hit_radius` off the straight line to it, so on a large map only a keep that really blocks the rope is chosen.
 **Example:** origin A (360, 1060), B (360, 760), C (360, 520). Releasing on C: bearings are both −90°, so B (300 px) is nearer than C (540 px): the target is B. With C′ (400, 520): bearing −85.8° against B's −90°, a difference of 4.2° ≤ 5: still B. With C″ (440, 520): −81.6°, a difference of 8.4° > 5: the target stays C″.
 
 ### Invariants (checked when the data is loaded; the loader reports a breach)
@@ -377,7 +378,7 @@ Baseline data unless a criterion says otherwise: `keep_hit_radius` 78, `keep_hit
 
 | # | Question | Owner | Resolve by |
 |---|----------|-------|------------|
-| 1 | F6 tests the angle only. At 5° the sideways offset grows with distance: about 26 px for a keep 300 px away, but up to about 128 px at 1,470 px (the table's diagonal), more than a keep's 78 px area. On a big map F6 could redirect to a keep that is not actually in the way. Add a maximum sideways distance (for example `keep_hit_radius`)? | game-designer | Before the Rope Links GDD, or the first playable |
+| 1 | ~~F6 tests the angle only; add a maximum sideways distance?~~ Resolved 2026-11-22: a nearer keep must also lie within `keep_hit_radius` (78 px) of the straight line origin→hit. Written into F6 and Core Rule 14 | game-designer | Done |
 | 2 | Should the preview look different when F6 has redirected (for example a short label "nearer keep")? | ux-designer | Vertical Slice |
 | 3 | A tap-then-tap way to tie for players who cannot drag | Accessibility | Alpha |
 | 4 | Haptic feedback on tie and cut: wanted, and is it a setting? | ux-designer, Settings | Vertical Slice |

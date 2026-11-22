@@ -182,6 +182,36 @@ formulas:
     notes: "Output is one keep (count 1). Applies to every owner and to the keyboard. Rope Links decides legality of the result and never moves on to a farther keep."
     added: 2026-11-22
     revised: ""
+  - name: effective_level
+    status: active
+    source: design/gdd/keep-levels.md
+    referenced_by:
+      - design/gdd/keep-levels.md
+      - design/gdd/troop-generation.md
+    variables:
+      - troops
+      - prev
+      - lv2_at
+      - lv3_at
+      - level_drop_margin
+    output_range: [1, 3]
+    expression: "max(rise_level(troops), prev) if troops >= threshold[prev] - level_drop_margin else rise_level(troops)"
+    notes: "rise_level is 3 at troops >= lv3_at, 2 at >= lv2_at, else 1. Rising is immediate; falling needs the margin. Capture resets to 1 regardless. Troop Generation reads the result each step."
+    added: 2026-11-22
+    revised: ""
+  - name: max_ropes
+    status: active
+    source: design/gdd/keep-levels.md
+    referenced_by:
+      - design/gdd/keep-levels.md
+    variables:
+      - level
+      - max_ropes_table
+    output_range: [1, 3]
+    expression: "max_ropes_table[level]"
+    notes: "Baseline table 1/2/3. Rope Links enforces it at tie time and cuts newest ropes on a level drop. Table must be non-decreasing (K4)."
+    added: 2026-11-22
+    revised: ""
 
 constants:
   - name: troop_cap
@@ -189,6 +219,7 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/keep-levels.md
     value: 60
     unit: troops
     added: 2026-11-22
@@ -298,5 +329,34 @@ constants:
       - design/gdd/touch-mouse-input.md
     value: 5
     unit: degrees
+    added: 2026-11-22
+    revised: ""
+  - name: lv2_at
+    status: active
+    source: design/gdd/keep-levels.md
+    referenced_by:
+      - design/gdd/keep-levels.md
+      - design/gdd/troop-generation.md
+    value: 15
+    unit: troops
+    added: 2026-11-22
+    revised: ""
+  - name: lv3_at
+    status: active
+    source: design/gdd/keep-levels.md
+    referenced_by:
+      - design/gdd/keep-levels.md
+      - design/gdd/troop-generation.md
+    value: 35
+    unit: troops
+    added: 2026-11-22
+    revised: ""
+  - name: level_drop_margin
+    status: active
+    source: design/gdd/keep-levels.md
+    referenced_by:
+      - design/gdd/keep-levels.md
+    value: 5
+    unit: troops
     added: 2026-11-22
     revised: ""
