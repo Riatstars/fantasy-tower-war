@@ -56,16 +56,16 @@ Brief paragraph per system (balanced density):
 
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
-| 1 | Troop Generation | Gameplay | MVP | Designed | design/gdd/troop-generation.md | Keep Levels (level input; cycle resolved by per-step order) |
-| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | Designed | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft) |
-| 3 | Touch & Mouse Input | Core | MVP | Designed | design/gdd/touch-mouse-input.md | — |
-| 4 | Save & Progress | Persistence | MVP | Designed | design/gdd/save-progress.md | Campaign Level Data (soft: id validation) |
-| 5 | Keep Levels | Gameplay | MVP | Designed | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
-| 6 | Rope Links | Gameplay | MVP | Not Started | — | Keep Levels, Touch & Mouse Input |
-| 7 | Troop Marching & Clashes | Gameplay | MVP | Not Started | — | Rope Links, Keep Levels, Troop Generation |
+| 1 | Troop Generation | Gameplay | MVP | In Review | design/gdd/troop-generation.md | Keep Levels (level input; cycle resolved by per-step order) |
+| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | In Review | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft) |
+| 3 | Touch & Mouse Input | Core | MVP | In Review | design/gdd/touch-mouse-input.md | — |
+| 4 | Save & Progress | Persistence | MVP | In Review | design/gdd/save-progress.md | Campaign Level Data (soft: id validation) |
+| 5 | Keep Levels | Gameplay | MVP | In Review | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
+| 6 | Rope Links | Gameplay | MVP | In Review | design/gdd/rope-links.md | Keep Levels, Touch & Mouse Input, Troop Generation (soft), Troop Marching & Clashes (runtime callback) |
+| 7 | Troop Marching & Clashes | Gameplay | MVP | Designed | design/gdd/troop-marching-clashes.md | Rope Links, Keep Levels, Troop Generation |
 | 8 | Level State & Match Flow (inferred) | Core | MVP | Not Started | — | Troop Marching & Clashes, Screen Flow & Scene Manager, Save & Progress |
 | 9 | Rival AI | Gameplay | MVP | Not Started | — | Rope Links, Troop Marching & Clashes, Keep Levels, Level State & Match Flow |
-| 10 | Campaign Level Data (inferred) | Progression | MVP | Not Started | — | Keep Levels, Rival AI, Level State & Match Flow, Touch & Mouse Input (soft: keep spacing rule I2) |
+| 10 | Campaign Level Data (inferred) | Progression | MVP | Not Started | — | Keep Levels, Rival AI, Level State & Match Flow, Touch & Mouse Input (soft: keep spacing rule I2), Rope Links (soft: invariant R3) |
 | 11 | World Map & Regions | Progression | MVP | Not Started | — | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager |
 | 12 | Level HUD (inferred) | UI | MVP | Not Started | — | Keep Levels, Rope Links, Level State & Match Flow, Touch & Mouse Input (soft) |
 | 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress (soft: messages) |
@@ -254,10 +254,10 @@ depends on.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 5 |
+| Design docs started | 6 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 5/13 |
+| MVP systems designed | 6/13 |
 | Vertical Slice systems designed | 0/7 |
 
 ---

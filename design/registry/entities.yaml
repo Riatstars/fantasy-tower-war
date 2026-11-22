@@ -205,12 +205,31 @@ formulas:
     source: design/gdd/keep-levels.md
     referenced_by:
       - design/gdd/keep-levels.md
+      - design/gdd/rope-links.md
     variables:
       - level
       - max_ropes_table
     output_range: [1, 3]
     expression: "max_ropes_table[level]"
     notes: "Baseline table 1/2/3. Rope Links enforces it at tie time and cuts newest ropes on a level drop. Table must be non-decreasing (K4)."
+    added: 2026-11-22
+    revised: ""
+  - name: tie_legal
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+      - design/gdd/touch-mouse-input.md
+      - design/gdd/keep-levels.md
+    variables:
+      - origin
+      - target
+      - side
+      - ropes_held
+      - max_ropes
+    output_range: [0, 1]
+    expression: "ok unless the first failing check of [origin owned by side, target != origin, no rope origin->target, not (allied target with rope target->origin), ropes_held(origin) < max_ropes(level)]"
+    notes: "Output is ok or one reason: not_yours, self, duplicate, reverse, slots. No distance check (unlimited rope length, player rule). Rival uses the same check."
     added: 2026-11-22
     revised: ""
 
@@ -220,6 +239,7 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/rope-links.md
       - design/gdd/keep-levels.md
     value: 60
     unit: troops
@@ -292,6 +312,7 @@ constants:
     source: design/gdd/touch-mouse-input.md
     referenced_by:
       - design/gdd/touch-mouse-input.md
+      - design/gdd/rope-links.md
     value: 78
     unit: px
     added: 2026-11-22
@@ -359,5 +380,52 @@ constants:
       - design/gdd/keep-levels.md
     value: 5
     unit: troops
+    added: 2026-11-22
+    revised: ""
+  - name: send_interval
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+      - design/gdd/troop-generation.md
+    value: 0.6
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: rope_lane
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+      - design/gdd/touch-mouse-input.md
+    value: 8
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: rope_extend_time
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+    value: 0.2
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: first_send_delay
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+    value: 0.3
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: rope_fade_time
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+    value: 0.9
+    unit: seconds
     added: 2026-11-22
     revised: ""

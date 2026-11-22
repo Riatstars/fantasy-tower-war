@@ -1,6 +1,6 @@
 # Keep Levels
 
-> **Status**: Designed (pending /design-review)
+> **Status**: In Review (revised 2026-11-22, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -42,9 +42,9 @@ the end of each game step, before Troop Generation reads it. It does not own the
 4. **Per-step order.** At the end of every game step, after all troop changes of that step (beats, arrivals, captures), Keep Levels recomputes every keep's level. Troop Generation uses the recomputed level on its next beat; Rope Links reads it when a tie is attempted and when a drop needs ropes cut. This is the order both sides agreed to resolve the cycle between the two systems.
 5. **Ropes per level.** A keep at level L may hold at most `max_ropes[L]` outgoing ropes: 1, 2 and 3. Rope Links enforces this when a rope is tied. Neutral keeps hold no ropes whatever their level.
 6. **On a drop**, if the keep holds more ropes than its new level allows, Keep Levels raises `level_dropped(keep, old, new)` and Rope Links cuts the keep's **newest** ropes until the count fits. The cut ropes behave like any cut rope (Rope Links owns the sag and the pawns already on the rope).
-7. **On capture** (Troop Marching & Clashes sets the owner and `troops` to 1), the level is reset to 1 at once, in the same step, with no margin, and Keep Levels raises `level_dropped` so Rope Links cuts every outgoing rope of the keep. Troop Generation's Core Rule 7 already states the same reset.
+7. **On capture** (Troop Marching & Clashes raises `keep_captured`; it sets the owner and `troops` to 1), the level is reset to 1 at once, in the same step, with no margin. Keep Levels raises no `level_dropped` for a capture: Rope Links cuts every outgoing rope on `keep_captured` itself (its rule 7). Troop Generation's Core Rule 7 already states the same reset.
 8. **At match start** every keep's level is the rise rule applied to its initial troops (rule 2), with no history: a neutral with 25 troops starts at level 2, the player's keep with 10 at level 1.
-9. **Events.** Keep Levels raises `level_rose(keep, old, new)` and `level_dropped(keep, old, new)` on the step the level changes. Level HUD and Feedback & Juice react to them; Rope Links reacts to `level_dropped`.
+9. **Events.** Keep Levels raises `level_rose(keep, old, new)` and `level_dropped(keep, old, new)` on the step the level changes (not for the capture reset, rule 7). Level HUD and Feedback & Juice react to them; Rope Links reacts to `level_dropped`.
 10. **Data.** `lv2_at`, `lv3_at`, `level_drop_margin` and `max_ropes[1..3]` come from the data file. In Alpha, Factions may supply `LevelModifiers` (threshold offsets, a margin override, a `max_ropes` override per level); with none supplied the baseline applies. Every modified set must satisfy the invariants in Formulas.
 11. **No other input.** Time held, kills, gold or anything else never changes a level; only troops do. This keeps the rule readable at a glance on the plaque.
 
@@ -59,7 +59,7 @@ The level is the state. Baseline thresholds 15 / 35 and margin 5.
 | 2 | `troops` < 10 | 1 | `level_dropped`; newest rope cut if 2 held |
 | 3 | `troops` < 30 and ≥ 10 | 2 | `level_dropped`; newest rope cut if 3 held |
 | 3 | `troops` < 10 | 1 | `level_dropped`; ropes cut down to 1 |
-| any | captured this step | 1 | `level_dropped`; all ropes cut |
+| any | captured this step | 1 | none here; Rope Links cuts all on `keep_captured` |
 | any | otherwise | same | none |
 
 Between 10 and 14 troops a keep that was level 2 stays 2 and a keep that was level 1 stays 1: the two histories give two different levels for the same count, which is the margin working as intended. The same holds between 30 and 34 for levels 2 and 3.
@@ -69,8 +69,8 @@ Between 10 and 14 troops a keep that was level 2 stays 2 and a keep that was lev
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
 | Troop Generation | both | In: `troops` of every keep (read at end of step). Out: `level`, used by its next beat (its Core Rule 3 and Interactions table) | Keep Levels owns thresholds and margin; Troop Generation owns `gen_amount[level]` and `troops` |
-| Rope Links | out | `max_ropes[level]` for the tie check; `level_dropped(keep, old, new)` to cut the newest ropes; the capture reset cuts all | Keep Levels defines the limit and the "newest falls" rule; Rope Links executes cuts |
-| Troop Marching & Clashes | in | Capture (owner change, `troops` = 1) triggers the reset to level 1 in the same step | Troop Marching & Clashes |
+| Rope Links | out | `max_ropes[level]` for the tie check; `level_dropped(keep, old, new)` to cut the newest ropes (capture cuts come from Troop Marching's `keep_captured`) | Keep Levels defines the limit and the "newest falls" rule; Rope Links executes cuts |
+| Troop Marching & Clashes | in | `keep_captured` (owner change, `troops` = 1) triggers the reset to level 1 in the same step. From Alpha it reads the origin's level at launch to pick the unit | Troop Marching & Clashes |
 | Campaign Level Data | in | Initial `troops` per keep, from which the starting level is derived (rule 8); it also decides which neutrals start at level 2 or 3 by giving them enough garrison | Campaign Level Data |
 | Rival AI | out | Reads `level` and `max_ropes` of every keep to plan ties and to judge targets | Keep Levels (read-only) |
 | Level HUD | out | `level` for the keep's storeys and the rope-slot dots; `level_rose` for the flourish | Keep Levels raises, Level HUD draws |
@@ -102,7 +102,7 @@ The rise_level formula is defined as:
 
 The effective_level formula is defined as:
 
-`effective_level(troops, prev) = max(rise_level(troops), prev) if troops ≥ threshold[prev] − level_drop_margin; else rise_level(troops)`, where `threshold[1] = 0`, `threshold[2] = lv2_at`, `threshold[3] = lv3_at`.
+`L = prev; while L > 1 and troops < threshold[L] − level_drop_margin: L = L − 1`; then `effective_level(troops, prev) = max(rise_level(troops), L)`, where `threshold[2] = lv2_at`, `threshold[3] = lv3_at`. The keep steps down one band at a time, so it keeps every level whose drop point it is still above.
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -112,7 +112,7 @@ The effective_level formula is defined as:
 | other variables | | | | As F1 |
 
 **Output Range:** 1 to 3, never below `rise_level(troops)` and never above `prev` unless `rise_level` says so. With `level_drop_margin` 0 the formula equals F1 (the prototype's behaviour).
-**Example:** prev 2, troops 12: 12 ≥ 15 − 5, so max(1, 2) = 2 (held). prev 2, troops 9: 9 < 10, so rise_level(9) = 1 (dropped). prev 3, troops 25: 25 < 30, so rise_level(25) = 2 (dropped one level). prev 3, troops 8: rise_level(8) = 1 (dropped two). prev 1, troops 12: 12 ≥ 0 − 5, so max(1, 1) = 1 (a level 1 keep does not rise until 15).
+**Example:** prev 2, troops 12: 12 ≥ 10, so L stays 2 (held). prev 2, troops 9: 9 < 10, L = 1 (dropped). prev 3, troops 25: 25 < 30, L = 2; 25 ≥ 10, stop: 2 (dropped one). prev 3, troops 12: L = 2, 12 ≥ 10: 2 (dropped one, as the States table says). prev 3, troops 8: L = 2, then 8 < 10, L = 1 (dropped two). prev 1, troops 12: L = 1, max(1, 1) = 1 (a level 1 keep does not rise until 15).
 
 ### F3. Ropes per level
 
@@ -124,7 +124,7 @@ The max_ropes formula is defined as:
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | level | int | 1–3 | calculated (F2) | The keep's effective level |
-| max_ropes_table | int[3] | each 0–5, non-decreasing (baseline 1, 2, 3) | data file | Outgoing ropes a keep may hold at each level |
+| max_ropes_table | int[3] | each 1–3, non-decreasing (baseline 1, 2, 3; more than 3 is OQ 6) | data file | Outgoing ropes a keep may hold at each level |
 
 **Output Range:** 1 to 3 at baseline. Rope Links refuses a tie when the keep already holds this many.
 **Example:** a level 2 keep holding 2 ropes: a third tie is refused with "Level 2 keep: only 2 ropes."
@@ -135,7 +135,7 @@ The ropes_to_cut formula is defined as:
 
 `ropes_to_cut = max(0, ropes_held − max_ropes(new_level))`, cut newest first.
 
-**Output Range:** 0 to 3. On capture `new_level` is 1 and every rope is cut regardless (Core Rule 7), so Rope Links treats capture as `ropes_to_cut = ropes_held`.
+**Output Range:** 0 to 3. F4 applies to level drops only; on capture Rope Links cuts every rope on `keep_captured` (Core Rule 7).
 **Example:** level 3 holding 3 ropes drops to 2: cut 1 (the newest). Drops to 1: cut 2.
 
 ### Invariants (checked when the data is loaded; the loader reports a breach)
@@ -147,7 +147,7 @@ The ropes_to_cut formula is defined as:
 
 **Boundary findings (inputs that break the system without the invariants):**
 - `level_drop_margin` 15 with `lv2_at` 15: a level 2 keep never drops (drop point 0). K2 catches it.
-- `level_drop_margin` 20 with thresholds 15 / 35: a level 3 keep holds 3 ropes and 1.2 troops per second down to 15 troops, the level 2 rise point. K3 catches it.
+- `level_drop_margin` 20 with thresholds 15 / 35: a level 3 keep holds 3 ropes and 1.2 troops per second down to 15 troops, the level 2 rise point, and the level 2 drop point falls below 0. K2 and K3 both catch it; the largest margin valid for both is 14.
 - `lv2_at` 2 (its minimum): a just-captured keep (1 troop) reaches level 2 on its first beat, 2.5 s after capture. Allowed by the invariants, since nothing breaks; a balance note, not a defect.
 - `max_ropes_table` `[2, 1, 3]`: levelling up would cut a rope. K4 catches it.
 
@@ -180,7 +180,7 @@ Keep Levels is one half of Troop Generation's loop (more troops → higher level
 
 ## Dependencies
 
-Troop Generation's GDD exists and its contract is checked against this one below. Every other system here has no GDD yet, so its contract is provisional.
+Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes have GDDs and are checked against this one. Every other system here has no GDD yet, so its contract is provisional.
 
 ### Depends on (upstream)
 
@@ -195,8 +195,8 @@ Troop Generation's GDD exists and its contract is checked against this one below
 | System | Kind | What it takes from this system |
 |--------|------|-------------------------------|
 | Troop Generation | Hard | `level` each step, to pick `gen_amount[level]`; thresholds `lv2_at`, `lv3_at` for its F3 and invariant I1 |
-| Rope Links | Hard | `max_ropes[level]`; `level_dropped` to cut the newest ropes; capture cuts all |
-| Troop Marching & Clashes | Soft | Triggers the capture reset; does not read the level |
+| Rope Links | Hard | `max_ropes[level]`; `level_dropped` to cut the newest ropes |
+| Troop Marching & Clashes | Soft | Triggers the capture reset (`keep_captured`); does not read the level at MVP, reads the origin's level at launch from Alpha |
 | Rival AI | Hard | `level` and `max_ropes` of every keep |
 | Level HUD | Hard | `level` for storeys and slot dots; `level_rose` for the flourish |
 | Feedback & Juice | Soft | `level_rose`, `level_dropped` |
@@ -205,8 +205,7 @@ Troop Generation's GDD exists and its contract is checked against this one below
 
 ### Consistency to fix
 
-- Troop Generation's edge case "If a keep's `troops` drop below a level threshold: the next beat uses the lower level's `gen_amount`" was written before the margin existed. It is still true (the beat uses whatever level Keep Levels gives) but "below a level threshold" should read "below its level's drop point". One-phrase edit in `troop-generation.md`, proposed with this GDD's index update.
-- `systems-index.md` lists Rope Links, Troop Marching, Rival AI, Campaign Level Data, Level HUD, Feedback & Juice, Unit Roster and Factions as depending on Keep Levels: complete. Keep Levels' own row must gain Campaign Level Data (soft) and Factions (soft).
+- Registry: `entities.yaml` (about line 199) copies the old F2 expression; replace it with the step-down form above.
 
 ## Visual/Audio Requirements
 
@@ -217,7 +216,7 @@ Troop Generation's GDD exists and its contract is checked against this one below
 - **Owner colour** on banner, roof trim and the circle: royal blue and gold for the player, crimson and black for the rival, monster green for neutrals. The silhouette is the same for every owner; colour and emblem differ.
 - **Rising**: a short build-up animation (scaffold or stone rising, about 0.4 s) and a gold spark burst, with a floating text "Level 2 · 2 ropes" / "Level 3 · 3 ropes" so the player learns what the level buys. The new silhouette is in place by the end of the animation.
 - **Falling**: a brief crumble (dust puffs, a storey sinking, about 0.3 s) and the newest rope's snap (Rope Links draws the snap). No floating text, to keep a losing moment from feeling like a lecture.
-- **Rope slots**: the plaque under the keep shows `max_ropes` dots, filled for ropes held, hollow for free ones (Troop Generation's UI section already places them; the count comes from here).
+- **Rope slots**: the plaque under each player and rival keep shows `max_ropes` dots, filled for ropes held, hollow for free ones (Troop Generation's UI section already places them; the count comes from here). Neutral keeps hold no ropes and show none.
 - Every figure is drawn; no emoji.
 
 **Audio**
@@ -229,7 +228,7 @@ Troop Generation's GDD exists and its contract is checked against this one below
 ## Game Feel
 
 - **A level-up is a reward the player saw coming.** The plaque's count climbs toward 15 or 35 in plain view, so the rise lands as "finally" rather than a surprise; the flourish and the new slot dot appear on the same step the level changes.
-- **Falling is forgiving.** With the 5-troop margin, a keep under attack keeps its ropes for about five more arrivals after dipping under the threshold, long enough for the player to cut a rope or reinforce. A single enemy pawn never costs a rope by itself.
+- **Falling is forgiving.** With the 5-troop margin, a keep under attack by one rope keeps its ropes for about 10 more arrivals at level 2 (5.8 s, since it still generates 0.8 troops/s) and 18 at level 3 (10.7 s) after dipping under the threshold, long enough for the player to cut a rope or reinforce. A single enemy pawn never costs a rope by itself.
 - **Readable from the silhouette.** A player glancing at the map should know each keep's rope capacity from its shape alone, without reading numbers.
 - **Weight**: level 3 feels heavier: a longer build-up, a deeper chime, a bigger castle.
 - **Reference feel**: the clear tiers of Mushroom Wars' villages and the satisfying "unlocked one more lane" of Tentacle Wars.
@@ -237,7 +236,7 @@ Troop Generation's GDD exists and its contract is checked against this one below
 ## UI Requirements
 
 - **Plaque**: the troop count (Troop Generation) plus `max_ropes` slot dots, filled and hollow. On a rise the new hollow dot appears with the flourish.
-- **Rope refusal**: when a tie is refused for lack of a slot, Rope Links shows "Level L keep: only L ropes. Grow it or cut one." (text as in the prototype); Keep Levels supplies L and the limit.
+- **Rope refusal**: when a tie is refused for lack of a slot, Rope Links shows "Level L keep: only N ropes. Grow it or cut one." (N = `max_ropes[L]`) (text as in the prototype); Keep Levels supplies L and the limit.
 - **Tutorial hook**: the first rise in the first level is the moment Tutorial & Onboarding explains "more troops → higher level → more ropes" (Core Loop in the brief).
 - **No level number is shown on the keep**: the silhouette and the slot dots carry it. A number would duplicate the dots.
 
@@ -245,15 +244,14 @@ Troop Generation's GDD exists and its contract is checked against this one below
 
 ## Cross-References
 
-Troop Generation's GDD exists and is checked; every other referenced GDD is still to be written and its entry is provisional.
+Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes exist and are checked; every other referenced GDD is still to be written and its entry is provisional.
 
 | This GDD uses | Owned by | Item |
 |---------------|----------|------|
 | `troops`, the per-step order, the capture reset (its Core Rules 3 and 7), `troop_cap` (60) | Troop Generation | Rules 1, 4, 7; F1's range |
 | Its F3 (time to fill) and AC14 (level 2 from 12.5 s, level 3 from 37.5 s) use the rise rule only | Troop Generation | Unchanged by the margin: rising is immediate (rule 2) |
-| Its edge case "drop below a level threshold" | Troop Generation | Reworded to "below its level's drop point" (Consistency to fix) |
 | Tie refusal, cutting the newest ropes, pawns on a cut rope, the both-ways ban | Rope Links | Rules 5, 6; F3, F4 |
-| Capture (owner change, troops 1) | Troop Marching & Clashes | Rule 7 |
+| `keep_captured` (owner change, troops 1) | Troop Marching & Clashes | Rule 7 |
 | Initial troops per keep | Campaign Level Data | Rule 8 |
 | Plaque placement and slot dots | Level HUD (and Troop Generation's UI section) | UI Requirements |
 | Unit kind per level (soldiers, cavalry, summons) | Unit Roster & Stats | Interactions |
@@ -269,7 +267,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 - **AC1 [Logic] (F1, rule 2)**: GIVEN a level 1 keep, WHEN its troops end a step at 14, THEN it is level 1; at 15, level 2; at 34, level 2; at 35, level 3.
 - **AC2 [Logic] (rule 2)**: GIVEN a level 1 keep at 14 troops, WHEN one step raises it to 36, THEN it is level 3 and exactly one `level_rose(keep, 1, 3)` is raised.
 - **AC3 [Logic] (F2, rule 3)**: GIVEN a level 2 keep, WHEN its troops end a step at 10, THEN it stays level 2; at 9, it is level 1 and `level_dropped(keep, 2, 1)` is raised once.
-- **AC4 [Logic] (F2)**: GIVEN a level 3 keep, WHEN its troops end a step at 30, THEN it stays 3; at 29, it is level 2; at 9, it is level 1 with one `level_dropped(keep, 3, 1)`.
+- **AC4 [Logic] (F2)**: GIVEN a level 3 keep, WHEN its troops end a step at 30, THEN it stays 3; at 29, it is level 2; at 12 (one step from 40), level 2 with one `level_dropped(keep, 3, 2)`; at 9, it is level 1 with one `level_dropped(keep, 3, 1)`.
 - **AC5 [Logic] (F2, hysteresis)**: GIVEN two keeps both at 12 troops, one previously level 2 and one previously level 1, THEN after the step the first is level 2 and the second is level 1.
 - **AC6 [Logic] (F2, margin 0)**: GIVEN `level_drop_margin` 0, THEN `effective_level` equals `rise_level` for every count 0–60 and every previous level (the prototype's rule).
 - **AC7 [Logic] (rule 8)**: GIVEN level data with keeps at 10, 25 and 40 troops, WHEN the match starts, THEN their levels are 1, 2 and 3 and no `level_rose` is raised at start.
@@ -280,7 +278,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 - **AC9 [Integration: Rope Links] (F3)**: GIVEN a level 2 keep holding 2 ropes, WHEN a third tie is attempted, THEN it is refused with "Level 2 keep: only 2 ropes. Grow it or cut one."; GIVEN it rises to 3, THEN the third tie succeeds.
 - **AC10 [Integration: Rope Links] (rule 6, F4)**: GIVEN a level 3 keep holding ropes tied at times t1 < t2 < t3, WHEN it drops to level 2, THEN only the rope tied at t3 is cut; WHEN it drops to level 1, THEN t3 and t2 are cut and t1 remains.
 - **AC11 [Integration: Rope Links] (F4)**: GIVEN a level 3 keep holding 1 rope, WHEN it drops to level 2, THEN no rope is cut.
-- **AC12 [Integration: Troop Marching & Clashes] (rule 7)**: GIVEN a level 3 keep holding 3 ropes at 0 troops, WHEN an enemy pawn captures it, THEN on that same step its level is 1, all 3 ropes are cut, and `level_dropped(keep, 3, 1)` is raised once.
+- **AC12 [Integration: Troop Marching & Clashes, Rope Links] (rule 7)**: GIVEN a level 1 keep holding 1 rope at 0 troops, WHEN an enemy pawn captures it, THEN on that same step its level is 1, its rope is cut with reason `capture`, and no `level_dropped` is raised. With an injected level 3 keep holding 3 ropes: level 1, all 3 cut, no `level_dropped`.
 
 **Per-step order (Rule 4)**
 
@@ -291,7 +289,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 
 - **AC15 [Logic] (K1)**: GIVEN `lv2_at` 20 and `lv3_at` 20, WHEN data loads in a development build, THEN it stops with an error naming K1 and both values; a shipped build raises `lv3_at` to 21 and logs it.
 - **AC16 [Logic] (K2)**: GIVEN `level_drop_margin` 15 with `lv2_at` 15, THEN K2 is reported; a shipped build lowers the margin to 14.
-- **AC17 [Logic] (K3)**: GIVEN `level_drop_margin` 20 with thresholds 15 / 35, THEN K3 is reported; a shipped build lowers the margin to 19.
+- **AC17 [Logic] (K3)**: GIVEN `level_drop_margin` 20 with thresholds 15 / 35, THEN K2 and K3 are reported; a shipped build lowers the margin to 14.
 - **AC18 [Logic] (K4)**: GIVEN `max_ropes` `[2, 1, 3]`, THEN K4 is reported; a shipped build makes it `[2, 2, 3]`.
 - **AC19 [Logic] (rule 10)**: GIVEN a Factions `LevelModifiers` that raises `lv2_at` by 5, THEN a keep rises to level 2 at 20 troops and drops below 15, and K1–K4 are re-checked against the modified set.
 
@@ -308,7 +306,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 
 | # | Question | Owner | Resolve by |
 |---|----------|-------|------------|
-| 1 | `level_drop_margin` 5 is the player's first choice; is 5 troops (about three enemy arrivals at one rope's rate) enough breathing room, or too much? | game-designer | First Godot playable |
+| 1 | `level_drop_margin` 5 is the player's first choice; is 5 troops (about 10 enemy arrivals at level 2 and 18 at level 3 against one rope, counting generation) enough breathing room, or too much? | game-designer | First Godot playable |
 | 2 | Should a guardian's castle be pinned at level 3 whatever its garrison, so it never looks weakened? | Guardian Castles | Alpha |
 | 3 | Do neutral keeps need a different level look (ruined, overgrown) so a level 2 neutral does not read as a rival keep? | art-director | Art bible |
 | 4 | Which unit kind each level produces per race (barracks soldiers, keep cavalry, castle summons) and whether a drop changes the units already marching | Unit Roster & Stats | Alpha |

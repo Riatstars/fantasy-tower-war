@@ -33,7 +33,7 @@
 ## E. GDD còn lại cho MVP (10/13), theo thứ tự thiết kế
 - [x] 4. Save & Progress (GDD viết 2026-11-22, chờ /design-review)
 - [x] 5. Keep Levels (GDD viết 2026-11-22, chờ /design-review)
-- [ ] 6. Rope Links (dùng F6 của Touch & Mouse Input)
+- [x] 6. Rope Links (GDD viết 2026-11-22, chờ /design-review)
 - [ ] 7. Troop Marching & Clashes (định nghĩa hợp đồng `UnitStats`)
 - [ ] 8. Level State & Match Flow
 - [ ] 9. Rival AI
