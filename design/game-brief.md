@@ -66,9 +66,10 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - [x] A full keep (60 troops) relays arriving ally pawns down its own ropes, in turn, instead of losing them
 - [ ] Anime pixel art: barracks / keep / castle by level, soldiers, mounted knights, summoner, monsters, guardian castles
 - [ ] World map: regions of level nodes, fog of war, stars per level, region conquered on the last level
-- [ ] Guardian castle at the end of each region *(provisional)*
-- [ ] God and goddess powers: one per region, cast once per level, picked before a level *(provisional)*
-- [ ] Monetisation: in-app purchases (gem packs, starter pack, remove ads) and ads (rewarded for a revive or double reward; an interstitial between levels, never in region 1) *(provisional)*
+- [ ] Army: races (human, beast, elf, spirit, dragon) with unit cards; gold from level wins upgrades cards; diamonds, a fixed reward per conquered region, unlock rare races (UAT build)
+- [ ] Guardian castle at the end of each region *(provisional, after UAT)*
+- [ ] God and goddess powers: one per region, cast once per level, picked before a level *(provisional, after UAT)*
+- [ ] Monetisation: in-app purchases (gem packs, starter pack, remove ads) and ads (rewarded for a revive or double reward; an interstitial between levels, never in region 1) *(provisional, store build after UAT)*
 - [ ] Mobile app build for the App Store and Google Play, with save of map progress on the device
 - [ ] Juice: banner pop on capture, level-up flourish, rope snap and fade, marching sounds
 
@@ -77,9 +78,10 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - tower levels (max 3) · in the slice
 - connections / links · in the slice
 - world map of levels, conquer region by region · in the slice
-- in-app purchase · later *(guessed)*
-- ads · later *(guessed)*
-- gods, goddesses and guardians · later *(guessed)*
+- army: races, unit cards, gold and diamonds · in the UAT build (decided 2026-11-22)
+- in-app purchase · after UAT
+- ads · after UAT
+- gods, goddesses and guardians · after UAT
 
 ## Keep
 -
@@ -91,15 +93,14 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - Several rival colours fighting each other: change it after play
 - Online versus: needs a server, not built yet — one AI rival on this device instead
 - Cloud save and accounts: progress lives on the device for now
-- In-app purchase and ads: build order step 4
-- Gods, goddesses and guardian powers: build order step 3
+- In-app purchase and ads: build order step 4 (after UAT)
+- Gods, goddesses and guardian powers: build order step 3 (after UAT)
 
 ## Build order
-1. The slice: one region of the world map with a few level nodes; player, rival and neutral keeps; link/cut, generation, levels, capture, win and lose; the next node unlocks on a win.
-2. Anime pixel art pass (keeps by level, troops, monsters), rival AI tuned per region, 5 regions.
+1. **UAT build** (offline, for testing; 20 systems, decided 2026-11-22): the match (link/cut, generation, levels, marching and clashes, capture, win and lose, rival AI), the world map with regions and stars, save, HUD and menus, and the army layer (races, unit cards, gold, diamonds from region conquest); anime pixel art for keeps, troops and monsters.
+2. Polish after UAT: juice and sound, tutorial, settings, mobile platform integration, accessibility.
 3. Guardian castles and god / goddess powers.
-4. App build for the App Store and Google Play; in-app purchases and ads.
-5. Juice and sound.
+4. Store build for the App Store and Google Play; in-app purchases and ads.
 
 ---
 **Kill condition:** if managing ropes feels like busywork rather than a tug-of-war after two tuning rounds, or players stop on the world map before region 2.

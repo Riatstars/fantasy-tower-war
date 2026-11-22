@@ -12,8 +12,10 @@
 Tower War is a mobile real-time conquest game. The player ties rope links between keeps; troops
 march down the ropes to take neutral and rival keeps. A keep grows from level 1 to 3 as it holds
 more troops, and its level sets how many ropes it can hold. Each match is one level on a fantasy
-world map; levels are grouped into regions that end at a guardian's castle. The release scope is a
-full game without in-app purchases, ads, online play or accounts.
+world map; levels are grouped into regions that end at a guardian's castle. The first release is
+an offline **UAT build** of 20 systems (the MVP tier: match, campaign, save, HUD, menus and the
+army layer; the player's decision, 2026-11-22). In-app purchases and ads come with the store build
+after UAT; online play and accounts stay out of scope.
 
 The scope has four layers. The **match layer** (Troop Generation, Keep Levels, Rope Links, Troop
 Marching & Clashes, Level State, Rival AI) is the tug-of-war loop and must be proven fun first.
@@ -70,23 +72,23 @@ Brief paragraph per system (balanced density):
 | 12 | Level HUD (inferred) | UI | MVP | Not Started | — | Keep Levels, Rope Links, Level State & Match Flow, Touch & Mouse Input (soft) |
 | 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress (soft: messages) |
 | 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | Save & Progress (settings file, Delete progress) |
-| 15 | Currencies & Economy | Economy | Vertical Slice | Not Started | — | Save & Progress |
+| 15 | Currencies & Economy | Economy | MVP | Not Started | — | Save & Progress |
 | 16 | Audio | Audio | Vertical Slice | Not Started | — | Settings |
-| 17 | Stars & Rewards | Progression | Vertical Slice | Not Started | — | Level State & Match Flow, Currencies & Economy, World Map & Regions, Save & Progress |
+| 17 | Stars & Rewards | Progression | MVP | Not Started | — | Level State & Match Flow, Currencies & Economy, World Map & Regions, Save & Progress |
 | 18 | Feedback & Juice | UI | Vertical Slice | Not Started | — | Troop Marching & Clashes, Keep Levels, Rope Links, Audio |
 | 19 | Tutorial & Onboarding | Meta | Vertical Slice | Not Started | — | Touch & Mouse Input, Rope Links, Level HUD, Campaign Level Data, Save & Progress (soft: first-run flag) |
 | 20 | Mobile Platform Integration | Meta | Vertical Slice | Not Started | — | Screen Flow & Scene Manager, Save & Progress, Settings |
-| 21 | Unit Roster & Stats | Gameplay | Alpha | Not Started | — | Troop Marching & Clashes, Keep Levels |
-| 22 | Factions | Gameplay | Alpha | Not Started | — | Unit Roster & Stats, Troop Generation, Keep Levels |
-| 23 | Unit Cards & Upgrades | Progression | Alpha | Not Started | — | Unit Roster & Stats, Currencies & Economy, Save & Progress |
-| 24 | Faction Collection & Unlocks | Progression | Alpha | Not Started | — | Factions, Currencies & Economy, Save & Progress |
+| 21 | Unit Roster & Stats | Gameplay | MVP | Not Started | — | Troop Marching & Clashes, Keep Levels |
+| 22 | Factions | Gameplay | MVP | Not Started | — | Unit Roster & Stats, Troop Generation, Keep Levels |
+| 23 | Unit Cards & Upgrades | Progression | MVP | Not Started | — | Unit Roster & Stats, Currencies & Economy, Save & Progress |
+| 24 | Faction Collection & Unlocks | Progression | MVP | Not Started | — | Factions, Currencies & Economy, Save & Progress |
 | 25 | God & Goddess Powers | Gameplay | Alpha | Not Started | — | Troop Marching & Clashes, Rope Links, Currencies & Economy, World Map & Regions |
 | 26 | Guardian Castles | Gameplay | Alpha | Not Started | — | Rival AI, Campaign Level Data, World Map & Regions |
-| 27 | Collection & Upgrade Screens (inferred) | UI | Alpha | Not Started | — | Faction Collection & Unlocks, Unit Cards & Upgrades, Currencies & Economy |
+| 27 | Collection & Upgrade Screens (inferred) | UI | MVP | Not Started | — | Faction Collection & Unlocks, Unit Cards & Upgrades, Currencies & Economy |
 | 28 | Accessibility (inferred) | Meta | Alpha | Not Started | — | Level HUD, Menus & Screens, Settings, Touch & Mouse Input (soft) |
 
-Out of scope for the full game (see the brief's Out of scope): in-app purchases, ads, online
-versus, cloud save and accounts.
+Out of scope for the UAT build (see the brief's Out of scope): in-app purchases and ads (store
+build after UAT), online versus, cloud save and accounts.
 
 ---
 
@@ -111,12 +113,12 @@ versus, cloud save and accounts.
 
 | Tier | Definition | Target Milestone | Design Urgency |
 |------|------------|------------------|----------------|
-| **MVP** | Required for the core loop to function. Without these, you can't test "is this fun?" | First playable prototype | Design FIRST |
+| **MVP** | The UAT build (decided 2026-11-22): the core loop plus the campaign and army layers. Without these, you can't test "is this fun, and does the map and army pull you on?" | UAT build (offline) | Design FIRST |
 | **Vertical Slice** | Required for one complete, polished area. Demonstrates the full experience. | Vertical slice / demo | Design SECOND |
 | **Alpha** | All features present in rough form. Complete mechanical scope, placeholder content OK. | Alpha milestone | Design THIRD |
 | **Full Vision** | Polish, edge cases, nice-to-haves, and content-complete features. | Beta / Release | Design as needed |
 
-Tier counts: MVP 13 · Vertical Slice 7 · Alpha 8 · Full Vision 0. The Full Vision tier holds
+Tier counts: MVP 20 · Vertical Slice 5 · Alpha 3 · Full Vision 0 (re-tiered 2026-11-22: Currencies & Economy, Stars & Rewards, Unit Roster & Stats, Factions, Unit Cards & Upgrades, Faction Collection & Unlocks and Collection & Upgrade Screens moved into MVP for the UAT build). The Full Vision tier holds
 content volume (5 regions × 10 levels, 5 races), not additional systems.
 
 Review gates: TD-SYSTEM-BOUNDARY, PR-SCOPE and CD-SYSTEMS were skipped (review mode: lean).
@@ -188,30 +190,30 @@ Integration, Tutorial & Onboarding, Collection & Upgrade Screens, Guardian Castl
 | 6 | Rope Links | MVP | Core | game-designer | M |
 | 7 | Troop Marching & Clashes | MVP | Core | game-designer, systems-designer | L |
 | 8 | Level State & Match Flow | MVP | Core | game-designer | S |
-| 9 | Rival AI | MVP | Feature | ai-programmer, game-designer | L |
-| 10 | Campaign Level Data | MVP | Feature | level-designer | M |
-| 11 | World Map & Regions | MVP | Feature | level-designer, ux-designer | M |
-| 12 | Level HUD | MVP | Presentation | ux-designer, ui-programmer | M |
-| 13 | Menus & Screens | MVP | Presentation | ux-designer | S |
-| 14 | Settings | Vertical Slice | Foundation | ux-designer | S |
-| 15 | Currencies & Economy | Vertical Slice | Core | economy-designer | M |
-| 16 | Audio | Vertical Slice | Core | audio-director, sound-designer | M |
-| 17 | Stars & Rewards | Vertical Slice | Feature | economy-designer, game-designer | S |
-| 18 | Feedback & Juice | Vertical Slice | Presentation | technical-artist, sound-designer | M |
-| 19 | Tutorial & Onboarding | Vertical Slice | Presentation | ux-designer | S |
-| 20 | Mobile Platform Integration | Vertical Slice | Polish | technical-director, release-manager | M |
-| 21 | Unit Roster & Stats | Alpha | Feature | systems-designer | L |
-| 22 | Factions | Alpha | Feature | game-designer, systems-designer | L |
-| 23 | Unit Cards & Upgrades | Alpha | Feature | economy-designer, systems-designer | M |
-| 24 | Faction Collection & Unlocks | Alpha | Feature | economy-designer | M |
-| 25 | God & Goddess Powers | Alpha | Feature | game-designer, systems-designer | L |
-| 26 | Guardian Castles | Alpha | Feature | level-designer, game-designer | M |
-| 27 | Collection & Upgrade Screens | Alpha | Presentation | ux-designer | M |
+| 9 | Unit Roster & Stats | MVP | Feature | systems-designer | L |
+| 10 | Factions | MVP | Feature | game-designer, systems-designer | L |
+| 11 | Rival AI | MVP | Feature | ai-programmer, game-designer | L |
+| 12 | Campaign Level Data | MVP | Feature | level-designer | M |
+| 13 | Currencies & Economy | MVP | Core | economy-designer | M |
+| 14 | World Map & Regions | MVP | Feature | level-designer, ux-designer | M |
+| 15 | Stars & Rewards | MVP | Feature | economy-designer, game-designer | S |
+| 16 | Unit Cards & Upgrades | MVP | Feature | economy-designer, systems-designer | M |
+| 17 | Faction Collection & Unlocks | MVP | Feature | economy-designer | M |
+| 18 | Level HUD | MVP | Presentation | ux-designer, ui-programmer | M |
+| 19 | Menus & Screens | MVP | Presentation | ux-designer | S |
+| 20 | Collection & Upgrade Screens | MVP | Presentation | ux-designer | M |
+| 21 | Settings | Vertical Slice | Foundation | ux-designer | S |
+| 22 | Audio | Vertical Slice | Core | audio-director, sound-designer | M |
+| 23 | Feedback & Juice | Vertical Slice | Presentation | technical-artist, sound-designer | M |
+| 24 | Tutorial & Onboarding | Vertical Slice | Presentation | ux-designer | S |
+| 25 | Mobile Platform Integration | Vertical Slice | Polish | technical-director, release-manager | M |
+| 26 | God & Goddess Powers | Alpha | Feature | game-designer, systems-designer | L |
+| 27 | Guardian Castles | Alpha | Feature | level-designer, game-designer | M |
 | 28 | Accessibility | Alpha | Polish | accessibility-specialist | M |
 
-Effort: S = 1 session, M = 2–3 sessions, L = 4+ sessions. Design Troop Marching & Clashes
-(order 7) carefully and early: it defines the `UnitStats` contract that Unit Roster (order 21)
-depends on.
+Effort: S = 1 session, M = 2–3 sessions, L = 4+ sessions. Unit Roster & Stats and Factions come
+before Rival AI (re-ordered 2026-11-22) because the rival must play a race in the UAT build. Troop
+Marching & Clashes (order 7) defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 
 ---
 
@@ -221,7 +223,7 @@ depends on.
 - **Troop Marching & Clashes ↔ Unit Roster & Stats:** marching needs per-unit stats (speed,
   strength, size) and the roster defines those stats. Resolution: the Troop Marching & Clashes GDD
   defines a `UnitStats` contract; Unit Roster fills in values for each unit. Marching is designed
-  first (order 7), the roster later (order 21).
+  first (order 7), the roster next (order 9).
 
 ---
 
@@ -232,20 +234,18 @@ depends on.
 | Factions + Unit Roster & Stats | Design / Scope | 5 races, each with its own units and playstyle, create a large balance matrix; Rival AI must handle each | Prototype 2 races first; cut to 3 if balance stalls |
 | Troop Marching & Clashes | Technical | Hundreds of pawns and clashes on a phone at 60 fps | Prototype 300+ pawns in Godot on a real phone early |
 | Rival AI | Design | Must work across races, powers and regions without feeling unfair | Rule-based AI with per-region parameters; playtest each region |
-| Mobile Platform Integration | Technical | Godot is not yet installed on the dev machine; iOS and Android export is unproven here | Install Godot and export templates early; test export at Vertical Slice |
-| Currencies & Economy | Design | Diamonds have no defined source without IAP; rare races could be unearnable or trivial | Decide the source before the GDD (stars? region conquest? quests?) |
+| Mobile Platform Integration | Technical | Godot 4.7.2 is installed, but the iOS and Android export templates and export preset are unproven (`commands.build` not set); the UAT build must still run on a phone | Install the export templates and make a first Android export early in Technical Setup |
+| Currencies & Economy | Design | Diamonds come only from region conquest in the UAT build (decided 2026-11-22); rare races could still be unlocked too fast or too slowly | Set per-region amounts and race costs in the GDD; check the pace with `/balance-check` |
 
 ---
 
 ## Open Questions
 
-- How are diamonds earned without in-app purchases (stars, region conquest, quests)?
-- How is gold split between unit card upgrades and god and goddess power upgrades?
-- Does the rival pick a race? One rival race per region?
-- Are the 5 races (human, beast, elf, spirit, dragon) all in the full release, and what is the unlock
-  order and cost of each?
-- The concept doc (`design/gdd/game-concept.md`) still lists the earlier scope question and does
-  not yet cover races, cards or diamonds; update it to match this index.
+- ~~How are diamonds earned without in-app purchases?~~ Decided 2026-11-22: a fixed reward per conquered region. Amounts are the Currencies & Economy GDD's.
+- ~~How is gold split between unit card upgrades and god power upgrades?~~ In the UAT build gold upgrades cards only; god powers come after UAT, so the split is decided then.
+- Does the rival pick a race? One rival race per region? (Factions)
+- Are the 5 races (human, beast, elf, spirit, dragon) all in the UAT build, and what is the unlock
+  order and cost of each? (Factions, Faction Collection & Unlocks)
 
 ---
 
@@ -254,11 +254,12 @@ depends on.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 6 |
-| Design docs reviewed | 0 |
+| Design docs started | 7 |
+| Design docs reviewed | 6 (all Needs Revision, revised, now In Review) |
 | Design docs approved | 0 |
-| MVP systems designed | 6/13 |
-| Vertical Slice systems designed | 0/7 |
+| MVP systems designed | 7/20 |
+| Vertical Slice systems designed | 0/5 |
+| Alpha systems designed | 0/3 |
 
 ---
 
@@ -267,5 +268,5 @@ depends on.
 - [ ] Review and approve this systems enumeration
 - [ ] Design MVP-tier systems first (use `/design-system [system-name]`)
 - [ ] Run `/design-review` on each completed GDD
-- [ ] Run `/gate-check technical-setup` when MVP systems are designed
+- [ ] Run `/gate-check technical-setup` when all 20 MVP (UAT build) systems are designed
 - [ ] Validate the highest-risk systems with `/vertical-slice` before committing to Production

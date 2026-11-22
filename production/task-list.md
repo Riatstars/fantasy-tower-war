@@ -1,52 +1,62 @@
 # Tower War: Danh sách việc còn lại
 
-> Tạo: 2026-11-22. Nguồn: `production/session-state/active.md`, `design/gdd/systems-index.md`, Open Questions của 3 GDD đã viết, các bước của rigor `standard`.
+> Tạo: 2026-11-22. Nguồn: `production/session-state/active.md`, `design/gdd/systems-index.md`, Open Questions của các GDD đã viết, các bước của rigor `standard`.
+> Cập nhật 2026-11-22: phạm vi bản UAT (20 hệ thống), art bible, review GDD, gate check.
 > Đánh dấu `[x]` khi xong. **(bạn)** = chỉ bạn quyết hoặc làm được.
 
 ## A. Dọn dẹp và việc dở dang
 - [x] **Commit** (4cad5aa, 2026-11-22) · còn lại sau đó: save-progress.md, systems-index, active.md, task-list: CLAUDE.md, `project.yaml`, `project.godot`, `technical-preferences.md`, `VERSION.md`, `game-brief.md`, `game-concept.md`, 3 GDD, `systems-index.md`, registry, `docs/consistency-failures.md`, file này
 - [ ] Ghi `production/project-stage-report.md` (đã đồng ý, chưa ghi)
-- [ ] Cập nhật `design/gdd/game-concept.md` theo phạm vi mới: các tộc, thẻ lính, vàng, kim cương; bỏ IAP và quảng cáo; xóa câu hỏi phạm vi cũ
-- [ ] Cập nhật `design/game-brief.md`: chuyển IAP và quảng cáo sang Out of scope
+- [x] Cập nhật `design/gdd/game-concept.md` theo phạm vi mới: các tộc, thẻ lính, vàng, kim cương; IAP và quảng cáo sau UAT; thêm Pillars và Visual Identity Anchor (2026-11-22)
+- [x] Cập nhật `design/game-brief.md`: IAP và quảng cáo sang bước 4 (sau UAT); build order mới (2026-11-22)
 - [x] Đổi git remote: origin = https://github.com/Riatstars/fantasy-tower-war (đã push main 2026-11-22); template = repo framework
+- [ ] Commit thay đổi cài Godot từ phiên kia: `project.yaml`, `project.godot`, `docs/engine-reference/godot/VERSION.md`, các file `.gdignore`; thêm `.godot/` vào `.gitignore`
 
 ## B. Môi trường Godot
-- [ ] Cài Godot 4.7.x và export templates **(bạn)**
+- [x] Cài Godot 4.7.2 (`engine.path` trong `project.yaml`) **(bạn)**
+- [ ] Cài export templates 4.7.2 **(bạn)**
 - [ ] Đặt đường dẫn editor cho `commands.*` bằng `/project-settings`
 - [ ] Tạo export preset Android/iOS rồi đặt `commands.build`
 - [ ] Chạy import để kiểm tra `project.godot` (đang NOT VERIFIED)
 
 ## C. Quyết định thiết kế cần chốt **(bạn)**
 - [x] F6 (Input): giới hạn ngang = keep_hit_radius (78 px), chốt 2026-11-22
-- [ ] Kim cương kiếm bằng cách nào khi không có IAP?
-- [ ] Vàng chia thế nào giữa nâng thẻ lính và nâng sức mạnh thần?
-- [ ] Đối thủ có chọn tộc không? Mỗi vùng một tộc?
-- [ ] Cả 5 tộc (người, ma thú, elf, tinh linh, rồng) có vào bản đầy đủ không?
+- [x] Phạm vi bản đầu: bản UAT offline, 20 hệ thống (13 cốt lõi + lớp quân đội); IAP và quảng cáo sau UAT (2026-11-22)
+- [x] Kim cương kiếm bằng cách nào khi không có IAP? Phần thưởng cố định khi chinh phục một vùng (2026-11-22)
+- [x] Vàng chia thế nào giữa nâng thẻ lính và nâng sức mạnh thần? Bản UAT: vàng chỉ để nâng thẻ; sức mạnh thần làm sau UAT
+- [ ] Đối thủ có chọn tộc không? Mỗi vùng một tộc? (GDD Factions)
+- [ ] Cả 5 tộc (người, ma thú, elf, tinh linh, rồng) có vào bản UAT không? (GDD Factions)
 - [ ] Troop Generation: lệch pha timer ban đầu? Giữ việc reset timer khi chiếm keep? (Open Questions 1, 2)
 - [ ] Screen Flow: Restart cần hai bước xác nhận có quá nặng? (Open Question 6)
 
 ## D. Review độc lập (mỗi file ở một phiên Claude Code mới)
-- [ ] `/design-review design/gdd/troop-generation.md`
-- [ ] `/design-review design/gdd/screen-flow-scene-manager.md`
-- [ ] `/design-review design/gdd/touch-mouse-input.md`
+- [x] Review lần 1 của 6 GDD (2026-11-22): cả 6 NEEDS REVISION, đã sửa, đang In Review (log trong `design/gdd/reviews/`)
+- [ ] `/design-review design/gdd/game-concept.md` (gate check yêu cầu)
+- [ ] `/design-review design/gdd/troop-marching-clashes.md` (chưa review lần nào)
+- [ ] Review lại 6 GDD đã sửa: troop-generation, screen-flow-scene-manager, touch-mouse-input, save-progress, keep-levels, rope-links
 
-## E. GDD còn lại cho MVP (10/13), theo thứ tự thiết kế
-- [x] 4. Save & Progress (GDD viết 2026-11-22, chờ /design-review)
-- [x] 5. Keep Levels (GDD viết 2026-11-22, chờ /design-review)
-- [x] 6. Rope Links (GDD viết 2026-11-22, chờ /design-review)
-- [ ] 7. Troop Marching & Clashes (định nghĩa hợp đồng `UnitStats`)
+## E. GDD còn lại cho bản UAT (13/20 còn lại), theo thứ tự thiết kế
+- [x] 1–6. Troop Generation, Screen Flow, Touch & Mouse Input, Save & Progress, Keep Levels, Rope Links
+- [x] 7. Troop Marching & Clashes (hợp đồng `UnitStats`; viết 2026-11-22)
 - [ ] 8. Level State & Match Flow
-- [ ] 9. Rival AI
-- [ ] 10. Campaign Level Data (tuân thủ khoảng cách keep I2)
-- [ ] 11. World Map & Regions
-- [ ] 12. Level HUD
-- [ ] 13. Menus & Screens
+- [ ] 9. Unit Roster & Stats
+- [ ] 10. Factions
+- [ ] 11. Rival AI
+- [ ] 12. Campaign Level Data (tuân thủ khoảng cách keep I2)
+- [ ] 13. Currencies & Economy (lượng kim cương mỗi vùng, giá tộc hiếm)
+- [ ] 14. World Map & Regions
+- [ ] 15. Stars & Rewards
+- [ ] 16. Unit Cards & Upgrades
+- [ ] 17. Faction Collection & Unlocks
+- [ ] 18. Level HUD
+- [ ] 19. Menus & Screens
+- [ ] 20. Collection & Upgrade Screens
 - [ ] `/consistency-check` sau mỗi GDD
 
 ## F. Hoàn tất Concept và Systems Design
-- [ ] `/art-bible`: hướng nghệ thuật pixel art anime (bắt buộc ở rigor `standard`)
-- [ ] `/gate-check systems-design`: chuyển Concept → Systems Design
-- [ ] `/review-all-gdds` khi xong 13 GDD MVP
+- [x] `/art-bible`: mục 1–4 (2026-11-22; mục 5–9 làm sau)
+- [ ] `/gate-check systems-design`: lần 1 = CONCERNS (`production/gate-checks/2026-11-22-systems-design.md`); chạy lại sau khi review game-concept
+- [ ] `/review-all-gdds` khi xong 20 GDD bản UAT
 - [ ] `/gate-check technical-setup`
 
 ## G. Technical Setup
@@ -58,11 +68,13 @@
 - [ ] `/gate-check pre-production`
 
 ## H. Pre-Production
-- [ ] `/ux-design` cho HUD, keep plaque, preview dây, các màn và lớp phủ (UX Flag từ 3 GDD)
+- [ ] `/ux-design` cho HUD, keep plaque, preview dây, các màn và lớp phủ (UX Flag từ các GDD)
 - [ ] `/create-epics`, rồi `/create-stories`, rồi `/sprint-plan`
 - [ ] `/gate-check production`
 
-## I. Sau MVP
-- [ ] GDD Vertical Slice (7): Settings, Currencies & Economy, Audio, Stars & Rewards, Feedback & Juice, Tutorial & Onboarding, Mobile Platform Integration
-- [ ] GDD Alpha (8): Unit Roster & Stats, Factions, Unit Cards & Upgrades, Faction Collection & Unlocks, God & Goddess Powers, Guardian Castles, Collection & Upgrade Screens, Accessibility
+## I. Sau bản UAT
+- [ ] GDD Vertical Slice (5): Settings, Audio, Feedback & Juice, Tutorial & Onboarding, Mobile Platform Integration
+- [ ] GDD Alpha (3): God & Goddess Powers, Guardian Castles, Accessibility
+- [ ] Bản store: in-app purchase và quảng cáo
+- [ ] Art bible mục 5–9 (nhân vật, môi trường, UI/HUD, chuẩn asset, tham chiếu)
 - [ ] Cân bằng tiếp: chỉnh trên prototype (`prototypes/tower-war/config.js`) hoặc `/balance-check` khi đã có GDD
