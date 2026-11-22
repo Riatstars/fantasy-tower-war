@@ -74,7 +74,7 @@ Brief paragraph per system (balanced density):
 | 10 | Campaign Level Data | Progression | MVP | Designed | design/gdd/campaign-level-data.md | Keep Levels, Rival AI, Level State & Match Flow, Save & Progress (id registration), Touch & Mouse Input (invariant I2), Rope Links (invariant R3), Troop Marching & Clashes (soft: speed_min, keep id order) |
 | 11 | World Map & Regions | Progression | MVP | Designed (UX spec needed: `/ux-design world-map`) | design/gdd/world-map-regions.md | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager, Touch & Mouse Input (soft) |
 | 12 | Level HUD | UI | MVP | Designed (UX spec needed: `/ux-design level-hud`, which also closes the HUD-element UX flags of Troop Generation, Keep Levels, Rope Links, Troop Marching and Touch & Mouse Input) | design/gdd/level-hud.md | Keep Levels, Rope Links, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Touch & Mouse Input, Screen Flow & Scene Manager, Campaign Level Data (soft: title text) |
-| 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress (soft: messages) |
+| 13 | Menus & Screens | UI | MVP | Designed (UX spec needed: `/ux-design menus`) | design/gdd/menus-screens.md | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress, World Map & Regions (soft: is_unlocked), Campaign Level Data (soft: names), Touch & Mouse Input (soft: controls list) |
 | 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | Save & Progress (settings file, Delete progress) |
 | 15 | Currencies & Economy | Economy | MVP | Not Started | — | Save & Progress |
 | 16 | Audio | Audio | Vertical Slice | Not Started | — | Settings |
@@ -260,10 +260,10 @@ defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 12 |
-| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 6 Designed, pending review |
+| Design docs started | 13 |
+| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 7 Designed, pending review |
 | Design docs approved | 0 (the game concept is approved, 2026-11-22) |
-| MVP systems designed | 12/20 (UAT-1: 12/13) |
+| MVP systems designed | 13/20 (UAT-1: 13/13, all designed 2026-11-22; UAT-2 army layer 0/7) |
 | Vertical Slice systems designed | 0/5 |
 | Alpha systems designed | 0/3 |
 

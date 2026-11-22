@@ -249,6 +249,6 @@ Baseline data: the Green Vale (gv-01 … gv-05) as the only region with levels; 
 | 1 | After the Green Vale is conquered in UAT-1, should the fogged regions carry a "coming soon" mark, or stay plain fog? Plain fog is honest about content; a mark sets an expectation | game-designer, the player | Before the UAT-1 build |
 | 2 | Node sizes, hit areas, the pulse and outline styles, and the hint's placement | ux-designer (`/ux-design world-map`) | Pre-Production |
 | 3 | The Green Vale splash illustration and the five region palettes and fog shapes | art-director (art bible regions section; `/asset-spec`) | Before the UAT-1 build |
-| 4 | Whether the map should show the best time on a Beaten node in UAT-1 (stars arrive in UAT-2); currently banner only | game-designer | UAT-1 UX spec |
+| 4 | Closed (2026-11-22): the best time is shown on the Win overlay (Menus & Screens F1), not on the map; Beaten nodes stay banner-only in UAT-1 | — | — |
 | 5 | Whether five regions on one fixed image stay readable as region counts grow (the brief says 5 × 10 provisional); a scrolling map would be a rule change here and in Screen Flow | game-designer, technical-director | Before region 3 |
 | 6 | The diamond reward on conquest and where it is shown in the sequence | Stars & Rewards, Currencies & Economy | UAT-2 |

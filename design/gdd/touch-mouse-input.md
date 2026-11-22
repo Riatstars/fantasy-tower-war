@@ -292,7 +292,7 @@ Input is how the player feels the game, so its feel targets matter more than for
 - **Drag preview and target ring**: drawn by Level HUD from Input's drag feedback (Visual/Audio).
 - **Swipe trail**: drawn by Level HUD from Input's trail (Visual/Audio).
 - **Cursor hint** on a computer: "Right mouse cuts a rope", shown once per session in the bottom strip when a left click lands on a rope or on empty space.
-- **Controls shown on screen**: the Title lists the controls for the current device (touch: drag to tie, swipe or tap a rope to cut; computer: left-drag to tie, right-click or right-drag to cut).
+- **Controls shown on screen**: the Title lists the controls for the current device (touch: drag to tie, swipe or tap a rope to cut; computer: left-drag to tie, right-click or right-drag to cut). Menus & Screens draws the list (its rule 2); this GDD owns the wording and which variant applies (added 2026-11-22).
 
 > **UX Flag — Touch & Mouse Input**: This system has UI requirements. In Pre-Production, run `/ux-design` to create a UX spec for the Level HUD's drag preview, target ring and swipe trail, and for the controls list on the Title, before writing epics. Stories that reference UI should cite `design/ux/[screen].md`, not this GDD directly.
 

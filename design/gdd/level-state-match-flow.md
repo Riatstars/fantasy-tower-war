@@ -259,7 +259,7 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 | 1 | Closed (2026-11-22): Rival AI's stall breaker (its F4, `aggro_eff`) raises the rival's aggression by `stall_boost` per `stall_time` (45 s) without a capture, reset by any capture. This system still adds no timer or draw | — | — |
 | 2 | Closed (2026-11-22): only the first level of the game (`gv-01`) waits; `wait_for_first_rope` is false elsewhere (Campaign Level Data rule 5) | — | — |
 | 3 | `win_stars` 1 is a placeholder for UAT-1; the star rule belongs to Stars & Rewards | Stars & Rewards | UAT-2 |
-| 4 | Should the Win overlay show the player's best `time` beside this attempt's? | Menus & Screens | Its GDD |
+| 4 | Closed (2026-11-22): yes, the Win overlay shows this attempt's `time` beside the stored best, with "New best!" / "First clear!" (Menus & Screens F1) | — | — |
 | 5 | Can a loss be revived once (a rewarded ad or gems, in the brief as provisional)? It would add a state after Ending | Store build | After UAT |
 | 6 | The build-time target for a match on the minimum phone (Retry should feel instant) | Technical Setup | First phone test |
 | 7 | Closed (2026-11-22): no clock during play; `time` is shown on the Win and Lose overlays only (Level HUD rule 9, Pillar 2) | — | — |

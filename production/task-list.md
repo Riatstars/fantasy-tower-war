@@ -28,7 +28,7 @@
 - [ ] Đối thủ có chọn tộc không? Mỗi vùng một tộc? (GDD Factions)
 - [ ] Cả 5 tộc (người, ma thú, elf, tinh linh, rồng) có vào bản UAT không? (GDD Factions)
 - [ ] Troop Generation: lệch pha timer ban đầu? Giữ việc reset timer khi chiếm keep? (Open Questions 1, 2)
-- [ ] Screen Flow: Restart cần hai bước xác nhận có quá nặng? (Open Question 6)
+- [x] Screen Flow: Restart giữ bước xác nhận (quyết định 2026-11-22 khi thiết kế Menus & Screens; Restart bỏ cả trận như Quit, một chạm nhầm không được làm mất 2 phút chơi)
 
 ## D. Review độc lập (mỗi file ở một phiên Claude Code mới)
 - [x] Review lần 1 của 6 GDD (2026-11-22): cả 6 NEEDS REVISION, đã sửa, đang In Review (log trong `design/gdd/reviews/`)

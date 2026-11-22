@@ -258,18 +258,20 @@ formulas:
       - design/gdd/level-state-match-flow.md
       - design/gdd/troop-marching-clashes.md
     variables:
-      - owned_player
-      - pawns_in_flight_player
+      - owned
+      - pawns_in_flight
     output_range: [0, 1]
     expression: "lost = (owned_player = 0) and (pawns_in_flight_player = 0)"
     notes: "Boolean (0 or 1), phase 7. A player with no keep and pawns still marching has not lost. With no keep the player has no ropes or relays, so pawns_in_flight can only fall: lost within longest_rope / pawn_speed (about 13.4 s) unless a landing pawn captures a keep."
     added: 2026-11-22
-    revised: ""
+    revised: "2026-11-22"  # variables were: owned_player, pawns_in_flight_player (renamed to the source GDD's names, /consistency-check)
   - name: match_time
     status: active
     source: design/gdd/level-state-match-flow.md
     referenced_by:
       - design/gdd/level-state-match-flow.md
+      - design/gdd/level-hud.md
+      - design/gdd/rope-links.md
     variables:
       - deciding_step
       - start_step
@@ -348,6 +350,8 @@ formulas:
     referenced_by:
       - design/gdd/campaign-level-data.md
       - design/gdd/rope-links.md
+      - design/gdd/level-state-match-flow.md
+      - design/gdd/troop-marching-clashes.md
     variables:
       - dist
     output_range: [156, 1470]
@@ -366,7 +370,7 @@ formulas:
       - keep_hit_radius
     output_range: [156, 1470]
     expression: "min over keep pairs of dist(k_i, k_j); I2 holds when min_spacing >= 2 * keep_hit_radius"
-    notes: "Measured per level by the loader to enforce Touch and Mouse Input invariant I2 (its F5). Green Vale: 262, 206, 226, 220, 180 px against a 156 px bound. A level that fails is Rejected at load; Touch's per-level radius fallback runs only for a runtime radius change."
+    notes: "Touch and Mouse Input calls this measurement keep_spacing (its F5); same value. Measured per level by the loader to enforce Touch and Mouse Input invariant I2 (its F5). Green Vale: 262, 206, 226, 220, 180 px against a 156 px bound. A level that fails is Rejected at load; Touch's per-level radius fallback runs only for a runtime radius change."
     added: 2026-11-22
     revised: ""
 
@@ -392,14 +396,14 @@ formulas:
       - design/gdd/world-map-regions.md
       - design/gdd/save-progress.md
     variables:
-      - unlocked_first
-      - beaten_all
+      - open
+      - conquered
       - celebrated_set
     output_range: [0, 2]
     expression: "Conquered if every level beaten (region non-empty); Open if first level unlocked or beaten; else Fogged. celebrate = Conquered and region not in celebrated_set"
     notes: "Conquest is derived; Save's stored conquered-region set means the conquest sequence has been shown. A region with no levels is Fogged. Encoded 0 Fogged, 1 Open, 2 Conquered."
     added: 2026-11-22
-    revised: ""
+    revised: "2026-11-22"  # variables were: unlocked_first, beaten_all, celebrated_set (renamed to the source GDD's names, /consistency-check)
 
   - name: strength_bar
     status: active
@@ -408,6 +412,7 @@ formulas:
       - design/gdd/level-hud.md
       - design/gdd/troop-generation.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/menus-screens.md
     variables:
       - troops
       - marching_strength
@@ -436,6 +441,38 @@ formulas:
     added: 2026-11-22
     revised: ""
 
+  - name: best_time_label
+    status: active
+    source: design/gdd/menus-screens.md
+    referenced_by:
+      - design/gdd/menus-screens.md
+      - design/gdd/level-state-match-flow.md
+      - design/gdd/save-progress.md
+    variables:
+      - t
+      - best
+      - plays
+    output_range: [0, 2]
+    expression: "'First clear!' if plays = 1; 'New best!' if plays > 1 and t = best; else 'best ' + format(best)"
+    notes: "Win overlay time line. Evaluated after Save's merge (Level State rule 6 records before the overlay opens), so best <= t always holds. Encoded 0 first clear, 1 new best, 2 shows best."
+    added: 2026-11-22
+    revised: ""
+  - name: next_level_enabled
+    status: active
+    source: design/gdd/menus-screens.md
+    referenced_by:
+      - design/gdd/menus-screens.md
+      - design/gdd/world-map-regions.md
+      - design/gdd/screen-flow-scene-manager.md
+    variables:
+      - next
+      - is_unlocked
+    output_range: [0, 1]
+    expression: "show_next = next(level) exists and is_unlocked(next(level))"
+    notes: "The Win overlay's Next level button. Hidden on a region's last level (next is none) and whenever World Map reports the next level locked, so a reordered campaign cannot offer a locked level."
+    added: 2026-11-22
+    revised: ""
+
 constants:
   - name: troop_cap
     status: active
@@ -458,6 +495,8 @@ constants:
     referenced_by:
       - design/gdd/troop-generation.md
       - design/gdd/level-state-match-flow.md
+      - design/gdd/rope-links.md
+      - design/gdd/troop-marching-clashes.md
     value: 2.5
     unit: seconds
     added: 2026-11-22
@@ -469,6 +508,7 @@ constants:
       - design/gdd/troop-generation.md
     value: 1
     unit: troops per beat
+    notes: "Troop Generation names this knob gen_l1 in its own text and data file; the two names are the same value."
     added: 2026-11-22
     revised: ""
   - name: gen_amount_level_2
@@ -478,6 +518,7 @@ constants:
       - design/gdd/troop-generation.md
     value: 2
     unit: troops per beat
+    notes: "Troop Generation names this knob gen_l2 in its own text and data file; the two names are the same value."
     added: 2026-11-22
     revised: ""
   - name: gen_amount_level_3
@@ -485,8 +526,10 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/rope-links.md
     value: 3
     unit: troops per beat
+    notes: "Troop Generation names this knob gen_l3 in its own text and data file; the two names are the same value."
     added: 2026-11-22
     revised: ""
 
@@ -585,6 +628,7 @@ constants:
       - design/gdd/troop-generation.md
       - design/gdd/level-state-match-flow.md
       - design/gdd/campaign-level-data.md
+      - design/gdd/troop-marching-clashes.md
     value: 35
     unit: troops
     added: 2026-11-22
@@ -594,6 +638,7 @@ constants:
     source: design/gdd/keep-levels.md
     referenced_by:
       - design/gdd/keep-levels.md
+      - design/gdd/troop-marching-clashes.md
     value: 5
     unit: troops
     added: 2026-11-22
@@ -618,6 +663,7 @@ constants:
       - design/gdd/rope-links.md
       - design/gdd/touch-mouse-input.md
       - design/gdd/level-hud.md
+      - design/gdd/troop-marching-clashes.md
     value: 8
     unit: px
     added: 2026-11-22
@@ -628,6 +674,7 @@ constants:
     referenced_by:
       - design/gdd/rope-links.md
       - design/gdd/level-hud.md
+      - design/gdd/rival-ai.md
     value: 0.2
     unit: seconds
     added: 2026-11-22
@@ -689,6 +736,7 @@ constants:
     source: design/gdd/level-state-match-flow.md
     referenced_by:
       - design/gdd/level-state-match-flow.md
+      - design/gdd/screen-flow-scene-manager.md
     value: 1.5
     unit: seconds
     added: 2026-11-22
@@ -698,6 +746,9 @@ constants:
     source: design/gdd/level-state-match-flow.md
     referenced_by:
       - design/gdd/level-state-match-flow.md
+      - design/gdd/campaign-level-data.md
+      - design/gdd/save-progress.md
+      - design/gdd/world-map-regions.md
     value: 1
     unit: stars
     added: 2026-11-22
@@ -735,6 +786,7 @@ constants:
     source: design/gdd/rival-ai.md
     referenced_by:
       - design/gdd/rival-ai.md
+      - design/gdd/level-state-match-flow.md
     value: 0.2
     unit: aggro per stall period
     added: 2026-11-22

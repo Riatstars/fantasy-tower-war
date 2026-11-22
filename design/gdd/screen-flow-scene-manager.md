@@ -211,7 +211,7 @@ Screen Flow draws almost nothing itself; Menus & Screens draws every screen and 
 - **Confirmation box**: one box used for Quit, Restart and Delete progress, with two buttons (Yes, No) and a text line that differs (for example "Leave this match? Its progress will be lost.", "Restart this level? Its progress will be lost." and Save & Progress' delete text). The No button is the default and matches Back.
 - **Message box**: one text and a single Continue button, over any screen; used for Save & Progress' messages and the load-failure error (Core Rules 11, 12).
 - **Settings overlay** (Vertical Slice): its contents belong to the Settings GDD; Delete progress is hidden when it was opened from Pause.
-- **Result overlays**: show the result record's stars and times; their buttons are the ones in Core Rule 10.
+- **Result overlays**: show the result record's times (this attempt's and, on a win, the stored best) and, from UAT-2, its stars (the star row is an empty slot in UAT-1, Menus & Screens rule 4, decided 2026-11-22); their buttons are the ones in Core Rule 10, with *Next level* shown by Menus & Screens F2. Restart's confirmation (Core Rule 8) was confirmed kept on 2026-11-22.
 - **Back affordance**: every screen with a Back action shows a visible Back control as well, so the behaviour does not depend on the phone's own Back.
 - **Touch targets**: every button here is a large touch target (the accessibility GDD sets the minimum size).
 
