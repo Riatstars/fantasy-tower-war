@@ -101,3 +101,15 @@ Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266
 Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
 Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
 Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of two edits since the APPROVED entry above, not a full review: the Status header (In Review -> Approved) and F9's B_send range.
+Blocking items: 0 | Recommended: 0 (the 10 recommendations above stand, less the F9 one fixed here)
+Summary: F9's `B_send` "up to ~1,035" (45 × 23) was stale, as flagged in the Rope Links re-review and this doc's own recommendation 9. This GDD's F8 gives 21 per rope at baseline (ceil(1,258 / 66) + 1), so the bound is 15 keeps × 3 ropes × 21 = 945, matching Rope Links F5. No other use of the figure; the F9 formulas and the ring examples (83, 319) are unchanged.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 65c480aa9794cc82d3b527a66b2678b440c761da
+Reviewed-Content-Hash: design/gdd/rope-links.md 5321180615344685ece5173c975bb8ab91380212

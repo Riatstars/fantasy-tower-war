@@ -219,7 +219,7 @@ The relay_limit formula is defined as, for an allied pawn at a full keep:
 
 `pawns_total ≤ min(B_send × (1 + relay_hops_max), pawns_in_flight_max + B_send)`, `B_send = Σ F8 over the level's ropes`; ring steady state `≈ n_ropes × (1 + relay_hops_max) × travel_time / send_interval`.
 
-**Variables:** `relays` (int, 0–`relay_hops_max`); `relay_hops_max` (int, 1–20, baseline 6, data file); `pawns_in_flight_max` (int, 200–2,000, baseline 600, data file); `B_send` (int, up to ~1,035).
+**Variables:** `relays` (int, 0–`relay_hops_max`); `relay_hops_max` (int, 1–20, baseline 6, data file); `pawns_in_flight_max` (int, 200–2,000, baseline 600, data file); `B_send` (int, up to about 945: 15 keeps × 3 ropes × F8's 21 at baseline, matching Rope Links F5).
 
 **Output Range:** without it a 3-keep full ring gains 5 pawns per second for ever. With it a pawn lives at most 7 legs; a chain needs 7 full keeps in a row before rear pawns are lost.
 **Example:** 3-keep ring of 260 px ropes: 3 × 7 × 2.367 / 0.6 ≈ 83 pawns; 5-keep ring of 600 px ropes ≈ 319.
