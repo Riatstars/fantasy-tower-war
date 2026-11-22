@@ -129,6 +129,7 @@ formulas:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/rope-links.md
     variables:
       - gen_amount
       - gen_interval
@@ -196,10 +197,11 @@ formulas:
       - lv3_at
       - level_drop_margin
     output_range: [1, 3]
-    expression: "max(rise_level(troops), prev) if troops >= threshold[prev] - level_drop_margin else rise_level(troops)"
-    notes: "rise_level is 3 at troops >= lv3_at, 2 at >= lv2_at, else 1. Rising is immediate; falling needs the margin. Capture resets to 1 regardless. Troop Generation reads the result each step."
+    # was: "max(rise_level(troops), prev) if troops >= threshold[prev] - level_drop_margin else rise_level(troops)" before 2026-11-22 (keep-levels.md F2 revised after design review: the old form gave level 1 for a level 3 keep at 10-14 troops)
+    expression: "L = prev; while L > 1 and troops < threshold[L] - level_drop_margin: L = L - 1; result = max(rise_level(troops), L)"
+    notes: "rise_level is 3 at troops >= lv3_at, 2 at >= lv2_at, else 1. Rising is immediate; falling steps down one band at a time, each needing the margin. Capture resets to 1 regardless (no level_dropped for a capture). Troop Generation reads the result each step."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: max_ropes
     status: active
     source: design/gdd/keep-levels.md
@@ -241,6 +243,7 @@ constants:
       - design/gdd/troop-generation.md
       - design/gdd/rope-links.md
       - design/gdd/keep-levels.md
+      - design/gdd/troop-marching-clashes.md
     value: 60
     unit: troops
     added: 2026-11-22
@@ -313,6 +316,7 @@ constants:
     referenced_by:
       - design/gdd/touch-mouse-input.md
       - design/gdd/rope-links.md
+      - design/gdd/troop-marching-clashes.md
     value: 78
     unit: px
     added: 2026-11-22
@@ -359,6 +363,7 @@ constants:
     referenced_by:
       - design/gdd/keep-levels.md
       - design/gdd/troop-generation.md
+      - design/gdd/troop-marching-clashes.md
     value: 15
     unit: troops
     added: 2026-11-22
@@ -388,6 +393,7 @@ constants:
     referenced_by:
       - design/gdd/rope-links.md
       - design/gdd/troop-generation.md
+      - design/gdd/troop-marching-clashes.md
     value: 0.6
     unit: seconds
     added: 2026-11-22
@@ -427,5 +433,35 @@ constants:
       - design/gdd/rope-links.md
     value: 0.9
     unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: pawn_speed
+    status: active
+    source: design/gdd/troop-marching-clashes.md
+    referenced_by:
+      - design/gdd/troop-marching-clashes.md
+      - design/gdd/rope-links.md
+    value: 110
+    unit: px/s
+    added: 2026-11-22
+    revised: ""
+  - name: pawns_per_rope_max
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+      - design/gdd/troop-marching-clashes.md
+    value: 40
+    unit: pawns
+    added: 2026-11-22
+    revised: ""
+  - name: relay_hops_max
+    status: active
+    source: design/gdd/troop-marching-clashes.md
+    referenced_by:
+      - design/gdd/troop-marching-clashes.md
+      - design/gdd/rope-links.md
+    value: 6
+    unit: relays
     added: 2026-11-22
     revised: ""

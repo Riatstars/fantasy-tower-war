@@ -267,7 +267,7 @@ None. Every keep (with its owner flag) and the player's cuttable ropes arrive th
 `art-director` not consulted — Lean mode. Review manually before production. A short note only, since Input draws nothing itself; Level HUD and Rope Links draw from the data it publishes.
 
 **Visual**
-- While a drag is active the preview rope follows the finger or cursor and snaps to the resolved target (F6), with a gold ring around that target keep. When F6 has redirected to a nearer keep, the ring sits on that keep so the player sees the redirect before releasing.
+- While a drag is active the preview rope follows the finger or cursor and snaps to the resolved target (F6), with a white ring around that target keep (art bible: Info White for the player's own touch). When F6 has redirected to a nearer keep, the ring sits on that keep so the player sees the redirect before releasing.
 - A tie that Rope Links judges illegal shows the preview in a muted style with a red cross on the target, as in the prototype.
 - A swipe leaves a thin, bright trail that fades out within a fraction of a second.
 - On a computer the cursor does not change; the hint "Right mouse cuts a rope" appears in the bottom strip once per session.

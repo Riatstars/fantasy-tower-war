@@ -322,7 +322,7 @@ Proposed edits, none applied.
 | Moment | Visual | Audio |
 |--------|--------|-------|
 | Marching | Small pixel figure in owner colours, facing its target, bobbing out of phase, depth-sorted with keeps, on its lane | One soft thud per `march_tick_interval` for the table |
-| Clash | Both drop with a dust puff and gold sparks, fading over `pawn_fade_time` | Short dull thud, pooled per step |
+| Clash | Both drop with a dust puff and steel sparks (art bible: gold means a gain), fading over `pawn_fade_time` | Short dull thud, pooled per step |
 | Hit | Keep flashes `arrival_flash_time`; count drops the same frame | None (would spam) |
 | Reinforce | Same flash in the owner's colour | None |
 | Capture | Banner pop, flag and gold burst, floating "Taken!" / "Lost!" / "Seized" | Two-note sting, higher for the player |
