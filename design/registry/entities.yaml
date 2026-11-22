@@ -177,8 +177,9 @@ formulas:
       - origin
       - hit
       - align_tolerance
+      - keep_hit_radius
     output_range: [1, 1]
-    expression: "nearest-to-origin keep within align_tolerance degrees of the direction to hit, never farther than hit"
+    expression: "nearest-to-origin keep within align_tolerance degrees of the direction to hit and within keep_hit_radius of the line origin-hit, never farther than hit"
     notes: "Output is one keep (count 1). Applies to every owner and to the keyboard. Rope Links decides legality of the result and never moves on to a farther keep."
     added: 2026-11-22
     revised: ""

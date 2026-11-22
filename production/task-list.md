@@ -17,7 +17,7 @@
 - [ ] Chạy import để kiểm tra `project.godot` (đang NOT VERIFIED)
 
 ## C. Quyết định thiết kế cần chốt **(bạn)**
-- [ ] F6 (Input): thêm giới hạn khoảng cách ngang? Chốt trước khi viết Rope Links (`touch-mouse-input.md`, Open Question 1)
+- [x] F6 (Input): giới hạn ngang = keep_hit_radius (78 px), chốt 2026-11-22
 - [ ] Kim cương kiếm bằng cách nào khi không có IAP?
 - [ ] Vàng chia thế nào giữa nâng thẻ lính và nâng sức mạnh thần?
 - [ ] Đối thủ có chọn tộc không? Mỗi vùng một tộc?
