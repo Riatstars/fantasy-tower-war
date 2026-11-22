@@ -33,7 +33,9 @@ punchy conquest in a couple of minutes, and the pull of painting a fantasy map i
    glance, cut it or move it off the table.*
 3. **Paint the map, grow the army.** Progress always shows: regions turn your colour, races join
    you, cards level up. *Test: every reward must appear on the world map or in the collection,
-   never only as a number (gold shows as card levels, diamonds as unlocked races).*
+   never only as a number (gold shows as card levels, diamonds as unlocked races).* A level's best
+   time is a *record*, not a reward, so it may show only as a number (the Win overlay); the test
+   applies to rewards (decided 2026-11-22, cross-GDD review H6).
 
 ## Visual Identity Anchor
 

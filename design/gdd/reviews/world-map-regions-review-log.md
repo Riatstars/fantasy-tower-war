@@ -89,3 +89,12 @@ Addressed:
 - [CROSS-REVIEW G-B3] linear unlocking makes "last level beaten" and F2 "all beaten" agree; F2 decides on edited files (rule 4)
 - [CROSS-REVIEW SB10 part / S1-W6] `first_of_campaign` is calculated, not a data field; `is_unlocked` is a pure query usable without the map screen
 Not addressed (recommended): Dependencies Menus & Screens row; regions 2–5 region records (Campaign Level Data, other session)
+
+## Revision — 2026-11-22 (cross-GDD review round 2)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): rule 6 stale "or a result arrives" clause removed (B13); conquest record made after the fog clear so a failed write cannot interrupt it (P4-W3; AC6, AC7, AC9, AC11, new AC21); regions 2-5 are Campaign Level Data records with empty level lists (B23); "More to come" mark on the first level-less region after a Conquered one and "Would you play region 2?" in AC16 (H6; rule 13, AC15, new AC22, OQ1 closed); node hint and mark texts in the strings file (B3); statuses (B17). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 3)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): States table records the conquest after the fog clear (blocker R3B1); set_map_position on return waits until Idle so no write happens during a sequence (R3-W2; rule 9, AC12); kill edge case covers the fog clear (R3B7). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 4)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 4): the return highlight comes from the return payload at once and only the write waits for Idle (R4B2; rule 9, AC12). Status In Review, pending re-review.

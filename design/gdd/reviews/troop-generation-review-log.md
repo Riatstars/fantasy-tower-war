@@ -103,3 +103,9 @@ Addressed:
 - [CROSS-REVIEW X1] Capture pace: player decision (2026-11-22) keeps `level_drop_margin` 5; F4 example restated (last send 56.3 s, capture step 3,541 = 59.0 s); AC15 window 55–63 s; two-rope figure flagged for re-run. Troop Marching AC-M32 / OQ (d) to match, applied by the other session
 - [CROSS-REVIEW C1] Factions labelled UAT-2, not Alpha (quick reference, rule 10, Interactions, Dependencies)
 Not addressed (recommended): Dependencies Campaign Level Data still "Provisional"; Consistency-to-fix note; I1–I3 named in the bad-data policy
+
+## Revision — 2026-11-22 (cross-GDD review round 2)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): I3 restated: an unfed keep cannot out-grow one enemy rope, an allied feed can (H5; Summary, I3, loop note); Rival AI reads troop_cap (Interactions, Dependencies); strength bar line updated for keep troops only (H4). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 3)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): Dependencies and Interactions refreshed (R3A3: statuses, Rival AI reads level from Keep Levels, checked-against lines, index note); Open Questions 3 and 4 retiered to UAT-2 (R3A3, R3A8). Status In Review, pending re-review.

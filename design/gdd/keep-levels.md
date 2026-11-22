@@ -45,7 +45,7 @@ the end of each game step, before Troop Generation reads it. It does not own the
 7. **On capture** (Troop Marching & Clashes raises `keep_captured`; it sets the owner and `troops` to 1), the level is reset to 1 at once, in the same step, with no margin. Keep Levels raises no `level_dropped` for a capture: Rope Links cuts every outgoing rope on `keep_captured` itself (its rule 7). Troop Generation's Core Rule 7 already states the same reset.
 8. **At match start** every keep's level is the rise rule applied to its initial troops (rule 2), with no history: a neutral with 25 troops starts at level 2, the player's keep with 10 at level 1.
 9. **Events.** Keep Levels raises `level_rose(keep, old, new)` and `level_dropped(keep, old, new)` on the step the level changes (not for the capture reset, rule 7). Level HUD and Feedback & Juice react to them; Rope Links reacts to `level_dropped`.
-10. **Data.** `lv2_at`, `lv3_at`, `level_drop_margin` and `max_ropes[1..3]` come from the data file. In Alpha, Factions may supply `LevelModifiers` (threshold offsets, a margin override, a `max_ropes` override per level); with none supplied the baseline applies. Every modified set must satisfy the invariants in Formulas.
+10. **Data.** `lv2_at`, `lv3_at`, `level_drop_margin` and `max_ropes[1..3]` come from the data file. From UAT-2, Factions may supply `LevelModifiers` (threshold offsets, a margin override, a `max_ropes` override per level); with none supplied the baseline applies. Every modified set must satisfy the invariants in Formulas.
 11. **No other input.** Time held, kills, gold or anything else never changes a level; only troops do. This keeps the rule readable at a glance on the plaque.
 
 ### States and Transitions
@@ -70,13 +70,13 @@ Between 10 and 14 troops a keep that was level 2 stays 2 and a keep that was lev
 |--------|-----------|------|-----------------|
 | Troop Generation | both | In: `troops` of every keep (read at end of step). Out: `level`, used by its next beat (its Core Rule 3 and Interactions table) | Keep Levels owns thresholds and margin; Troop Generation owns `gen_amount[level]` and `troops` |
 | Rope Links | out | `max_ropes[level]` for the tie check; `level_dropped(keep, old, new)` to cut the newest ropes (capture cuts come from Troop Marching's `keep_captured`) | Keep Levels defines the limit and the "newest falls" rule; Rope Links executes cuts |
-| Troop Marching & Clashes | in | `keep_captured` (owner change, `troops` = 1) triggers the reset to level 1 in the same step. From Alpha it reads the origin's level at launch to pick the unit | Troop Marching & Clashes |
+| Troop Marching & Clashes | in | `keep_captured` (owner change, `troops` = 1) triggers the reset to level 1 in the same step. From UAT-2 it reads the origin's level at launch to pick the unit | Troop Marching & Clashes |
 | Campaign Level Data | in | Initial `troops` per keep, from which the starting level is derived (rule 8); it also decides which neutrals start at level 2 or 3 by giving them enough garrison | Campaign Level Data |
 | Rival AI | out | Reads `level` and `max_ropes` of every keep to plan ties and to judge targets | Keep Levels (read-only) |
 | Level HUD | out | `level` for the keep's storeys and the rope-slot dots; `level_rose` for the flourish | Keep Levels raises, Level HUD draws |
 | Feedback & Juice | out | `level_rose` and `level_dropped` for effects and sound | Keep Levels raises |
 | Touch & Mouse Input | none | The F6 target rule and hit tests do not read the level; the slot check it mentions is Rope Links' | Touch & Mouse Input |
-| Unit Roster & Stats, Factions (Alpha) | in/out | Out: `level` decides which unit kind a keep produces (barracks soldiers, keep cavalry, castle summons). In: `LevelModifiers` per race | Each owning GDD, inside the invariants |
+| Unit Roster & Stats, Factions (UAT-2) | in/out | Out: `level` decides which unit kind a keep produces (barracks soldiers, keep cavalry, castle summons). In: `LevelModifiers` per race | Each owning GDD, inside the invariants |
 
 ## Formulas
 
@@ -127,7 +127,7 @@ The max_ropes formula is defined as:
 | max_ropes_table | int[3] | each 1–3, non-decreasing (baseline 1, 2, 3; more than 3 is OQ 6) | data file | Outgoing ropes a keep may hold at each level |
 
 **Output Range:** 1 to 3 at baseline. Rope Links refuses a tie when the keep already holds this many.
-**Example:** a level 2 keep holding 2 ropes: a third tie is refused with "Level 2 keep: only 2 ropes."
+**Example:** a level 2 keep holding 2 ropes: a third tie is refused with "Level 2 keep: only 2 ropes. Grow it or cut one."
 
 ### F4. Ropes to cut on a drop
 
@@ -180,17 +180,15 @@ Keep Levels is one half of Troop Generation's loop (more troops → higher level
 
 ## Dependencies
 
-Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes have GDDs and are checked against this one. Every other system here has no GDD yet, so its contract is provisional.
+Every system here that has a GDD (Troop Generation, Rope Links, Touch & Mouse Input, Troop Marching & Clashes, Level State & Match Flow, Rival AI, Level HUD, Campaign Level Data) was checked in the 2026-11-22 cross-GDD review. Factions, Unit Roster & Stats and Feedback & Juice have no GDD yet, so their contracts are provisional.
 
 ### Depends on (upstream)
 
 | System | Kind | What this system needs | Status |
 |--------|------|------------------------|--------|
 | Troop Generation | Hard | `troops` of every keep at the end of each step. The cycle (Troop Generation needs the level) is resolved by per-step order: Keep Levels recomputes first, Troop Generation uses the result on its next beat. Both GDDs state it | Checked: Troop Generation Core Rule 3, Interactions, Dependencies and AC11b say the same |
-| Campaign Level Data | Soft (data only) | Initial troops per keep, for the starting level | Provisional |
-| Level State & Match Flow | Soft | Asks for initialisation at match build: every keep's level from its starting troops with no history (rule 8); a Restart or Retry rebuilds from the same data | Added 2026-11-22 from that GDD |
-| Rival AI | Soft (read-only) | Reads every keep's `level` and `max_ropes[level]` to find free rope slots (its Core Rule 6) | Added 2026-11-22 from that GDD |
-| Factions (Alpha) | Soft | `LevelModifiers`, identity by default | Provisional |
+| Campaign Level Data | Soft (data only) | Initial troops per keep, for the starting level | Checked 2026-11-22: its F3 applies F1 (`rise_level`) |
+| Factions (UAT-2) | Soft | `LevelModifiers`, identity by default | Provisional |
 
 ### Depended on by (downstream)
 
@@ -198,16 +196,17 @@ Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes h
 |--------|------|-------------------------------|
 | Troop Generation | Hard | `level` each step, to pick `gen_amount[level]`; thresholds `lv2_at`, `lv3_at` for its F3 and invariant I1 |
 | Rope Links | Hard | `max_ropes[level]`; `level_dropped` to cut the newest ropes |
-| Troop Marching & Clashes | Soft | Triggers the capture reset (`keep_captured`); does not read the level at MVP, reads the origin's level at launch from Alpha |
-| Rival AI | Hard | `level` and `max_ropes` of every keep |
+| Troop Marching & Clashes | Soft | Triggers the capture reset (`keep_captured`); does not read the level in UAT-1, reads the origin's level at launch from UAT-2 |
+| Rival AI | Hard (read-only) | `level` and `max_ropes[level]` of every keep, to find free rope slots (its Core Rule 6) |
+| Level State & Match Flow | Soft | Initialisation at match build: every keep's level from its starting troops with no history (rule 8); a Restart or Retry rebuilds from the same data |
 | Level HUD | Hard | `level` for storeys and slot dots; `level_rose` for the flourish |
 | Feedback & Juice | Soft | `level_rose`, `level_dropped` |
-| Campaign Level Data | Soft (a rule it must know) | Which initial garrisons give a neutral level 2 or 3 (F1) |
-| Unit Roster & Stats, Factions (Alpha) | Hard | `level` decides the unit kind produced; `LevelModifiers` |
+| Campaign Level Data | Soft (a rule it must know) | Which initial garrisons give a keep (neutral or rival) level 2 or 3 (F1; its F3) |
+| Unit Roster & Stats, Factions (UAT-2) | Hard | `level` decides the unit kind produced; `LevelModifiers` |
 
 ### Consistency to fix
 
-- Registry: `entities.yaml` (about line 199) copies the old F2 expression; replace it with the step-down form above.
+None open. The registry's F2 entry was updated to the step-down form on 2026-11-22.
 
 ## Visual/Audio Requirements
 
@@ -238,7 +237,7 @@ Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes h
 ## UI Requirements
 
 - **Plaque**: the troop count (Troop Generation) plus `max_ropes` slot dots, filled and hollow. On a rise the new hollow dot appears with the flourish.
-- **Rope refusal**: when a tie is refused for lack of a slot, Rope Links shows "Level L keep: only N ropes. Grow it or cut one." (N = `max_ropes[L]`) (text as in the prototype); Keep Levels supplies L and the limit.
+- **Rope refusal**: when a tie is refused for lack of a slot, Rope Links shows "Level L keep: only 1 rope. Grow it or cut one." when N is 1 and "Level L keep: only N ropes. Grow it or cut one." when N is 2 or more (N = `max_ropes[L]`; a singular and a plural string in the strings data file, decided 2026-11-22) (text as in the prototype); Keep Levels supplies L and the limit.
 - **Tutorial hook**: the first rise in the first level is the moment Tutorial & Onboarding explains "more troops → higher level → more ropes" (Core Loop in the brief).
 - **No level number is shown on the keep**: the silhouette and the slot dots carry it. A number would duplicate the dots.
 
@@ -246,7 +245,7 @@ Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes h
 
 ## Cross-References
 
-Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes exist and are checked; every other referenced GDD is still to be written and its entry is provisional.
+Every referenced GDD that exists was checked in the 2026-11-22 cross-GDD review; Unit Roster & Stats and Factions have no GDD yet, so their entries are provisional.
 
 | This GDD uses | Owned by | Item |
 |---------------|----------|------|
@@ -311,6 +310,6 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 | 1 | `level_drop_margin` 5 is the player's first choice; is 5 troops (about 10 enemy arrivals at level 2 and 18 at level 3 against one rope, counting generation) enough breathing room, or too much? | game-designer | First Godot playable |
 | 2 | Should a guardian's castle be pinned at level 3 whatever its garrison, so it never looks weakened? | Guardian Castles | Alpha |
 | 3 | Do neutral keeps need a different level look (ruined, overgrown) so a level 2 neutral does not read as a rival keep? | art-director | Art bible |
-| 4 | Which unit kind each level produces per race (barracks soldiers, keep cavalry, castle summons) and whether a drop changes the units already marching | Unit Roster & Stats | Alpha |
+| 4 | Which unit kind each level produces per race (barracks soldiers, keep cavalry, castle summons) and whether a drop changes the units already marching | Unit Roster & Stats | UAT-2 |
 | 5 | Should the level-up float text appear only the first few times per session, to reduce clutter for experienced players? | ux-designer | Vertical Slice |
-| 6 | Whether `max_ropes` should ever exceed 3 for a race or a god power (the brief says max level 3; the rope table allows up to 5 per level for tuning) | Factions, God & Goddess Powers | Alpha |
+| 6 | Whether `max_ropes` should ever exceed 3 for a race or a god power (the brief says max level 3; the rope table allows up to 5 per level for tuning) | Factions, God & Goddess Powers | UAT-2 (Factions); Alpha (God & Goddess Powers) |

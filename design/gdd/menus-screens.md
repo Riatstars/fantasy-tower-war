@@ -1,6 +1,6 @@
 # Menus & Screens
 
-> **Status**: Designed (pending /design-review in a fresh session)
+> **Status**: In Review (revised 2026-11-22, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -27,13 +27,13 @@ Menus & Screens is the frame around the game: the screens and overlays the playe
 4. **The Win overlay**: the frozen table beneath a warm amber dim at about 45% so the conquered table shows through (art bible §2 Victory, §4); a header naming the level as taken ("Crossroads taken!"; the writer owns the form); **"Clear!"** above **this attempt's time** and the **best time**, as F1 ("Clear!" then "1:30.5 · best 1:12.0"; the same on every win, decided 2026-11-22: no "First clear!" or "New best!" variants); a **star row slot** that is empty in UAT-1 (decided 2026-11-22: no stars until Stars & Rewards exists; the slot keeps the layout stable); buttons **Next level** (primary, shown only when F2 is true) and **World Map**. Back acts as World Map (Screen Flow table). After a region's last level there is no *Next level* and the map plays the conquest (World Map rule 6).
 5. **The Lose overlay**: a cool slate dim at about 60%, low contrast, no accent gold (art bible §2 Defeat: "regroup and go again, never shame"); a furled blue banner on a weathered card; a short header ("The keep fell."; writer); this attempt's time, shown and never stored (Level State rule 5); buttons **Retry** (primary, in blue and gold, the brightest thing on the card) and **World Map**. Back acts as World Map. The brief's revive (a rewarded ad or gems) is after UAT and would add one button here (Open Question 3).
 6. **The confirmation box**: one parchment box used for Quit, Restart and Delete progress (Screen Flow UI), with a text line per cause — Quit: "Leave this match? Its progress will be lost."; Restart: "Restart this level? Its progress will be lost."; Delete progress: Save & Progress' text — and two buttons, **Yes** and **No**. **No is the default and matches Back**; No is drawn primary (the safe move is the forward move here), Yes in plain Dark Wood. Nothing destructive is ever one tap away.
-7. **The message box**: one text and a single **Continue** button, over any screen (Screen Flow rules 11, 12). Texts come from Save & Progress ("Your progress was restored from a backup", "Your progress could not be read and has been reset", "This save is from a newer version of the game. Progress this session will not be saved.", the write-failure text) and the load-failure error. Several messages show one after another (Screen Flow's queue). A message raised during Level State's Ending, while an overlay is open or during a transition waits, and shows over the next screen that has no overlay (Screen Flow rule 1), so a message box is never drawn over another overlay.
+7. **The message box**: one text and a **Continue** button, over any screen (Screen Flow rules 11, 12). The newer-version message also has a **Delete progress** button (secondary), which opens the Delete confirmation (rule 6) with Save & Progress' newer-version text (its rule 11; UAT-1 has no Settings, decided 2026-11-22). Texts come from Save & Progress ("Your progress was restored from a backup", "Your progress could not be read and has been reset", "This save is from a newer version of the game. Progress this session will not be saved.", the write-failure text) and the load-failure error. Several messages show one after another (Screen Flow's queue). A message raised during Level State's Ending, while an overlay is open or during a transition waits, and shows over the next screen that has no overlay (Screen Flow rule 1), so a message box is never drawn over another overlay.
 8. **The transition cover**: one full-screen cover in dark wood and parchment, never black or white (Screen Flow Visual/Audio), faded in and out at Screen Flow's timings (about 0.15 s each). It carries no text or spinner in UAT-1; Screen Flow keeps it up while a screen loads.
 9. **Buttons.** Primary buttons are Royal Blue edged in Heraldic Gold; secondary buttons Dark Wood with a Light Wood bevel and a pressed state; Crimson is never a button colour (art bible §4). A button shows its press state on the frame of the tap (Screen Flow Game Feel). Every button is at least the touch minimum Touch & Mouse Input sets (about 9 mm; the accessibility GDD sets the final size). Every screen or overlay with a Back action shows a visible control for it (Screen Flow UI), so nothing depends on the phone's Back.
-10. **Text.** Every string on these screens comes from the strings data file (one plain file, one language in UAT-1; Localization is an after-UAT system, decided 2026-11-22) with room for 30% expansion kept for it; the writer owns the wording and the placeholders above are marked as such in the table. Times use F3's format. No text is drawn from code.
+10. **Text.** Every string on these screens comes from the strings data file (one plain file, one language in UAT-1; Localization is an after-UAT system, decided 2026-11-22) with room for 30% expansion kept for it; the strings data file holds the text; the GDD that defines a message owns its key, placeholders and draft wording; the writer owns the final wording; this GDD and Level HUD only draw it (Level HUD rule 15). The placeholders above are marked as such in the table. Times use F3's format. No text is drawn from code.
 11. **Layout.** Everything lays out inside the 720 × 1,280 portrait frame and respects the display's safe area. Overlay panels are centred, at most `panel_max_w` (600) px wide, and never cover the strength bar's row entirely on Pause (the player may read the state they paused in). The Title and overlays are the only places splash art appears (art bible Principle 3).
 12. **Read, never write.** The Win and Lose overlays read the result record Level State passes and the stored best time Save already merged, through Save's read-only getter `best_time(level_id)` (Level State rule 6 records before the overlay). This GDD never writes to any system and calls nothing else except World Map's `is_unlocked` (F2).
-13. **Data.** Dims, panel width, fade times and button sizes are data (`menus.tres`); strings are the table's. Nothing is hardcoded.
+13. **Data.** Dims, panel width (`panel_max_w`), `press_time` and button sizes are data (`menus.tres`); the fade times are Screen Flow's (`overlay_fade`, `cover_fade`, its Game Feel); strings are the table's. Nothing is hardcoded.
 
 ### States and Transitions
 
@@ -102,13 +102,14 @@ The time_format formula is defined as:
 
 **Variables:** `t` (float, s, to 0.1). **Output Range:** "0:00.0" upward; a 3-minute level reads "3:00.0". **Example:** 90.5 → "1:30.5"; 72.0 → "1:12.0".
 
-### Timings (data; Screen Flow's targets, restated for the overlays this GDD draws)
+### Timings and layout (data)
 
 | Value | Baseline | Range | Owner |
 |---|---|---|---|
-| overlay_fade | 0.2 s | 0.1–0.4 | Screen Flow Game Feel (target) |
-| cover_fade | 0.15 s (each way) | 0.1–0.3 | Screen Flow Game Feel (target) |
-| press_time | 0.08 s | 0.05–0.15 | this GDD |
+| overlay_fade | 0.2 s | 0.1–0.4 | Screen Flow (its Game Feel); read here, not restated as data |
+| cover_fade | 0.15 s (each way) | 0.1–0.3 | Screen Flow (its Game Feel); read here, not restated as data |
+| press_time | 0.08 s | 0.05–0.15 | this GDD (`menus.tres`) |
+| panel_max_w | 600 px | 480–680 | this GDD (`menus.tres`, rule 11) |
 | win_dim / lose_dim / pause_dim | 45% / 60% / 55% | ±10 points | art bible §4 |
 
 ### Boundary check
@@ -136,10 +137,10 @@ Worked at the extremes (lens: systems-designer): F1 on a first clear shows `best
 | System | Nature | Direction | What this GDD needs or gives | GDD status |
 |---|---|---|---|---|
 | Screen Flow & Scene Manager | Hard | both | Which screen to show and its payload; button taps as its named requests | In Review |
-| Level State & Match Flow | Hard | in | The result record | Designed |
+| Level State & Match Flow | Hard | in | The result record | In Review |
 | Save & Progress | Hard | in | Best time; message texts; delete text | In Review |
-| World Map & Regions | Soft | in | `is_unlocked` for F2 | Designed |
-| Campaign Level Data | Soft | in | Names, order, `next` | Designed |
+| World Map & Regions | Soft | in | `is_unlocked` for F2 | In Review |
+| Campaign Level Data | Soft | in | Names, order, `next` | In Review |
 | Touch & Mouse Input | Soft | in | Controls list text; touch minimum | In Review |
 | **Depended on by** | | | | |
 | Settings (Vertical Slice) | Hard | out | The Settings frame | Not yet designed |
@@ -147,7 +148,7 @@ Worked at the extremes (lens: systems-designer): F1 on a first clear shows `best
 | Tutorial & Onboarding (after UAT) | Soft | out | A first-run panel over the Title | Not yet designed |
 | Accessibility (Alpha); Localization (after UAT) | Soft | out | Size hooks; the strings data file and its 30% room, which Localization takes over | Not yet designed |
 
-**Bidirectional check.** Screen Flow names Menus & Screens throughout (UI Requirements, AC21). Save & Progress names it (Interactions: "Draws the message boxes"). Level State names it (UI Requirements, Interactions). World Map names it (Interactions, Dependencies, `is_unlocked`). Campaign Level Data names it (Interactions: name and order). Touch & Mouse Input names the Title controls list but not this GDD by name: one line to add. `systems-index.md` lists Screen Flow, Level State and Save & Progress (soft); it should add World Map & Regions, Campaign Level Data and Touch & Mouse Input (soft).
+**Bidirectional check.** Screen Flow names Menus & Screens throughout (UI Requirements, AC21). Save & Progress names it (Interactions: "Draws the message boxes"). Level State names it (UI Requirements, Interactions). World Map names it (Interactions, Dependencies, `is_unlocked`). Campaign Level Data names it (Interactions: name and order). Touch & Mouse Input names it (Interactions, Dependencies: the controls list and the touch minimum). `systems-index.md` row 13 lists all six (re-checked 2026-11-22).
 
 ## Visual/Audio Requirements
 
@@ -193,7 +194,7 @@ Worked at the extremes (lens: systems-designer): F1 on a first clear shows `best
 | Win | Amber dim, header, "Clear!", this time · best (F1), star row slot (empty UAT-1) | Next level (primary, F2), World Map | World Map |
 | Lose | Slate dim, banner card, header, this time | Retry (primary), World Map | World Map |
 | Confirmation | Box, one text line per cause | No (primary, default), Yes | No |
-| Message box | Box, one text | Continue (primary) | Continue |
+| Message box | Box, one text | Continue (primary); on the newer-version message also Delete progress (secondary) | Continue |
 | Cover | Full-screen panel | — | — |
 | Settings frame (VS) | Panel, Close | Close; contents by Settings | Close |
 
@@ -236,6 +237,7 @@ Baseline data: the Green Vale; `overlay_fade` 0.2 s; `press_time` 0.08 s; dims 5
 - **AC7 [Logic] (rule 6)**: GIVEN the confirmation opens for Quit, THEN its text is "Leave this match? Its progress will be lost.", No is primary and default, Yes is plain; GIVEN Restart, THEN "Restart this level? Its progress will be lost."; GIVEN Delete progress, THEN Save & Progress' text.
 - **AC8 [Logic] (rule 2)**: GIVEN a touch device, THEN the Title's controls list reads the touch variant; GIVEN a mouse, THEN the computer variant; GIVEN a fresh install and a returning player, THEN the Title shows the same single Start button.
 - **AC9 [Logic] (rule 7)**: GIVEN Save raises "restored from backup", THEN a message box with that text and one *Continue* button shows over the Title before Start can be tapped.
+- **AC9b [Logic] (rule 7, newer version)**: GIVEN Save raises the newer-version message, THEN the box shows Continue (primary) and Delete progress (secondary); WHEN Delete progress is tapped, THEN the confirmation shows Save & Progress' newer-version text with No as default.
 - **AC10 [Logic] (rules 10, 13)**: GIVEN the tagline string changed in the strings table and `pause_dim` changed in the data file, THEN both take effect with no code change.
 - **AC11 [Integration: Screen Flow] (rules 3, 9)**: GIVEN Pause open, WHEN Resume is tapped, THEN the press state shows on that frame and the overlay is closed within `overlay_fade`; WHEN Back is pressed, THEN the same as Resume.
 - **AC12 [Integration: Screen Flow, Level State] (rule 4)**: GIVEN a win with deciding step D, THEN the Win overlay opens on step D + 90 with the record's time and the frozen table visible beneath an amber dim.

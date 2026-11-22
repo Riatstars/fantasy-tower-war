@@ -1,6 +1,6 @@
 # Troop Marching & Clashes
 
-> **Status**: Designed (pending /design-review)
+> **Status**: In Review (revised 2026-11-22, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -11,7 +11,7 @@
 
 Troop Marching & Clashes is what happens to a pawn after a rope launches it: it walks the straight line to its target at 110 px/s, dies together with any opposing pawn it meets coming the other way between the same two keeps, and on arrival adds one troop to an allied keep, removes one from an enemy or neutral keep, or takes a keep that has no troop left to lose (a keep with T troops falls to pawn T+1). It hands allied pawns that reach a full keep back to Rope Links for relay (at most 6 times per pawn), reports every capture, and defines the `UnitStats` contract (speed, strength, size) that Unit Roster fills in later.
 
-> **Quick reference** — Layer: `Core` · Priority: `MVP` · Key deps: `Rope Links, Troop Generation (hard); Keep Levels (soft at MVP, hard from Alpha); Unit Roster & Stats (contract, Alpha)`
+> **Quick reference** — Layer: `Core` · Priority: `MVP` · Key deps: `Rope Links, Troop Generation (hard); Keep Levels (soft in UAT-1, hard from UAT-2); Unit Roster & Stats (contract, UAT-2)`
 
 ## Overview
 
@@ -90,12 +90,12 @@ A relay is a new launch by Rope Links carrying the pawn's unit, `hp` and `relays
 |--------|-----------|------|-----------------|
 | Rope Links | in/out | In: `pawn_launched`. Out: `ally_arrived_full` (origin, unit, `hp`, `relays`), `keep_captured`, `pawn_speed` for its F5 and R3 | Rope Links launches and picks the relay rope; this system moves, fights, delivers, limits relays |
 | Troop Generation | out | Changes `troops` by rules 10 and 12; reads `troops`, `troop_cap`, `owner`; `keep_captured` resets its timer | Troop Generation owns the count |
-| Keep Levels | out/in | Out: `keep_captured` (level reset). In (Alpha): origin `level` at launch | Keep Levels |
+| Keep Levels | out/in | Out: `keep_captured` (level reset). In (UAT-2): origin `level` at launch | Keep Levels |
 | Level State & Match Flow | out | `keep_captured`; `pawns_in_flight(owner)` for the loss rule | Level State (and pawns after a result, OQ 8) |
-| Rival AI | out | `incoming`, `pawns_in_flight`, `marching_strength`; capture and hit events | This system (read-only) |
-| Level HUD | out | `pawns()`; `marching_strength(owner)` for the strength bar | Level HUD draws |
+| Rival AI | out | `incoming` (the threat to a keep) and `keep_captured` | This system (read-only) |
+| Level HUD | out | `pawns()` for drawing. The strength bar counts keep troops only (Level HUD F1, decided 2026-11-22), so it reads nothing else here | Level HUD draws |
 | Feedback & Juice, Tutorial & Onboarding | out | Clash, hit, reinforce and capture events; the player's first capture | This system raises |
-| Unit Roster & Stats, Factions, Unit Cards & Upgrades (Alpha) | in | `UnitStats` records, `unit_for`, inside M1–M7 | Contract here, values there |
+| Unit Roster & Stats, Factions, Unit Cards & Upgrades (UAT-2) | in | `UnitStats` records, `unit_for`, inside M1–M7 | Contract here, values there |
 | Campaign Level Data | out | Must check M2 per level; "T troops falls to pawn T+1"; travel time (F1) | Campaign Level Data checks |
 
 God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19). Pawns cannot be touched (Touch & Mouse Input).
@@ -108,7 +108,7 @@ God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19)
 
 | # | Phase | Owner |
 |---|---|---|
-| 0 | Player input: ties and cuts from Touch & Mouse Input received since the last step, applied in the order received (added 2026-11-22) | Rope Links |
+| 0 | Player input: ties and cuts from Touch & Mouse Input received since the last step, applied in the order received (added 2026-11-22). On an Armed level the first accepted tie, and what arrives after it in the same frame, is step 0's phase 0 (Level State & Match Flow rule 2) | Rope Links |
 | 1 | Generation beats | Troop Generation |
 | 1b | Rival decision pass, when its think timer fires (cuts, then ties; added 2026-11-22) | Rival AI |
 | 2 | Rope timers and sends in ascending `rope_id` (each launch takes the next `seq`); then the ropes cut in phases 0 and 1b turn Fading. A cut frees its slot when requested, but a rope cut this step still launches a pawn due this step (the last pawn leaves, decided 2026-11-22; Rope Links rule 8). A launched pawn has `marches` 0 | Rope Links |
@@ -240,7 +240,7 @@ The relay_limit formula is defined as, for an allied pawn at a full keep:
 
 ### Feedback loop
 
-A counter-rope cancels one stream point for point (F7), damping free sending's snowball; a second stream (more keeps held) breaks it, as intended. A captured keep holds 1 troop and can flip back after 2 pawns (OQ 4). Strength (Alpha) multiplies pressure; Unit Roster must price it.
+A counter-rope cancels one stream point for point (F7), damping free sending's snowball; a second stream (more keeps held) breaks it, as intended. A captured keep holds 1 troop and can flip back after 2 pawns (OQ 4). Strength (UAT-2) multiplies pressure; Unit Roster must price it.
 
 ### Tuning knobs
 
@@ -283,39 +283,26 @@ Constants: `step_dt`, `ε`. Owned elsewhere, not duplicated: `send_interval`, `r
 
 ## Dependencies
 
-Rope Links, Troop Generation and Keep Levels have GDDs and are checked; the rest are provisional.
+Rope Links, Troop Generation, Keep Levels, Level State & Match Flow, Rival AI, Level HUD and Campaign Level Data have GDDs and were checked in the 2026-11-22 cross-GDD review; Unit Roster & Stats, Factions, Unit Cards & Upgrades, Feedback & Juice, Tutorial & Onboarding and God & Goddess Powers have none yet, so their contracts are provisional.
 
 ### Depends on (upstream)
 
 | System | Kind | What this system needs | Status |
 |--------|------|------------------------|--------|
-| Rope Links | Hard | `pawn_launched` at every send and relay | Checked against its Core Rules 6–8, 10, F3, F5; fixes 1, 2, 5, 7, 8 below |
-| Troop Generation | Hard | `troops`, `troop_cap`, `owner`; beat before arrivals; its Core Rules 6, 7 | Checked; fixes 3, 4, 9 below |
-| Keep Levels | Soft (hard from Alpha) | Reset on capture; origin `level` at launch from Alpha | Checked against its Core Rules 4, 7; fixes 2, 6 below |
-| Unit Roster & Stats (Alpha) | Soft | `UnitStats` values, `unit_for` | Provisional |
+| Rope Links | Hard | `pawn_launched` at every send and relay | Checked against its Core Rules 6–8, 10, F3, F5 (edits applied 2026-11-22) |
+| Troop Generation | Hard | `troops`, `troop_cap`, `owner`; beat before arrivals; its Core Rules 6, 7 | Checked (edits applied 2026-11-22) |
+| Keep Levels | Soft (hard from UAT-2) | Reset on capture; origin `level` at launch from UAT-2 | Checked against its Core Rules 4, 7 (edits applied 2026-11-22) |
+| Unit Roster & Stats (UAT-2) | Soft | `UnitStats` values, `unit_for` | Provisional |
 
 ### Depended on by (downstream)
 
-What each takes is in the Interactions table. **Hard:** Rope Links, Troop Generation, Level State & Match Flow, Rival AI, Level HUD, and from Alpha Unit Roster & Stats, Factions, Unit Cards & Upgrades (the contract and M1–M4, M7). **Soft:** Keep Levels, Feedback & Juice, Tutorial & Onboarding, God & Goddess Powers, Campaign Level Data.
+What each takes is in the Interactions table. **Hard:** Rope Links, Troop Generation, Level State & Match Flow, Rival AI, Level HUD, and from UAT-2 Unit Roster & Stats, Factions, Unit Cards & Upgrades (the contract and M1–M4, M7). **Soft:** Keep Levels, Feedback & Juice, Tutorial & Onboarding, God & Goddess Powers, Campaign Level Data.
 
 ### Consistency to fix
 
-Proposed edits, none applied.
+None open. The twelve edits proposed here on 2026-11-22 were applied in the other GDDs (Rope Links rules 6, 7, 10, F5, R3 and AC22; Troop Generation F4, AC15 and its OQ 5; Keep Levels Interactions and Dependencies; `systems-index.md`). Two were notes, not edits: the strength wording waits for unit kinds in UAT-2, and the prototype's relay counter differs from Rope Links F3, so the build follows the GDD.
 
-1. **Relay limit (decided).** `rope-links.md:49` rule 10: "none is lost" → "lost at the next full allied keep after `relay_hops_max` (6) relays (Troop Marching rule 13)". `:153`–`:161` (F5), `:168` (R3): "bounds sent pawns; relays ride on top, bounded by Troop Marching F9". `:213`: count sent pawns only. `:339` (AC22): "each pawn is relayed at most 6 times; the ring's count settles (AC-M29)". `:180`, `:367` follow.
-2. **Capture report.** `keep-levels.md:45` raises `level_dropped` on capture to cut all ropes; `rope-links.md:46` reads `level_dropped` as "newest until it fits" and capture as its own cause (`:73`). Edit: Rope Links cuts all on `keep_captured`; Keep Levels resets on it and raises no `level_dropped` for a capture.
-3. **Capture pace (decided: keep the faster pace).** `troop-generation.md:153` (F4 example, ≈ 88 s) and `:286` (AC15, 80–95 s) ignore the level drops of `keep-levels.md:41`, `:105`. Step simulation (restated 2026-11-22): capture at step 3,541, ≈ 59 s, on a 300 px rope; the earlier 49.2 s last-send / ≈ 52 s figures and the two-rope 15.6 s figure are superseded and need re-running before they are quoted. Edit both to the level-drop-aware figure.
-4. **Arrival order (decided).** `troop-generation.md:319` (its OQ 5) is answered by rule 11; close it.
-5. **"Full" is at or above the cap.** `rope-links.md:49`, `troop-generation.md:69` say "equals"; `troop-generation.md:178` allows above. Edit both to "at or above".
-6. **Level read.** `keep-levels.md:199` "does not read the level" against `:79` (level picks the unit). Edit: "not at MVP; at launch from Alpha".
-7. **One speed.** `rope-links.md:159` against `systems-index.md:36`. Edit: F5 and R3 use the level's slowest unit speed.
-8. **Relay carries the pawn.** `rope-links.md:49` "a fresh launch (origin, target, owner, lane)". Edit: it also carries unit, `hp` and `relays`.
-9. **Who applies an arrival.** `rope-links.md:199` (Troop Generation) against `troop-generation.md:78` (Troop Marching). Edit Rope Links' wording.
-10. **Strength wording.** `troop-generation.md:50-52`, `keep-levels.md:45` say 1; edit only when units differ.
-11. **Relay counter.** Prototype (`index.html:240-241`) differs from `rope-links.md:123`; no edit, build to the GDD.
-12. **`systems-index.md`**: row 7 gains Unit Roster & Stats (contract); rows 10, 12, 19 gain this system.
-
-**Registry candidates (not applied):** `pawn_speed`, `capture_troops`, `relay_hops_max`, `pawns_in_flight_max`; F1, F4–F6; `UnitStats`; `referenced_by` on registered values used. No registry conflict.
+**Registry candidates:** `pawn_speed` and `relay_hops_max` are registered; still to register: `capture_troops`, `pawns_in_flight_max`; F1, F4–F6; `UnitStats`; `referenced_by` on registered values used. No registry conflict.
 
 ## Visual/Audio Requirements
 
@@ -330,7 +317,7 @@ Proposed edits, none applied.
 | Capture | Banner pop, flag and gold burst, floating "Taken!" / "Lost!" / "Seized" | Two-note sting, higher for the player |
 | Relay limit loss | No effect; the pawn does not reappear | None |
 
-Alpha unit kinds differ by silhouette, not only `size`. Every figure is drawn; no emoji.
+UAT-2 unit kinds differ by silhouette, not only `size`. Every figure is drawn; no emoji.
 
 📌 **Asset Spec** — after the art bible is approved, run `/asset-spec system:troop-marching-clashes`.
 
@@ -345,11 +332,11 @@ Alpha unit kinds differ by silhouette, not only `size`. Every figure is drawn; n
 ## UI Requirements
 
 - No interface on a pawn (no selection, bar or tooltip).
-- Strength bar: keeps' `troops` plus `marching_strength(owner)`.
+- Strength bar: keeps' `troops` only (Level HUD F1); marching pawns are not counted (decided 2026-11-22). `marching_strength` stays a query (AC-M35); no UAT-1 system reads it.
 - Capture words float about 1.6 s in the captor's colour.
 - No second number on the plaque for incoming pawns.
 - No loss shown while the player still has pawns in flight.
-- Alpha: a pawn worth more than one troop must read from the figure alone.
+- UAT-2: a pawn worth more than one troop must read from the figure alone.
 
 > **UX Flag — Troop Marching & Clashes**: run `/ux-design` for the strength bar, capture words and pawn readability before writing epics; stories cite `design/ux/[screen].md`.
 
@@ -407,7 +394,7 @@ Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_m
 - **AC-M31 [Logic] (rule 13)**: at `pawns_in_flight_max`, an allied pawn at a full keep is lost (backstop) with one log line; rope sends are not refused.
 - **AC-M32 [Integration: Troop Generation, Keep Levels, Rope Links] (F5 with generation; step simulation, scratchpad sim)**: a level 3 keep with 40 troops and timer 0, attacked by one enemy rope of 300 px tied at t = 0, is captured between 55 s and 63 s (step simulation: step 3,541 = 59.0 s; restated 2026-11-22 with Troop Generation F4 and AC15, `level_drop_margin` kept at 5).
 - **AC-M33 [Logic] (F8)**: on the longest rope of each prototype layout, with no relays, sent pawns never exceed `ceil(L / 66) + 1`.
-- **AC-M34 [Integration: Unit Roster & Stats] (rule 3; Alpha, OQ 3)**: a launched pawn carries `unit_for`'s stats and keeps them and its `hp` through a relay from a keep of another level.
+- **AC-M34 [Integration: Unit Roster & Stats] (rule 3; UAT-2, OQ 3)**: a launched pawn carries `unit_for`'s stats and keeps them and its `hp` through a relay from a keep of another level.
 
 **Queries, data, device**
 - **AC-M35 [Logic] (rule 15)**: 4 player pawns (`hp` 1, 1, 2, 3) heading for K, 2 rival pawns elsewhere → `incoming(K, player)` 7, `marching_strength(player)` 7, `pawns_in_flight` 4 and 2; a fallen pawn leaves all three on that step and `pawns()` after `pawn_fade_time`.

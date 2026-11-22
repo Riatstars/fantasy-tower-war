@@ -1,6 +1,6 @@
 # Campaign Level Data
 
-> **Status**: Designed (pending /design-review in a fresh session)
+> **Status**: In Review (revised 2026-11-22, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -21,7 +21,7 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 
 ### Core Rules
 
-1. **Shape.** The campaign is a list of **regions**; each region is an ordered list of **levels**; each level is one **level record**. A **region record** holds `id`, `name`, its ordered level ids, and two fields World Map & Regions defines (added 2026-11-22): `fog_shape` (the art id of its silhouette under fog) and `banner_anchor` (a map-pixel point where conquest banners gather). Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
+1. **Shape.** The campaign is a list of **regions**; each region is an ordered list of **levels**, possibly empty (a region with no levels is legal, never unlocks and stays fogged: World Map & Regions F2, decided 2026-11-22); each level is one **level record**. A **region record** holds `id`, `name`, its ordered level ids, and two fields World Map & Regions defines (added 2026-11-22): `fog_shape` (the art id of its silhouette under fog) and `banner_anchor` (a map-pixel point where conquest banners gather). Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
 2. **The level record** is the contract Level State (its rule 1) and Rival AI (its rule 2) consume:
    - `id`, `region_id`, `name`, `order` (1-based within the region);
    - `wait_for_first_rope` (bool);
@@ -34,12 +34,12 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 4. **Starting troops are per keep**, including the player's and the rival's. The prototype's single `player_start` (10) and per-map `rival` number are written into each keep's `troops`; the baseline keeps those values. A keep's starting level follows from its troops by Keep Levels F1 (`rise_level`), with no history (its rule 8): a neutral with 16 troops starts at level 2.
 5. **The first-rope wait** (decided 2026-11-22; closes Level State Open Question 2): `wait_for_first_rope` is true on the first level of the game (`gv-01`) and false everywhere else. It is a field, not a rule, so a tutorial level may set it later.
 6. **The rival's seed is fixed per level** (decided 2026-11-22; closes Rival AI Open Question 2): `rival.seed` is a constant in the record, so every attempt at a level meets the same rival given the same player actions. A level with no rival keep still carries a `rival` block (unused).
-7. **Sequence.** `next(level)` is the level with `order + 1` in the same region, else the first level of the next region, else none. World Map & Regions derives which nodes are unlocked from Save & Progress results and this sequence; this GDD never stores progress. A region is complete when its last level is beaten (World Map's rule to state).
+7. **Sequence.** `next(level)` is the level with `order + 1` in the same region, else the first level of the next region that has levels (an empty region is skipped), else none. World Map & Regions derives which nodes are unlocked from Save & Progress results and this sequence; this GDD never stores progress. A region is complete when its last level is beaten (World Map's rule to state).
 8. **The loader validates every record before Level State builds a match**, against invariants other systems impose (Formulas: L1, I2, R3, B1–B4, and Troop Marching's M2 and M3). M2 is the same inequality as R3 (`ceil(L / (v × s)) + 1 ≤ 40` holds exactly when `s ≥ L / (39 × v)`), so the loader checks it once and a breach names both R3 and M2; M3 (`speed_min × send_interval ≥ pawn_min_spacing × size_max`) is checked per level with them. A development build stops with an error naming the level id, the rule and the offending values; a shipped build refuses to load the level and Screen Flow's load-failure rule returns the player to the World Map with a message. A level that fails validation is never built, so no match can start from bad data. **Policy for bad data** (decided 2026-11-22; one rule for every GDD): a level record, and every check that compares a level with tuning (L1, I2, R3, B1–B4, Troop Marching M2 and M3), is Rejected in a shipped build, never clamped. Global tuning constants that do not depend on a level (Touch & Mouse Input I1, I3, I4; Rope Links R1, R2, R4; Troop Marching M1, M4–M7; Keep Levels K1–K4; Troop Generation I1–I3; the knobs in Rival AI's tuning file) are checked once at app start by their owners and, in a shipped build, clamped to the nearest valid value and logged, so the game still runs. The one runtime adjustment is Touch & Mouse Input's per-level radius reduction after the accessibility setting raises `keep_hit_radius` (Edge Cases).
 9. **Registration.** At app start the loader registers with Save & Progress the set of known level ids and region ids (Save rule 10, its "lookup it registers"), and offers World Map the region and level sequence. It never reads or writes the progress file.
 10. **Decor has no effect on play.** The river polyline is drawn by the Level scene behind the keeps; ropes and pawns cross it freely, as in the prototype. Anything that affects play is a keep.
 11. **Content ships as data files**, one per level plus one per region, in the format the architecture decides (an ADR); the GDD fixes the fields and ranges, not the syntax. Development builds reload a level file on change without a restart (tools item).
-12. **UAT-1 content: one region.** The Green Vale, `gv`, holds the five prototype maps in their played order (Content below). The difficulty ramp across them is data: `think` 3.0 → 1.4, `aggro` 0.3 → 1.0, rival keeps 1 → 3 with 10 → 18 troops, keeps 7 → 11. UAT-2 and later add regions by adding files; no rule here changes.
+12. **UAT-1 content: one playable region.** The Green Vale, `gv`, holds the five prototype maps in their played order (Content below). Regions 2–5 ship as region records with an `id` (`r2` … `r5`), a placeholder `name`, their `fog_shape` and `banner_anchor`, and an empty level list (decided 2026-11-22), so World Map & Regions draws their fog from data (its rule 13). Their ids are permanent once shipped (rule 1): UAT-2 fills these records with levels rather than replacing them. The difficulty ramp across them is data: `think` 3.0 → 1.4, `aggro` 0.3 → 1.0, rival keeps 1 → 3 with 10 → 18 troops, keeps 7 → 11. UAT-2 and later add regions by adding files; no rule here changes.
 
 ### Content: Region 1, the Green Vale (`gv`)
 
@@ -53,7 +53,7 @@ Measured on the prototype's layouts (`prototypes/tower-war/config.js` MAPS); tab
 | 4 | gv-04 | Twin Hills | 10 (1 / 2 / 7) | 16 | 86 | 1 (the 20) | 1.7 | 0.85 | no | 220 px | 914 px | 0.213 s |
 | 5 | gv-05 | The Last Keep | 11 (1 / 3 / 7) | 18 | 94 | 3 (16, 16, 24) | 1.4 | 1.0 | no | 180 px | 920 px | 0.214 s |
 
-Every level passes I2 (≥ 156 px), R3 (0.6 ≥ 0.217) and L1. The keep coordinates are the prototype's and are reproduced in the data files, not here; the river polylines on gv-02, gv-04 and gv-05 are decor. `rival.seed` values are assigned when the files are written (any fixed integers). The level names are placeholders until the writer passes over the Green Vale.
+Rival keeps of 15 troops or more also start at level 2 (F3): gv-02's, gv-04's and gv-05's. Every level passes I2 (≥ 156 px), R3 (0.6 ≥ 0.217) and L1. The keep coordinates are the prototype's and are reproduced in the data files, not here; the river polylines on gv-02, gv-04 and gv-05 are decor. `rival.seed` values are assigned when the files are written (any fixed integers). The level names are placeholders until the writer passes over the Green Vale.
 
 ### States and Transitions
 
@@ -80,7 +80,7 @@ A record is re-parsed and re-validated on every request (a Retry included): vali
 | Rope Links | in (a rule) | Invariant R3: `send_interval ≥ longest_rope / (speed_min × (pawns_per_rope_max − 1))` per level (its F5, R3) | Rope Links owns the rule; this GDD enforces it at load |
 | Troop Generation | in (a bound) | `troop_cap` bounds starting troops (B1) | Troop Generation |
 | Save & Progress | out | The set of known level ids and region ids, registered at app start (its rule 10) | Save & Progress validates; this GDD supplies |
-| World Map & Regions | out | Regions, levels, their order and names; `next(level)`; node positions on the world map (a field World Map adds to the region file when its GDD is written) | World Map draws and derives unlocks |
+| World Map & Regions | out | Regions, levels, their order and names; `next(level)`; the level record's `node` (rule 2) and the region record's `fog_shape` and `banner_anchor` (rule 1), fields World Map & Regions defines | World Map draws and derives unlocks |
 | Screen Flow & Scene Manager | out | A load failure (Rejected) for its load-failure rule (its rule 11) | Screen Flow |
 | Stars & Rewards (UAT-2) | out | The reserved `stars` block per level (time thresholds) | Stars & Rewards defines it |
 | Tutorial & Onboarding (after UAT) | out | May add tutorial levels or set `wait_for_first_rope` and `aggro` 0 on them: all data | Tutorial |
@@ -134,17 +134,18 @@ The start_level formula is defined as:
 | keep.troops | int | 0–`troop_cap` (60) | data file (this GDD) | Starting troops |
 | lv2_at, lv3_at | int | 15, 35 | data file (Keep Levels) | Level thresholds |
 
-**Output Range:** 1–3. Green Vale: every player and rival keep starts at level 1 (10–18 troops); seven neutrals start at level 2 (16, 16, 25, 20, 16, 16, 24); none at level 3. A neutral at level 2 or 3 holds more rope slots once captured, which is the reward for taking the big ones; it is authored by giving it ≥ 15 or ≥ 35 troops, never by a level field.
+**Output Range:** 1–3. Green Vale: every player keep starts at level 1 (10 troops). Rival keeps of 15 or more start at level 2: gv-02's one (15), gv-04's two (16) and gv-05's three (18); gv-01's (10) and gv-03's two (14) start at level 1. Seven neutrals start at level 2 (16, 16, 25, 20, 16, 16, 24); none at level 3.
+**Balance note** (decided 2026-11-22: intended). A level 2 rival keep holds 2 rope slots from step 0, so the rival opens with more slots than the player's 1: gv-02 2, gv-03 2 (two level 1 keeps), gv-04 4 and gv-05 6 at step 0. gv-03's two 14-troop keeps reach 15 on the first beat (2.5 s), before the rival's first pass, so the rival's slots at its first pass are 1 / 2 / 4 / 4 / 6 across gv-01 … gv-05. It is part of the Green Vale ramp with `think` and `aggro`; the player catches up by taking the level 2 neutrals. Playtest question for UAT-1: does gv-05's 6-slot opening read as a hard final level or as unfair? A neutral at level 2 or 3 holds more rope slots once captured, which is the reward for taking the big ones; it is authored by giving it ≥ 15 or ≥ 35 troops, never by a level field.
 **Example:** gv-03's centre neutral, 25 troops: 25 ≥ 15 and < 35 → level 2.
 
 ### F4. Sequence
 
 The next formula is defined as:
 
-`next(level) = the level with order + 1 in level.region, else the first level of the region after level.region, else none`
+`next(level) = the level with order + 1 in level.region, else the first level of the next region after level.region (in campaign order) that has at least one level, else none`
 
 **Variables:** `order` (int, 1–N, data file), regions in campaign order (data file).
-**Output Range:** one level or none. Green Vale: gv-01 → gv-02 → … → gv-05 → none in UAT-1 (the next region is UAT-2 content).
+**Output Range:** one level or none. Green Vale: gv-01 → gv-02 → … → gv-05 → none in UAT-1 (regions r2–r5 have no levels yet and are skipped; their levels are UAT-2 content).
 **Example:** `next(gv-03)` = gv-04.
 **Use by Menus & Screens:** `next()` crosses into the next region, but the Win overlay offers *Next level* only when `next(level)` is in the same region (Menus & Screens F2, decided 2026-11-22), so a region's last level always returns to the World Map, which plays the conquest sequence.
 
@@ -177,7 +178,7 @@ Worked at the extremes (lens: systems-designer): a two-keep level (one player, o
 - **If the level order has a gap** (orders 1, 2, 4): `next(gv-02)` finds no order 3 → the loader reports B3 (orders must be 1 … N) rather than skipping to 4.
 - **If `keep_hit_radius` is raised by a setting at runtime** (accessibility): I2 is re-checked against the new radius when a level loads; a level that now fails is not Rejected, in any build: Touch & Mouse Input lowers `keep_hit_radius` for that level to half its smallest spacing and logs it. The data passed I2 at the baseline radius, so the result is always at least 78, above I1's floor 48. This is the one case where the reduction runs; a level that breaches I2 at the baseline radius is Rejected like any other.
 - **If a river polyline crosses a keep**: nothing happens; decor has no collision (rule 10). Authors keep rivers clear of keeps for readability, which is an art-pass check, not an invariant.
-- **If the campaign has one region** (UAT-1): `next(gv-05)` is none; the Win overlay offers World Map only (Screen Flow rule 10) and World Map shows the region conquered.
+- **If no later region has levels** (UAT-1: r2–r5 are empty): `next(gv-05)` is none; the Win overlay offers World Map only (Screen Flow rule 10) and World Map shows the region conquered.
 
 ## Dependencies
 
@@ -186,20 +187,20 @@ Worked at the extremes (lens: systems-designer): a two-keep level (one player, o
 | Keep Levels | Hard | in/out | In: F1 `rise_level`, `lv2_at`, `lv3_at` (F3). Out: starting `troops` per keep | In Review |
 | Touch & Mouse Input | Hard (a rule) | in | Invariant I2 and `keep_hit_radius`; the 720 × 1,280 table | In Review |
 | Rope Links | Hard (a rule) | in | Invariant R3, `send_interval`, `pawns_per_rope_max` | In Review |
-| Troop Marching & Clashes | Soft | in | `speed_min` (`pawn_speed` at UAT-1) for R3; keep id order matters to its arrival rule | Designed |
+| Troop Marching & Clashes | Soft | in | `speed_min` (`pawn_speed` at UAT-1) for R3; keep id order matters to its arrival rule | In Review |
 | Troop Generation | Soft (a bound) | in | `troop_cap` for B1 | In Review |
-| Level State & Match Flow | Hard | out | The validated record; L1 | Designed |
-| Rival AI | Hard | out | `rival.think`, `rival.aggro`, `rival.seed`; B4 ranges | Designed |
+| Level State & Match Flow | Hard | out | The validated record; L1 | In Review |
+| Rival AI | Hard | out | `rival.think`, `rival.aggro`, `rival.seed`; B4 ranges | In Review |
 | Save & Progress | Hard | out | Known level and region ids, registered at app start | In Review |
 | Screen Flow & Scene Manager | Soft | out | Load failure for its rule 11 | In Review |
 | **Depended on by** | | | | |
-| World Map & Regions | Hard | out | Regions, levels, order, names, `next`; node positions (a field it will add) | Not yet designed |
-| Level HUD, Menus & Screens | Soft | out | Level `name`, `order` | Not yet designed |
+| World Map & Regions | Hard | out | Regions (with `fog_shape` and `banner_anchor`, empty ones included), levels, order, names, `next`; each level record's `node` | In Review |
+| Level HUD, Menus & Screens | Soft | out | Level `name`, `order` | In Review |
 | Stars & Rewards (UAT-2) | Soft | out | The reserved `stars` block | Not yet designed |
 | Tutorial & Onboarding (after UAT) | Soft | out | Tutorial levels as data | Not yet designed |
 | Guardian Castles (Alpha) | Soft | out | A guardian block on a region's last level | Not yet designed |
 
-**Bidirectional check.** Keep Levels, Touch & Mouse Input, Rope Links, Save & Progress, Level State & Match Flow and Rival AI all already name Campaign Level Data. Troop Marching & Clashes and Troop Generation do not and need not: this GDD reads a value from each, and both list it as "others" or under a soft heading already (Troop Marching: "Campaign Level Data (longest rope)" in its Dependencies). Screen Flow names a load failure generically (its rule 11), which is enough. `systems-index.md` lists this system's dependencies correctly; it should add Save & Progress (out) and Troop Marching & Clashes (soft).
+**Bidirectional check** (re-checked 2026-11-22, cross-GDD review). Every system above that has a GDD names Campaign Level Data: Keep Levels, Touch & Mouse Input, Rope Links, Troop Marching & Clashes (its Dependencies, soft), Troop Generation (`troop_cap` for B1), Level State & Match Flow, Rival AI, Save & Progress, World Map & Regions, Level HUD and Menus & Screens. Screen Flow names a load failure generically (its rule 11), which is enough. `systems-index.md` row 10 lists this system's dependencies, Save & Progress and Troop Marching & Clashes included.
 
 ## Visual/Audio Requirements
 
@@ -240,7 +241,7 @@ None of its own. It supplies the Level HUD with the level `name` and `order` ("G
 Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `speed_min` at UAT-1), `pawns_per_rope_max` 40, `troop_cap` 60, `lv2_at` 15, `lv3_at` 35. Tags: **[Logic]** automated test in `tests/unit/` against an in-memory record; **[Integration: X]** in `tests/integration/`; **[Content]** a check run over the shipped data files in CI; **[Visual]** retained screenshot in `production/qa/evidence/`. `qa-lead` lens applied: every rule, formula and bound has a criterion; boundaries are AC4, AC6, AC8, AC13.
 
 - **AC1 [Content] (rule 12, Content)**: GIVEN the shipped Green Vale files, THEN there are exactly 5 levels with ids gv-01 … gv-05, orders 1–5, keep counts 7, 8, 9, 10, 11, and every level passes L1, I2, R3 and B1–B4.
-- **AC2 [Content] (rule 4, F3)**: GIVEN the shipped files, THEN the player keep of every level has 10 troops; gv-02's two 16-troop neutrals, gv-03's 25, gv-04's 20 and gv-05's 16, 16 and 24 are the only keeps with `start_level` 2, and no keep has `start_level` 3.
+- **AC2 [Content] (rule 4, F3)**: GIVEN the shipped files, THEN the player keep of every level has 10 troops; the keeps with `start_level` 2 are exactly gv-02's rival keep (15) and its two 16-troop neutrals, gv-03's 25, gv-04's two rival keeps (16) and its 20, and gv-05's three rival keeps (18) and its 16, 16 and 24; no keep has `start_level` 3.
 - **AC3 [Content] (rules 5, 6)**: GIVEN the shipped files, THEN `wait_for_first_rope` is true on gv-01 only, and every level's `rival.seed` is an integer that does not change between two loads.
 - **AC4 [Logic] (F2, I2 boundary)**: GIVEN a record with two keeps 156 px apart, THEN it validates; GIVEN 155 px, THEN it is Rejected naming I2, the two keep ids and 155.
 - **AC5 [Logic] (F1, R3)**: GIVEN a record whose longest pair is 1,258 px (opposite corners of the B2 box at baseline) and `send_interval` 0.3, THEN it validates at `speed_min` 110 (needs 0.293); GIVEN `speed_min` 100, THEN Rejected naming R3 and 0.323; GIVEN `send_interval` 0.6, THEN it validates (Rope Links AC27).
@@ -251,11 +252,11 @@ Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `s
 - **AC10 [Logic] (B3)**: GIVEN keep ids 0, 1, 3, THEN Rejected naming B3; GIVEN two levels with id gv-02, THEN the campaign load reports B3 and, in a shipped build, keeps the first and drops the second.
 - **AC11 [Logic] (B4)**: GIVEN `rival.think` 0.4 or `rival.aggro` 1.1, THEN Rejected naming B4; GIVEN 0.5 and 1.0, THEN it validates.
 - **AC12 [Logic] (rule 8, several failures)**: GIVEN a record breaching I2 and B1 at once, THEN the development error lists both before stopping.
-- **AC13 [Logic] (F4 boundary)**: GIVEN the Green Vale alone, THEN `next(gv-03)` is gv-04 and `next(gv-05)` is none; GIVEN a second region after it, THEN `next(gv-05)` is that region's order-1 level.
+- **AC13 [Logic] (F4 boundary)**: GIVEN the Green Vale alone, THEN `next(gv-03)` is gv-04 and `next(gv-05)` is none; GIVEN a second region after it, THEN `next(gv-05)` is that region's order-1 level; GIVEN regions r2–r5 with empty level lists (the UAT-1 files), THEN `next(gv-05)` is none and the campaign loads with five region records.
 - **AC14 [Logic] (rule 3, parsing)**: GIVEN a record with an extra field `stars`, THEN it validates and one log line names the ignored field; GIVEN a record missing `keeps`, THEN it is a parse failure, not a validation failure.
 - **AC15 [Integration: Level State & Match Flow] (rule 8)**: GIVEN a Rejected level, WHEN its node is tapped, THEN no match is built, Screen Flow shows its load-failure message over the World Map and Save & Progress records nothing.
 - **AC16 [Integration: Save & Progress] (rule 9)**: GIVEN app start with the Green Vale, THEN Save & Progress's known-id set is {gv, gv-01 … gv-05}, and a progress file naming gv-07 loads with that entry kept and ignored (Save AC13).
-- **AC17 [Integration: Rival AI, Keep Levels] (rules 2, 4)**: GIVEN gv-05 is built, THEN Rival AI reads `think` 1.4 and `aggro` 1.0, and keeps 7, 8 and 9 start at level 2 with the rest at level 1.
+- **AC17 [Integration: Rival AI, Keep Levels] (rules 2, 4)**: GIVEN gv-05 is built, THEN Rival AI reads `think` 1.4 and `aggro` 1.0, and keeps 1, 2 and 3 (the rival's, 18 troops) and 7, 8 and 9 (neutrals 16, 16, 24) start at level 2 with the rest at level 1, so at step 0 the rival has 6 free rope slots and the player 1.
 - **AC18 [Integration: Level State] (rule 5)**: GIVEN gv-01 is built, THEN Level State is Armed; GIVEN gv-02, THEN it is Running at once.
 - **AC19 [Logic] (rule 11, hot reload, development only)**: GIVEN a development build with gv-02 loaded, WHEN its file's `rival.think` changes on disk and the level is restarted, THEN the new value is in effect with no rebuild.
 - **AC20 [Visual] (Content, Pillar 2)**: retained screenshots of all five Green Vale levels at match start on the minimum phone in portrait, each showing every keep with its troop plaque readable and no two keeps overlapping.

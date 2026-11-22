@@ -174,14 +174,35 @@ formulas:
     source: design/gdd/touch-mouse-input.md
     referenced_by:
       - design/gdd/touch-mouse-input.md
+      - design/gdd/rope-links.md
     variables:
       - origin
       - hit
+      - blocking_keep
+    output_range: [1, 1]
+    # 2026-11-22 (touch-mouse-input.md / rope-links.md, cross-GDD review H3): was
+    # "nearest-to-origin keep within align_tolerance degrees of the direction to
+    # hit and within keep_hit_radius of the line origin-hit, never farther than
+    # hit" (a one-shot redirect computed in Input).
+    expression: "target = hit; repeat target = blocking_keep(origin, target) (Rope Links F6) while it is not none"
+    notes: "Output is one keep (count 1). Applies to every owner and to the keyboard. The old one-shot redirect could leave a target that was itself blocked; the repeat fixes that. Strict nearer: a keep exactly as far as the target never blocks it. Rope Links decides legality of the result and never moves on to a farther keep."
+    added: 2026-11-22
+    revised: 2026-11-22
+  - name: blocking_keep
+    status: active
+    source: design/gdd/rope-links.md
+    referenced_by:
+      - design/gdd/rope-links.md
+      - design/gdd/touch-mouse-input.md
+      - design/gdd/rival-ai.md
+    variables:
+      - o
+      - t
       - align_tolerance
       - keep_hit_radius
-    output_range: [1, 1]
-    expression: "nearest-to-origin keep within align_tolerance degrees of the direction to hit and within keep_hit_radius of the line origin-hit, never farther than hit"
-    notes: "Output is one keep (count 1). Applies to every owner and to the keyboard. Rope Links decides legality of the result and never moves on to a farther keep."
+    output_range: [0, 1]
+    expression: "nearest keep k to o, other than o and t, with angle_diff(bearing(o,k), bearing(o,t)) <= align_tolerance, dist_to_line(k, o->t) <= keep_hit_radius and dist(o,k) < dist(o,t); none if no keep qualifies; equal distance -> lower id"
+    notes: "Rope Links F6 (moved from Touch & Mouse Input F6, cross-GDD review H3, 2026-11-22). Output is none or one keep. tie_legal refuses 'blocked' when it is not none, so the player (redirected by Input) and the rival (filtered by tie_legal) obey one rule."
     added: 2026-11-22
     revised: ""
   - name: effective_level
@@ -226,17 +247,21 @@ formulas:
       - design/gdd/touch-mouse-input.md
       - design/gdd/keep-levels.md
       - design/gdd/rival-ai.md
+      - design/gdd/level-hud.md
     variables:
       - origin
       - target
       - side
       - ropes_held
       - max_ropes
+      - blocking_keep
     output_range: [0, 1]
-    expression: "ok unless the first failing check of [origin owned by side, target != origin, no rope origin->target, not (allied target with rope target->origin), ropes_held(origin) < max_ropes(level)]"
-    notes: "Output is ok or one reason: not_yours, self, duplicate, reverse, slots. No distance check (unlimited rope length, player rule). Rival uses the same check."
+    # 2026-11-22 (rope-links.md, cross-GDD review H3): blocked check added as the
+    # third check; reasons were not_yours, self, duplicate, reverse, slots.
+    expression: "ok unless the first failing check of [origin owned by side, target != origin, blocking_keep(origin, target) = none, no rope origin->target, not (allied target with rope target->origin), ropes_held(origin) < max_ropes(level)]"
+    notes: "Output is ok or one reason: not_yours, self, blocked, duplicate, reverse, slots. No distance check (unlimited rope length, player rule). Rival uses the same check. self and blocked raise no strip text. The slots text has a singular form ('only 1 rope') and a plural form ('only N ropes') in the strings data file."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
 
   - name: win_test
     status: active
@@ -317,16 +342,29 @@ formulas:
       - dist
       - dist_scale
       - w_defend
+      - defend_margin
+      - relieve_ratio
       - w_counter
       - w_neutral
+      - neutral_per_troop
       - w_attack
+      - attack_per_troop
+      - attack_margin
+      - attack_aggro
+      - troop_cap
       - aggro_eff
+      - stall_share
       - noise_max
-    output_range: [-80, 86]
-    expression: "case-based: defend w_defend - d; counter w_counter - d; neutral w_neutral - 2*troops - d +/- bonus; attack w_attack - 1.5*troops - d + 22*aggro_eff; plus noise_max*rng(); tie if max > 0"
-    notes: "d = dist / dist_scale (baseline 25 px per point). Baseline weights 80 / 46 / 52 / 40. The attack case is a candidate only when origin.troops * aggro_eff > target.troops + attack_margin (4). Refined from the prototype's aiThink."
+    output_range: [-134, 86]
+    expression: "case-based: defend w_defend - d (own keep with threat > 0, threat >= troops - defend_margin and threat >= relieve_ratio * troops); neutral w_neutral - 2*troops - d +/- bonus; player keep = max(counter w_counter - d if it ropes k, attack w_attack - 1.5*(1 - stall_share)*troops - d + 22*aggro_eff if attack_gate); plus noise_max*rng(); tie if max > 0"
+    # 2026-11-22 (rival-ai.md, cross-GDD reviews X6 and round 2): attack gate was
+    # origin.troops * aggro_eff > target.troops + attack_margin (4) alone; attack
+    # penalty was 1.5*troops with no stall_share term; counter and attack were
+    # separate cases (counter won). Output floor was -80 (wrong: a far 60-troop
+    # neutral reaches about -133).
+    notes: "d = dist / dist_scale (baseline 25 px per point). Baseline weights 80 / 46 / 52 / 40. attack_gate = (origin.troops * aggro_eff > target.troops + attack_margin) OR (target.troops < (troop_cap + 1) * stall_share): outside a stall only the prototype's test runs; a full stall admits every player keep; F3 never scores a keep cut_outgrown would cut, by construction (cut_outgrown exempts counters, rope(t->k), and the stall gate); and stall_share 1 removes the per-troop penalty, so the full-stall attack on a 60-troop keep at the longest rope scores >= 7.3 (11.7 at aggro_eff 1). Refined from the prototype's aiThink."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: aggro_eff
     status: active
     source: design/gdd/rival-ai.md
@@ -340,9 +378,9 @@ formulas:
       - stall_boost
     output_range: [0, 1]
     expression: "min(1, aggro + stall_boost * floor(stall_steps / (60 * stall_time)))"
-    notes: "The stall breaker. stall_steps counts steps since the last keep_captured by either side (or clock_started); any capture resets it. Answers Level State's open question 1 (no draw rule, no match timer)."
+    notes: "The stall breaker. stall_steps counts steps since the last resetting keep_captured by either side (or clock_started); a capture resets it unless it is a re-capture (the keep changed owner less than stall_time before; cross-GDD review R3H2, 2026-11-22). The same F4 also gives stall_share = min(1, stall_periods / stall_full) (stall_full 4; 0 when stall_boost is 0), used by target_score's stall gate and attack penalty and by the rival's cut_outgrown exception. Answers Level State's open question 1 (no draw rule, no match timer)."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
 
   - name: longest_rope
     status: active
@@ -380,6 +418,7 @@ formulas:
     referenced_by:
       - design/gdd/world-map-regions.md
       - design/gdd/save-progress.md
+      - design/gdd/menus-screens.md
     variables:
       - beaten
       - prev
@@ -415,13 +454,14 @@ formulas:
       - design/gdd/menus-screens.md
     variables:
       - troops
-      - marching_strength
       - bar_width_px
     output_range: [0, 500]
-    expression: "width(side) = bar_width_px * S_side / total, S_player = sum player troops + marching_strength(player), S_rival likewise, S_neutral = sum neutral troops; total 0 gives three equal grey thirds"
-    notes: "Three segments player | neutral | rival (decided 2026-11-22). Updates every frame, no easing. Labels show S_player and S_rival as integers."
+    expression: "S_side = sum of that side's keep troops (S_neutral = neutral garrisons); raw = bar_width_px * S_side / total; w_player = 0 if S_player = 0 else max(1, round_half_up(raw)); w_rival likewise; w_neutral = bar_width_px - w_player - w_rival (min 1 when S_neutral > 0, the pixel taken from the wider side; if S_neutral = 0 the rival takes bar_width_px - w_player); total 0 gives 167 / 166 / 167 grey"
+    # 2026-11-22 (level-hud.md, cross-GDD review round 2): S_side was troops +
+    # marching_strength(side) (H4), and the rounding rule was not recorded (B14).
+    notes: "Three segments player | neutral | rival (decided 2026-11-22). Keep troops only: pawns in flight are not counted, so tying or cutting a rope never moves the bar. Updates every frame, no easing. Labels show S_player and S_rival as integers."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: strip_message
     status: active
     source: design/gdd/level-hud.md
@@ -436,11 +476,40 @@ formulas:
       - tutorial_prompt
       - strip_time
     output_range: [0, 1]
-    expression: "first non-empty of [refusal (while strip_timer > 0), cursor_hint (once per session), armed_hint (while Armed), tutorial_prompt, none]"
-    notes: "At most one line. A new refusal replaces the current one and restarts strip_time. The timer counts game steps, so a pause does not expire a message."
+    expression: "first non-empty of [refusal (while strip_timer > 0), cursor_hint (once per session, while its timer > 0), armed_hint (while Armed), tutorial_prompt, none]"
+    # 2026-11-22 (level-hud.md, cross-GDD review round 2, B1/B14): the timer
+    # counted game steps, so a message raised while Armed never expired.
+    notes: "At most one line. A new refusal replaces the current one and restarts strip_time. The timer counts unpaused rendered time (not match steps), so a pause does not expire a message and one shown while Armed still expires. self and blocked refusals raise no text."
+    added: 2026-11-22
+    revised: 2026-11-22
+
+  - name: plaque_width
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+    variables:
+      - plaque_font_px
+      - digit_aspect
+      - plaque_pad_px
+      - plaque_min_height_px
+    output_range: [38, 68]  # width over plaque_font_px 16-40 at digit_aspect 0.48, 1-2 digits
+    expression: "digit = round_half_up(plaque_font_px * digit_aspect); width = plaque_pad_px + digit * digits(troops); height = max(plaque_min_height_px, plaque_font_px + 7)"
+    notes: "Level HUD F3. Baseline 41-52 px wide, 30 px tall; at font 30, 44-58 px wide, 37 px tall. Registered 2026-11-22 (cross-GDD review B21)."
     added: 2026-11-22
     revised: ""
-
+  - name: time_format
+    status: active
+    source: design/gdd/menus-screens.md
+    referenced_by:
+      - design/gdd/menus-screens.md
+    variables:
+      - t
+    output_range: [0, 0]  # string output, "0:00.0" upward
+    expression: "floor(t / 60) + ':' + two-digit floor(t mod 60) + '.' + one-digit tenths"
+    notes: "Menus & Screens F3. 90.5 -> '1:30.5'. Registered 2026-11-22 (cross-GDD review B21)."
+    added: 2026-11-22
+    revised: ""
   - name: best_time_label
     status: active
     source: design/gdd/menus-screens.md
@@ -451,7 +520,7 @@ formulas:
     variables:
       - t
       - best
-    output_range: [0, 0]
+    output_range: [0, 0]  # string output; no numeric range (cross-GDD review B21)
     expression: "title 'Clear!'; line format(t) + ' · best ' + format(best)"
     notes: "Win overlay time line. Evaluated after Save's merge (Level State rule 6 records before the overlay opens), so best <= t always holds. One fixed form on every win (revised 2026-11-22: no 'First clear!' or 'New best!' variants); on a first clear, a record or a tie best = t."
     added: 2026-11-22
@@ -599,13 +668,16 @@ constants:
     revised: ""
   - name: align_tolerance
     status: active
-    source: design/gdd/touch-mouse-input.md
+    # 2026-11-22 (cross-GDD review H3): source was touch-mouse-input.md; the
+    # blocking-keep rule that uses it moved to Rope Links F6.
+    source: design/gdd/rope-links.md
     referenced_by:
+      - design/gdd/rope-links.md
       - design/gdd/touch-mouse-input.md
     value: 5
     unit: degrees
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: lv2_at
     status: active
     source: design/gdd/keep-levels.md
@@ -790,6 +862,58 @@ constants:
     unit: aggro per stall period
     added: 2026-11-22
     revised: ""
+  - name: stall_full
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    value: 4
+    unit: stall periods
+    notes: "Range 1-10. Periods without a capture until the rival's stall gate admits every player keep and the attack's per-troop penalty is gone (180 s at baseline stall_time 45). Added 2026-11-22, cross-GDD review X6."
+    added: 2026-11-22
+    revised: ""
+  - name: overlay_fade
+    status: active
+    source: design/gdd/screen-flow-scene-manager.md
+    referenced_by:
+      - design/gdd/screen-flow-scene-manager.md
+      - design/gdd/menus-screens.md
+    value: 0.2
+    unit: seconds
+    notes: "Range 0.1-0.4. Overlay fade in/out (cross-GDD review B16: one owner)."
+    added: 2026-11-22
+    revised: ""
+  - name: cover_fade
+    status: active
+    source: design/gdd/screen-flow-scene-manager.md
+    referenced_by:
+      - design/gdd/screen-flow-scene-manager.md
+      - design/gdd/menus-screens.md
+    value: 0.15
+    unit: seconds (each way)
+    notes: "Range 0.1-0.3. Transition cover fade, each way (cross-GDD review B16)."
+    added: 2026-11-22
+    revised: ""
+  - name: press_time
+    status: active
+    source: design/gdd/menus-screens.md
+    referenced_by:
+      - design/gdd/menus-screens.md
+    value: 0.08
+    unit: seconds
+    notes: "Range 0.05-0.15. Button press feedback (cross-GDD review B16)."
+    added: 2026-11-22
+    revised: ""
+  - name: panel_max_w
+    status: active
+    source: design/gdd/menus-screens.md
+    referenced_by:
+      - design/gdd/menus-screens.md
+    value: 600
+    unit: px
+    notes: "Range 480-680. Widest overlay panel (cross-GDD review B16)."
+    added: 2026-11-22
+    revised: ""
   - name: celebration_time
     status: active
     source: design/gdd/world-map-regions.md
@@ -825,6 +949,16 @@ constants:
       - design/gdd/troop-generation.md
     value: 23
     unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: plaque_min_height_px
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+    value: 30
+    unit: px
+    notes: "Floor of the plaque height in Level HUD F3 (cross-GDD review B15, B21)."
     added: 2026-11-22
     revised: ""
   - name: hud_top_px

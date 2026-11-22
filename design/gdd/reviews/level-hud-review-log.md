@@ -85,3 +85,9 @@ Addressed:
 - [CROSS-REVIEW X9, HUD side] drag feedback drawn on the next rendered frame, Armed included (rule 8, AC12); preview legality read from Rope Links `tie_legal`, not Input (agreed with the other session)
 - [CROSS-REVIEW G-C2] Rope Links has four refusal texts (`self` silent)
 Not addressed (recommended): stale bidirectional-check text; Level State HUD row omits pause_allowed (Level State, other session); H1 at keep_hit_radius 120 and plaque fit at radius 48
+
+## Revision — 2026-11-22 (cross-GDD review round 2)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): strip timer counts unpaused rendered time, not match steps, so Armed messages expire (blocker B1; AC22 and new AC4b); strength bar counts keep troops only (H4; F1, AC1, AC2, registry); blocked refusal silent; one strings-ownership rule in rule 15 (B3); plaque height floor named (B15); H1 cites Campaign Level Data B6 and plaque overlap goes to the UX spec (B10); Dependencies add tie_legal and statuses (B8, B17). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 3)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): AC22 Armed clause no longer relies on an unreachable not_yours refusal (R3B4); plaque_width and plaque_min_height_px registered (B21). Status In Review, pending re-review.

@@ -113,3 +113,12 @@ Addressed:
 - [RECOMMENDED] Interactions/Dependencies: Menus reads `best_time`; army systems labelled UAT-2
 Not addressed (recommended): state the purpose of `plays`
 - Follow-up (same day): UAT-1 background retry had no event source; player decision — Save & Progress reads the engine's app-background notification itself in UAT-1 (Interactions, Dependencies, Cross-References, AC22); Mobile Platform Integration takes it over from the Vertical Slice
+
+## Revision — 2026-11-22 (cross-GDD review round 2)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): UAT-1 newer-version message carries Delete progress (B11; rule 11, UI, AC5 tier tag, AC28); Stars & Rewards labelled UAT-2 (B12); stale provisional lines updated (B17); rules renumbered in order (B18). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 3)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): delete_progress() named as the call Screen Flow (UAT-1) or Settings (Vertical Slice) makes on Yes (R3B2; rule 11, direction rule); a refused write in a read-only session returns success and never raises could not be saved (R3-W3; rule 9, AC12); message-box wording (R3B3); same-frame merge example made realistic (R3B7; Edge, AC15); soft id-validation dependency stated in the direction rule (R3B9). Status In Review, pending re-review.
+
+## Revision — 2026-11-22 (cross-GDD review round 4)
+Revisions applied 2026-11-22 (user-approved, cross-GDD review round 4): Screen Flow row is both ways, naming its delete_progress() call (R4B1); on Yes the Title stays with the fresh profile (R4S1). Status In Review, pending re-review.

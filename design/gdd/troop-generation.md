@@ -9,7 +9,7 @@
 
 ## Summary
 
-Troop Generation makes owned keeps add troops automatically on a steady 2.5-second beat, faster at higher keep levels, up to a cap of 60; neutral keeps never grow. It is the income that drives the whole match: it sets how fast keeps level up and how many pawns the player's ropes can pour onto a target, while sending troops stays free so a keep only loses troops when attacked. Its invariant I3 keeps it from out-growing a single attacking rope.
+Troop Generation makes owned keeps add troops automatically on a steady 2.5-second beat, faster at higher keep levels, up to a cap of 60; neutral keeps never grow. It is the income that drives the whole match: it sets how fast keeps level up and how many pawns the player's ropes can pour onto a target, while sending troops stays free so a keep only loses troops when attacked. Its invariant I3 keeps an unfed keep from out-growing a single attacking rope; a keep fed by an allied rope can (an ally rope adds about 1.67 troops/s), which is the strongest move a player has.
 
 > **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Keep Levels, Campaign Level Data, Factions (soft, UAT-2)`
 
@@ -83,7 +83,7 @@ There is no state in which an owned keep stops generating for any other reason.
 | Troop Marching & Clashes | in | Changes `troops` (±1 per arrival) and raises `keep_captured` | Troop Marching & Clashes |
 | Rope Links | out | Reads `troops` and `troop_cap` to detect a full keep (its rule 10); I3 bounds its `send_interval`. Sending is free, so ropes never change `troops` | Rope Links owns `send_interval`; Troop Generation owns the count |
 | Level State & Match Flow | out | Reads `owner` and `troops` to decide win and loss | Troop Generation (read-only to others) |
-| Rival AI | out | Reads `troops` and `level` of every keep; follows the same generation rules | Troop Generation |
+| Rival AI | out | Reads `owner` and `troops` of every keep (`level` comes from Keep Levels), and `troop_cap` as the scale of its stall gate (Rival AI F3); follows the same generation rules | Troop Generation |
 | Campaign Level Data | in | Initial `owner` and `troops` per keep | Campaign Level Data |
 | Level HUD, Feedback & Juice | out | Event "keep gained troops" (keep, amount) and "keep reached cap" | Troop Generation |
 | Factions (UAT-2) | in | `GenerationModifiers`: interval multiplier, per-level amount offsets, cap offset (identity by default) | Factions defines values, Troop Generation defines the hook |
@@ -161,11 +161,11 @@ The bands come from Keep Levels' drop points (baseline: level 3 down to 30, leve
 
 - **I1.** `lv3_at ≤ troop_cap`, so level 3 is reachable by generation.
 - **I2.** `1 ≤ gen_l1 ≤ gen_l2 ≤ gen_l3`, so every level gains and levelling up never lowers income.
-- **I3.** `R_gen(3) < R_send`, that is `gen_l3 / gen_interval < 1 / send_interval`, so one enemy rope can always wear a keep down. It is the same inequality as Rope Links' R1 and is checked once; a shipped build fixes a breach by lowering `send_interval` (Rope Links' clamp). Factions' `GenerationModifiers` must keep I1–I3 true.
+- **I3.** `R_gen(3) < R_send`, that is `gen_l3 / gen_interval < 1 / send_interval`, so one enemy rope can always wear down a keep that generation alone feeds. It says nothing about a keep that an allied rope also feeds: an ally rope adds `R_send` (1.67 troops/s), more than any generation rate, so a fed keep can out-grow one enemy rope (decided 2026-11-22, cross-GDD review H5: intended; the rival does not feed its keeps this way, Rival AI rule 10). It is the same inequality as Rope Links' R1 and is checked once; a shipped build fixes a breach by lowering `send_interval` (Rope Links' clamp). Factions' `GenerationModifiers` must keep I1–I3 true.
 
 ### Feedback loop
 
-More troops → higher level → faster generation → more troops. This is a positive loop and it is intended: it makes holding keeps valuable and rewards early captures. It is damped by `troop_cap` (growth stops at 60), by combat (arriving enemy pawns remove troops), and by I3 (no keep out-grows a single rope). Because sending is free there is no cost to attacking, so the loop is stronger than in a game where sending costs troops.
+More troops → higher level → faster generation → more troops. This is a positive loop and it is intended: it makes holding keeps valuable and rewards early captures. It is damped by `troop_cap` (growth stops at 60), by combat (arriving enemy pawns remove troops), and by I3 (no unfed keep out-grows a single rope; an allied feed rope can, which is the skill the loop rewards). Because sending is free there is no cost to attacking, so the loop is stronger than in a game where sending costs troops.
 
 ## Edge Cases
 
@@ -189,14 +189,14 @@ More troops → higher level → faster generation → more troops. This is a po
 
 ## Dependencies
 
-Keep Levels, Rope Links and Troop Marching & Clashes have GDDs and are checked against this one; every other contract here is provisional until its GDD is written.
+Every system named here that has a GDD (Keep Levels, Rope Links, Troop Marching & Clashes, Rival AI, Level State & Match Flow, Campaign Level Data, Level HUD) was checked against this one in the cross-GDD review of 2026-11-22; the contracts with systems not yet designed (Factions, Unit Roster & Stats, Feedback & Juice) stay provisional until those GDDs exist.
 
 ### Depends on (upstream)
 
 | System | Kind | What this system needs | Status |
 |--------|------|------------------------|--------|
 | Keep Levels | Hard | The keep's `level` (1–3), to pick `gen_amount`. Resolved without a cycle by per-step order: Keep Levels recomputes the level from `troops`, then Troop Generation uses it | Checked: Keep Levels Core Rule 4 states the same order |
-| Campaign Level Data | Hard (data only) | Initial `owner` and `troops` of each keep | Provisional |
+| Campaign Level Data | Hard (data only) | Initial `owner` and `troops` of each keep | In Review |
 | Factions (UAT-2) | Soft | `GenerationModifiers`, identity by default | Provisional |
 
 ### Depended on by (downstream)
@@ -207,14 +207,14 @@ Keep Levels, Rope Links and Troop Marching & Clashes have GDDs and are checked a
 | Troop Marching & Clashes | Hard | Owns the changes it makes to `troops` (±1 per arrival, capture to 1) and the timer reset on capture |
 | Rope Links | Soft | `troops` and `troop_cap` to detect a full keep; I3 bounds its `send_interval` |
 | Level State & Match Flow | Hard | `owner` and `troops`, for win and loss |
-| Rival AI | Hard | `troops` and `level` of every keep |
+| Rival AI | Hard | `owner` and `troops` of every keep (it reads `level` from Keep Levels); `troop_cap` (its F3 stall gate) |
 | Level HUD | Soft | `troops` for the on-screen count; works without events by reading each frame |
 | Feedback & Juice | Soft | Events "keep gained troops" and "keep reached cap" |
 | Factions (UAT-2) | Soft | Defines `GenerationModifiers` values; must keep invariants I1–I3 |
 
 ### Consistency to fix
 
-- Level State & Match Flow, Rival AI, Level HUD and Feedback & Juice are not yet listed as depending on Troop Generation in `systems-index.md`. Add them when those GDDs are written.
+- `systems-index.md` lists Level State & Match Flow, Rival AI and Level HUD as depending on Troop Generation (checked 2026-11-22); Feedback & Juice is added when its GDD is written.
 
 ## Visual/Audio Requirements
 
@@ -248,13 +248,13 @@ This system has no input of its own, so its feel targets are about readability a
 - Every keep, owned or neutral, always shows its current troop count on a plaque under the keep. The number is large enough to read on a phone held in portrait (the prototype used 23 px on a 720 px wide table; the accessibility GDD may raise it).
 - Owned keeps (the player's and the rival's) show their rope slots (filled and empty) beside the count: shown by Keep Levels and Rope Links, placed by Level HUD.
 - The "full" mark and the beat pop are described under Visual/Audio.
-- The Level HUD's global strength bar sums every keep's `troops` plus marching pawns for each side; it reads `troops` from this system.
+- The Level HUD's global strength bar sums every keep's `troops` for each side (pawns in flight are not counted, Level HUD rule 10); it reads `troops` from this system.
 
 > **UX Flag — Troop Generation**: This system has UI requirements. In Pre-Production, run `/ux-design` to create a UX spec for each screen or HUD element this system contributes to (the keep plaque and the level HUD) before writing epics. Stories that reference UI should cite `design/ux/[screen].md`, not this GDD directly.
 
 ## Cross-References
 
-Keep Levels, Rope Links and Troop Marching & Clashes exist and are checked; the other entries are provisional until each GDD exists.
+Every entry whose GDD exists was checked in the cross-GDD review of 2026-11-22; entries for Factions, Unit Roster & Stats and Feedback & Juice are provisional until those GDDs exist.
 
 | This GDD uses | Owned by | Item |
 |---------------|----------|------|
@@ -320,8 +320,8 @@ Baseline data unless a criterion says otherwise: `gen_interval` 2.5 s, `gen_l1` 
 |---|----------|-------|------------|
 | 1 | Should keep timers start staggered (for example offset by keep index) instead of all at 0, so beats do not all land on the same frame? Rule 9 currently starts every timer at 0 | game-designer | First Godot playable (MVP playtest) |
 | 2 | Capture now resets the timer to 0 (Rule 7); the prototype kept the old timer. Is the difference noticeable or harmful to feel? | game-designer | First Godot playable |
-| 3 | Does the rival follow the same generation numbers on every region, or does difficulty also scale through generation (for example a faster `gen_interval`)? I3 limits how far that can go | Rival AI / Campaign Level Data | Before the Rival AI GDD |
-| 4 | Per-race generation differences (Factions): which of interval, per-level amounts or cap may a race change, and how does each stay inside I1–I3? | Factions | Alpha |
+| 3 | Does the rival follow the same generation numbers on every region, or does difficulty also scale through generation (for example a faster `gen_interval`)? I3 limits how far that can go. For UAT-1 the rival uses the same numbers everywhere and difficulty is Rival AI data (`think`, `aggro`; Rival AI rule 2, Campaign Level Data rule 12); revisit for UAT-2 | Rival AI / Campaign Level Data | UAT-2 |
+| 4 | Per-race generation differences (Factions): which of interval, per-level amounts or cap may a race change, and how does each stay inside I1–I3? | Factions | UAT-2 |
 | 5 | Closed (2026-11-22): the keep's own side first (Troop Marching & Clashes rule 11) | — | — |
 | 6 | A ring of three or more full allied keeps relaying in a loop: acceptable, or limited by Rope Links? | Rope Links | Before that GDD |
 | 7 | The performance target (under 0.1 ms per frame for all keeps) has not been measured on a phone | gameplay-programmer | Mobile Platform Integration (Vertical Slice) |

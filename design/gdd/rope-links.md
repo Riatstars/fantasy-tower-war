@@ -38,8 +38,8 @@ Without this system the match has no decisions: troops would grow and nothing wo
 `game-designer`, `systems-designer`, `ai-programmer` and `art-director` not consulted — Lean mode. Review manually before production.
 
 1. **A rope is directed**: from an origin keep to a target keep, owned by the origin's owner at tie time. Only an owned keep can be an origin; neutral keeps never tie. The target may be any other keep: allied, neutral or rival.
-2. **A tie is legal when all of these hold** (checked in this order, and the first failure is the reason reported): the origin belongs to the side tying; the target is not the origin; no rope already runs origin→target; if the target is allied, no rope runs target→origin (the both-ways ban, the player's rule; "runs" means Extending or Active: a Fading rope never blocks a tie, so a cut rope can be re-tied at once in either direction, decided 2026-11-22); the origin holds fewer ropes than `max_ropes[level]` (Keep Levels). Distance is never checked (the player's rule: no length limit).
-3. **The target is the one Touch & Mouse Input resolved** (its F6: the nearer keep on the same line, when one blocks the way). If that keep fails rule 2, the tie is refused with the reason; Rope Links never substitutes a farther keep.
+2. **A tie is legal when all of these hold** (checked in this order, and the first failure is the reason reported): the origin belongs to the side tying; the target is not the origin; no keep lies in the way (rule 3, F6); no rope already runs origin→target; if the target is allied, no rope runs target→origin (the both-ways ban, the player's rule; "runs" means Extending or Active: a Fading rope never blocks a tie, so a cut rope can be re-tied at once in either direction, decided 2026-11-22); the origin holds fewer ropes than `max_ropes[level]` (Keep Levels). Distance is never checked (the player's rule: no length limit).
+3. **A keep in the way blocks a tie** (moved here from Touch & Mouse Input's F6, decided 2026-11-22, so the player and the rival obey one rule). `blocking_keep(origin, target)` (F6) is the keep nearest the origin that lies on the way to the target; while one exists the tie is refused with `blocked`. Touch & Mouse Input resolves a drag through F6 to the nearest keep that nothing blocks before it reports the release (its F6), so a player's tie is never refused with `blocked` and the preview already shows the keep the rope will reach. The rival scores only targets with `tie_legal` = `ok` (Rival AI rule 6), so it never ties past a keep either. If the resolved keep fails rule 2, the tie is refused with that reason; Rope Links never substitutes a farther keep.
 4. **Tying.** A legal tie creates the rope at once, raises `rope_tied(rope)`, and the rope spends `rope_extend_time` (0.2 s) extending from origin to target before it can send. The first pawn leaves `first_send_delay` (0.3 s) after extension; after that one pawn leaves every `send_interval` (0.6 s) while the rope is active.
 5. **Sending is free and unconditional.** A pawn leaving never reduces the origin's troops (Troop Generation's Core Rule 5), and the rope sends whatever the origin's troop count, even 0, for as long as the origin stays owned by the rope's owner. The troop count is the keep's defence, not its ammunition.
 6. **The pawn is handed to Troop Marching & Clashes** at launch with its origin, target, owner and lane (a relay also passes its unit, `hp` and relay count); Rope Links does not move it, fight it or deliver it.
@@ -50,7 +50,7 @@ Without this system the match has no decisions: troops would grow and nothing wo
 11. **Lanes.** Two ropes between the same two keeps in opposite directions (only possible between enemies, by rule 2) are each offset `rope_lane` (8 px) to their own right, so both are visible and their pawns clash in the open (Troop Marching). A lone rope lies on the straight line.
 12. **The rival uses the same calls** (`tie`, `cut`) and gets the same refusals; Rival AI decides what to try, Rope Links decides what is allowed.
 13. **Events** for the HUD, effects and the tutorial: `rope_tied`, `rope_cut(reason: player | rival | level_drop | capture)`, `tie_refused(origin, target, reason)`, `pawn_launched`, `pawn_relayed`.
-14. **Data.** `send_interval`, `rope_extend_time`, `first_send_delay`, `rope_fade_time`, `rope_lane`, `pawns_per_rope_max` are data-file values. In Alpha, Factions may change `send_interval` per race inside Troop Generation's invariant I3; God & Goddess Powers may add temporary rope effects through their own GDD.
+14. **Data.** `send_interval`, `rope_extend_time`, `first_send_delay`, `rope_fade_time`, `rope_lane`, `pawns_per_rope_max` and `align_tolerance` (F6) are data-file values. From UAT-2, Factions may change `send_interval` per race inside Troop Generation's invariant I3; in Alpha, God & Goddess Powers may add temporary rope effects through their own GDD.
 
 ### States and Transitions
 
@@ -67,16 +67,16 @@ A tie that is refused creates no rope and no state; it raises `tie_refused`. Paw
 
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
-| Touch & Mouse Input | in/out | In: `tie_released(from, to)` (to already resolved by F6), `cut_tapped(rope)`, `cut_swiped(rope, t)`. Out: the hit-test provider (every keep with its owner flag; the player's Extending and Active ropes as lane-adjusted segments); whether a previewed tie is legal and why not (`tie_legal`), which Level HUD reads directly for the preview's red cross; Input does not judge legality (decided 2026-11-22) | Input defines the events; Rope Links defines legality and supplies the provider |
+| Touch & Mouse Input | in/out | In: `tie_released(from, to)` (to already resolved by Input's F6, which repeats this GDD's F6), `cut_tapped(rope)`, `cut_swiped(rope, t)`. Out: the hit-test provider (every keep with its owner flag; the player's Extending and Active ropes as lane-adjusted segments) and `blocking_keep` (F6) for target resolution. Input does not judge legality (decided 2026-11-22) | Input defines the events; Rope Links defines legality and the blocking rule and supplies the provider |
 | Keep Levels | in | `max_ropes[level]` for rule 2; `level_dropped(keep, old, new)` → cut newest ropes beyond the new limit | Keep Levels defines the limit and "newest falls"; Rope Links executes |
 | Troop Generation | in/out | In: `troops` and `troop_cap`, to know when a keep is full (rule 10). Out: nothing that changes `troops` (sending is free). `send_interval` is this GDD's, and Troop Generation's invariant I3 bounds it | Rope Links owns `send_interval`; Troop Generation owns the count |
 | Troop Marching & Clashes | out/in | Out: `pawn_launched(origin, target, owner, lane)` at every send and relay (a relay also passes unit, `hp`, relays). In: `ally_arrived_full(keep, pawn)` with the pawn's origin, so rule 10 can relay it; `keep_captured`, so rule 7 cuts the keep's outgoing ropes | Rope Links launches; Troop Marching moves, fights and delivers |
-| Rival AI | in | `tie(origin, target)` and `cut(rope)` calls, answered with the same refusals as the player's | Rope Links |
-| Level HUD | out | Each rope's state, end points and lane, for drawing the rune rope, its extension, its sag and the pins; `tie_refused` for the message strip | Rope Links raises; Level HUD draws |
+| Rival AI | in | `tie(origin, target)` and `cut(rope)` calls, answered with the same refusals as the player's, `blocked` included (F6) | Rope Links |
+| Level HUD | out | Each rope's state, end points and lane, for drawing the rune rope, its extension, its sag and the pins; `tie_refused` for the message strip; whether a previewed tie is legal and why not (`tie_legal`), which the HUD reads directly for the preview's red cross (decided 2026-11-22) | Rope Links raises; Level HUD draws |
 | Feedback & Juice | out | `rope_tied`, `rope_cut`, `pawn_relayed` for the snap sound, sparks and the relay flicker | Rope Links raises |
 | Tutorial & Onboarding | out | `rope_tied` and `rope_cut` with reason player, to tell that the first tie and the first cut happened | Rope Links raises |
 | Campaign Level Data | none | Keep positions come through the keeps themselves; Rope Links never reads level files | Campaign Level Data |
-| Factions, God & Goddess Powers (Alpha) | in | `send_interval` override per race (inside I3); temporary rope effects | Their GDDs |
+| Factions (UAT-2), God & Goddess Powers (Alpha) | in | `send_interval` override per race (inside I3); temporary rope effects | Their GDDs |
 
 ## Formulas
 
@@ -86,18 +86,19 @@ A tie that is refused creates no rope and no state; it raises `tie_refused`. Paw
 
 The tie_legal formula is defined as:
 
-`tie_legal(o, t) = first failing check of [o.owner = side, t ≠ o, ¬rope(o→t), ¬(t.owner = o.owner ∧ rope(t→o)), ropes_held(o) < max_ropes(o.level)]`, giving `ok` or one of `not_yours`, `self`, `duplicate`, `reverse`, `slots`. `rope(x→y)` is true only for an Extending or Active rope; Fading ropes are ignored (rule 2).
+`tie_legal(o, t) = first failing check of [o.owner = side, t ≠ o, blocking_keep(o, t) = none, ¬rope(o→t), ¬(t.owner = o.owner ∧ rope(t→o)), ropes_held(o) < max_ropes(o.level)]`, giving `ok` or one of `not_yours`, `self`, `blocked`, `duplicate`, `reverse`, `slots`. `rope(x→y)` is true only for an Extending or Active rope; Fading ropes are ignored (rule 2).
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | o, t | keep | | calculated | Origin and resolved target |
 | side | owner | player or rival | calculated | Who is tying |
+| blocking_keep(o, t) | keep or none | | calculated (F6) | The nearest keep in the way |
 | ropes_held(o) | int | 0–3 | calculated | Active or extending ropes from o |
 | max_ropes(level) | int | 1–3 | calculated (Keep Levels F3) | Slots at o's level |
 
 **Output Range:** `ok` or one reason. No distance term (unlimited length).
-**Example:** a level 2 player keep holding 2 ropes, tie to a neutral: `slots`. The same keep holding 1 rope, tie to an allied keep that already ropes it: `reverse`. Tie to a rival keep that ropes it: `ok` (enemy ropes may cross).
+**Example:** a level 2 player keep holding 2 ropes, tie to a neutral: `slots`. The same keep holding 1 rope, tie to an allied keep that already ropes it: `reverse`. Tie to a rival keep that ropes it: `ok` (enemy ropes may cross). The rival asking for A→C with B in the way (F6 example): `blocked`.
 
 ### F2. Send schedule
 
@@ -165,6 +166,24 @@ It bounds pawns sent by the rope's own timer. Relayed pawns ride on top; the tot
 **Output Range:** at baseline 21 pawns on the longest possible rope, 5 on a typical 260 px rope. With 15 keeps × 3 ropes the worst case is about 945 sent pawns; a real level is far below it.
 **Example:** 1,258 / (110 × 0.6) = 19.1 → 20, + 1 = 21 pawns.
 
+### F6. Blocking keep (a keep in the way)
+
+The blocking_keep formula is defined as:
+
+`blocking_keep(o, t) = the keep k nearest to o among all keeps other than o and t with |angle_diff(bearing(o, k), bearing(o, t))| ≤ align_tolerance and dist_to_line(k, o→t) ≤ keep_hit_radius and dist(o, k) < dist(o, t)`; `none` if no keep qualifies. Equal distances go to the lower id.
+
+`bearing(o, k)` is the direction in degrees from o to k; `angle_diff` is the smallest difference between two bearings (wrapping at ±180°). It applies to keeps of every owner. It was Touch & Mouse Input's F6 until 2026-11-22 and moved here so that one rule judges the player's and the rival's ties (rule 3); Input's F6 now repeats it to resolve a drag.
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| o, t | keep | | calculated | Origin and the asked-for target |
+| align_tolerance | float, degrees | 0–15 (baseline 5, from the player's own rule) | data file (this GDD; moved from Touch & Mouse Input) | How far off the same direction still counts |
+| keep_hit_radius | float, px | 48–120 (baseline 78) | data file (Touch & Mouse Input F1; the level's effective value) | The most a keep may sit off the straight line o→t and still be in the way |
+
+**Output Range:** one keep or none. A blocker is always strictly nearer to o than t, so repeating F6 on the blocker ends after at most (keeps − 2) repeats. A keep within 5° lies at most 0.087 × its distance off the line, so below about 895 px from the origin the angle test alone decides; the 78 px limit acts only on longer ropes.
+**Example:** o = A (360, 1060), B (360, 760), t = C (360, 520): both bearings are −90° and B is 300 px from A against C's 540 px, so `blocking_keep(A, C)` = B and `tie(A, C)` is `blocked`; `blocking_keep(A, B)` = none. With C′ (400, 520), 4.2° off B's bearing: still B. With C″ (440, 520), 8.4° > 5°: none, and A→C″ is not blocked.
+
 ### Invariants (checked when the data is loaded; the loader reports a breach)
 
 - **R1.** `send_interval < gen_interval / gen_l3` (Troop Generation's I3 from this side): one rope always out-sends a level 3 keep. Baseline 0.6 < 0.833.
@@ -191,7 +210,9 @@ Free sending makes ropes cost nothing but attention, so the loop "more ropes →
 - **If the target is captured by the other side while the rope is Extending or Active**: the rope stays; its meaning flips (reinforcement becomes attack, or attack becomes reinforcement). Nothing is cut. The player sees the rope's end pin change colour with the keep.
 - **Two allied keeps can never rope each other both ways**: rule 2 refuses it at tie time, and the only way two keeps become allied, a capture, cuts the captured keep's outgoing ropes (rule 7). The ban is therefore absolute.
 - **If a tie is attempted to a keep that is Extending-roped already** (origin→target exists but has not reached the target): `duplicate`.
-- **If F6 redirects to a keep that fails rule 2**: refused with that reason; no tie to the farther keep (Input's Core Rule 14 agrees).
+- **If Input's F6 resolves a drag to a nearer keep that fails rule 2**: refused with that reason; no tie to the farther keep (Input's Core Rule 14 agrees).
+- **If the rival asks for a tie past a keep in the way**: refused with `blocked` (F6). It cannot happen through the rival's scoring, which keeps only `tie_legal` = `ok` targets; the blocking keep is a candidate of its own.
+- **If the accessibility setting lowers `keep_hit_radius` on a level** (Touch & Mouse Input's runtime reduction): F6 uses the level's effective radius for both sides, so the player and the rival meet the same blockers.
 - **If the rival and the player tie opposite ropes on the same frame**: both succeed (enemy pairs are allowed) and both get lanes (F4).
 - **If the keyboard fallback ties**: same path as a release, same refusals.
 
@@ -222,15 +243,15 @@ Free sending makes ropes cost nothing but attention, so the loop "more ropes →
 
 ## Dependencies
 
-Keep Levels, Touch & Mouse Input, Troop Generation and Troop Marching & Clashes have GDDs and their contracts are checked below. Every other system here has no GDD yet; its contract is provisional.
+Every system here that has a GDD (Keep Levels, Touch & Mouse Input, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Rival AI, Level HUD, Campaign Level Data) was checked in the 2026-11-22 cross-GDD review. Feedback & Juice, Tutorial & Onboarding, Factions and God & Goddess Powers have no GDD yet, so their contracts are provisional.
 
 ### Depends on (upstream)
 
 | System | Kind | What this system needs | Status |
 |--------|------|------------------------|--------|
 | Keep Levels | Hard | `max_ropes[level]`; `level_dropped` to know what to cut (capture cuts come from Troop Marching) | Checked: its Core Rules 5–7, F3, F4 and AC9–AC12 match rules 2, 7 and F1 |
-| Touch & Mouse Input | Hard | `tie_released` with the F6 target, `cut_tapped`, `cut_swiped`; it expects the hit-test provider and the preview legality in return | Checked: its Core Rules 4, 7, 8, 14, Interactions and AC14 match rules 3, 9 and F1 |
-| Level State & Match Flow | Hard | Initialisation at build (no ropes, `relay_count` 0); the match state. Rope timers run only while the match is Running: not while Armed (before the first rope on a level that waits) and not after the deciding step. `rope_tied` from the first accepted tie starts the level clock on an Armed level (its Core Rule 2) | Added 2026-11-22 from that GDD; not yet re-checked here |
+| Touch & Mouse Input | Hard | `tie_released` with the target its F6 resolved, `cut_tapped`, `cut_swiped`; it expects the hit-test provider and `blocking_keep` (F6) in return | Checked: its Core Rules 4, 7, 8, 14, F6, Interactions and AC14 match rules 3, 9, F1 and F6 |
+| Level State & Match Flow | Hard | Initialisation at build (no ropes, `relay_count` 0); the match state. Rope timers run only while the match is Running: not while Armed (before the first rope on a level that waits) and not after the deciding step. On an Armed level the first tie accepted on arrival (`tie_legal`) starts the level clock, and its rope is created in step 0's phase 0 (its Core Rule 2) | Checked 2026-11-22: its Core Rule 2 matches rules 4 and 9 |
 | Troop Generation | Soft (data read) | `troops` and `troop_cap` to detect a full keep | Checked: its Core Rule 6, Interactions and edge case "at the cap … Rope Links relays it" match rule 10 |
 | Troop Marching & Clashes | Hard (runtime) | `ally_arrived_full(keep, pawn)` with the pawn's origin, unit, `hp` and relays; `keep_captured`; `pawn_speed` / `speed_min`; the relay limit | Checked: its rules 1, 10–13, F6, F8, F9 match rules 6, 7, 10, F5 and R3. Not a design cycle: Rope Links launches, Marching delivers and reports |
 
@@ -240,18 +261,16 @@ Keep Levels, Touch & Mouse Input, Troop Generation and Troop Marching & Clashes 
 |--------|------|-------------------------------|
 | Troop Marching & Clashes | Hard | `pawn_launched(origin, target, owner, lane)`; the lane for clash geometry |
 | Rival AI | Hard | `tie`, `cut` and their refusals; the rope list to read the board |
-| Level HUD | Hard | Rope states, end points, lanes; `tie_refused` messages |
+| Level HUD | Hard | Rope states, end points, lanes; `tie_refused` messages; `tie_legal` for the preview's red cross |
 | Feedback & Juice | Soft | `rope_tied`, `rope_cut`, `pawn_relayed` |
 | Tutorial & Onboarding | Soft | First tie and first cut |
-| Touch & Mouse Input | Hard | The hit-test provider (every keep with its owner; the player's cuttable ropes) and preview legality |
+| Touch & Mouse Input | Hard | The hit-test provider (every keep with its owner; the player's cuttable ropes) and `blocking_keep` (F6) |
 | God & Goddess Powers (Alpha) | Soft | Rope effects through this GDD's data and events |
 | Campaign Level Data | Soft (a rule it must check) | Invariant R3 per level (longest rope against `send_interval` and `pawn_speed`) |
 
 ### Consistency to fix
 
-- `touch-mouse-input.md:49`, `:248` name "the Level screen" as the hit-test provider and `:77` lists only the player's keeps; both must read "Rope Links (rule 9), every keep with its owner" (the player's decision, 2026-11-22).
-- `game-concept.md:79` "A full keep never loses arriving allied troops while it has an outgoing rope" must add "except a pawn past the relay limit (6 relays)".
-- Registry: add rope-links.md to `referenced_by` for `gen_interval`, `gen_amount_level_3`, `generation_rate`; register `pawns_per_rope_max` (40).
+None open. The three edits listed here earlier (Touch & Mouse Input's hit-test provider wording, `game-concept.md`'s relay-limit exception and the registry entries) were applied on 2026-11-22.
 
 ## Visual/Audio Requirements
 
@@ -282,28 +301,30 @@ Keep Levels, Touch & Mouse Input, Troop Generation and Troop Marching & Clashes 
 
 ## UI Requirements
 
-- **Refusal messages** in the Level HUD's bottom strip, one per reason: `slots` → "Level L keep: only N ropes. Grow it or cut one." (N = `max_ropes[L]`); `reverse` → "That keep already ropes this one."; `duplicate` → "Already roped."; `not_yours` → "Only your keeps can tie ropes."; `self` → no message (the drag simply ends). Each shows for about 2.4 s.
+- **Refusal messages** in the Level HUD's bottom strip, one per reason (this GDD owns each key and draft wording; the text is in the strings data file, Level HUD rule 15): `slots` → "Level L keep: only 1 rope. Grow it or cut one." when N is 1, "Level L keep: only N ropes. Grow it or cut one." when N is 2 or more (N = `max_ropes[L]`; two strings, singular and plural, in the strings data file, decided 2026-11-22); `reverse` → "That keep already ropes this one."; `duplicate` → "Already roped."; `not_yours` → "Only your keeps can tie ropes."; `self` → no message (the drag simply ends); `blocked` → no message (Input redirects the player's drag to the nearer keep first, so only the rival can receive it). Each shows for about 2.4 s.
 - **Slot dots** under each owned keep (Keep Levels and Troop Generation already place them): filled per Active or Extending rope.
-- **Preview**: the drag preview snaps to the resolved target and shows a red cross when F1 would refuse (Input's Visual/Audio section).
-- **Controls on the Title** list "drag to tie, swipe or tap a rope to cut" (Input owns the wording).
+- **Preview**: the drag preview snaps to the resolved target and shows a red cross when F1 would refuse (Level HUD rule 8, from `tie_legal`).
+- **Controls on the Title** list "drag to tie, swipe or tap a rope to cut" (Input owns the key and draft wording; strings data file).
 - **Rival ropes** are visible but not interactive. The rival's keeps show slot dots like the player's (as Keep Levels and Troop Generation state), so the player can read the rival's spare capacity (the player's decision, 2026-11-22).
 
 > **UX Flag — Rope Links**: This system has UI requirements. In Pre-Production, run `/ux-design` for the message strip, the preview states and the slot dots before writing epics. Stories that reference UI should cite `design/ux/[screen].md`, not this GDD directly.
 
 ## Cross-References
 
-Keep Levels, Touch & Mouse Input, Troop Generation and Troop Marching & Clashes exist and are checked; the other referenced GDDs are still to be written and their entries are provisional.
+Every referenced GDD that exists was checked in the 2026-11-22 cross-GDD review; Factions and God & Goddess Powers have no GDD yet, so their entries are provisional.
 
 | This GDD uses | Owned by | Item |
 |---------------|----------|------|
 | `max_ropes[level]`, `level_dropped`, "newest falls", refusal text for `slots` | Keep Levels | Rules 2, 7; F1; UI Requirements |
-| `tie_released` with the F6 target, `cut_tapped`, `cut_swiped(rope, t)`, hit-test provider, preview legality, "never a farther keep" | Touch & Mouse Input | Rules 3, 7, 9; Interactions |
+| `tie_released` with the target its F6 resolved (by repeating this GDD's F6), `cut_tapped`, `cut_swiped(rope, t)`, hit-test provider, "never a farther keep" | Touch & Mouse Input | Rules 3, 7, 9; F6; Interactions |
+| Initialisation, the match state (Armed, Running, Ending), the clock start on the first accepted tie | Level State & Match Flow | Rules 4, 9; its Core Rule 2 |
+| `tie` and `cut` calls; scoring only targets with `tie_legal` = `ok` | Rival AI | Rules 3, 12; F1, F6 |
 | Sending is free (its Core Rule 5); relay at `troop_cap` (its Rule 6 and edge case); invariant I3 on `send_interval`; `gen_interval`, `gen_l3` | Troop Generation | Rules 5, 10; R1 |
 | `pawn_speed` (110 px/s), `speed_min` (F8); `ally_arrived_full`, `keep_captured`; the relay limit (its rule 13, F9); clash geometry on lanes | Troop Marching & Clashes | F5, R3; rules 6, 7, 10 |
 | Longest rope per level for R3 | Campaign Level Data | R3 |
-| Rope and pin drawing, message strip | Level HUD | Visual/Audio, UI Requirements |
+| Rope and pin drawing, message strip, the preview's red cross from `tie_legal` | Level HUD | Visual/Audio, UI Requirements; Interactions |
 | `send_interval` per race; rope effects | Factions, God & Goddess Powers | Rule 14 |
-| `keep_hit_radius` (78) | Touch & Mouse Input | R2 |
+| `keep_hit_radius` (78) | Touch & Mouse Input | R2, F6 |
 
 ## Acceptance Criteria
 
@@ -317,6 +338,8 @@ Baseline data unless stated: `send_interval` 0.6 s, `rope_extend_time` 0.2 s, `f
 - **AC4 [Integration: Keep Levels] (rule 2, slots)**: GIVEN a level 2 keep holding 2 ropes, WHEN a third tie is attempted, THEN `slots` with the message "Level 2 keep: only 2 ropes. Grow it or cut one."; WHEN the keep rises to level 3, THEN the tie succeeds.
 - **AC5 [Logic] (rule 2, no distance)**: GIVEN keeps at opposite corners of the B2 box (1,258 px apart at baseline, the longest legal rope), WHEN tied, THEN the tie succeeds.
 - **AC6 [Integration: Touch & Mouse Input] (rule 3)**: GIVEN B is already roped from A and C lies beyond B on the same line, WHEN the drag from A is released on C and Input resolves B, THEN the tie is refused with `duplicate` and no rope to C is made.
+- **AC6b [Logic] (rule 3, F6)**: GIVEN rival keep A (360, 1060), B (360, 760) and C (360, 520), WHEN the rival calls `tie(A, C)`, THEN it is refused with `blocked` and no rope exists; `tie(A, B)` succeeds; with C″ (440, 520) in place of C, `tie(A, C″)` succeeds.
+- **AC6c [Logic] (F6 boundaries)**: GIVEN `align_tolerance` 0, THEN only a keep exactly on the line o→t blocks (C′ (400, 520) is not blocked by B); GIVEN a keep exactly as far from o as t, THEN it never blocks t; GIVEN two blockers equally near o, THEN the lower id is returned.
 - **AC7 [Integration: Rival AI] (rule 12)**: GIVEN the rival asks for an illegal tie, THEN it gets the same reason code as the player would, and the board is unchanged.
 
 **Sending (Rules 4–6; F2)**
