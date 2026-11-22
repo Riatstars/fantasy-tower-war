@@ -60,13 +60,13 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - [x] Sending is free: pawns march along links and the sender keeps its troops; hitting an enemy keep reduces its garrison and takes it at zero; hitting your own reinforces
 - [x] Two keeps roping each other: their ropes run side by side and the marches clash and kill each other where they meet; the rival ropes back at a keep that ropes it
 - [x] Neutral keeps hold a garrison and don't generate *(guessed)*
-- [x] One AI rival that expands, attacks weak keeps and defends, at a calmer pace (thinks 1.8x slower, leaves you alone for the first 60 s of map 1)
+- [x] One AI rival that expands, attacks weak keeps and defends, at a calmer pace (thinks 1.8x slower; on map 1 the level clock starts at your first rope: until then no keep generates troops and the rival does nothing, decided 2026-11-22)
 - [x] Ropes have no length limit: any keep can rope any keep on the map
 - [x] Two allied keeps can't rope each other both ways (a rope back to an ally that already ropes you is refused)
 - [x] A full keep (60 troops) relays arriving ally pawns down its own ropes, in turn, instead of losing them
 - [ ] Anime pixel art: barracks / keep / castle by level, soldiers, mounted knights, summoner, monsters, guardian castles
 - [ ] World map: regions of level nodes, fog of war, stars per level, region conquered on the last level
-- [ ] Army: races (human, beast, elf, spirit, dragon) with unit cards; gold from level wins upgrades cards; diamonds, a fixed reward per conquered region, unlock rare races (UAT build)
+- [ ] Army: races (human, beast, elf, spirit, dragon) with unit cards; gold from level wins upgrades cards; diamonds, a fixed reward per conquered region, unlock rare races (UAT-2)
 - [ ] Guardian castle at the end of each region *(provisional, after UAT)*
 - [ ] God and goddess powers: one per region, cast once per level, picked before a level *(provisional, after UAT)*
 - [ ] Monetisation: in-app purchases (gem packs, starter pack, remove ads) and ads (rewarded for a revive or double reward; an interstitial between levels, never in region 1) *(provisional, store build after UAT)*
@@ -78,7 +78,7 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - tower levels (max 3) · in the slice
 - connections / links · in the slice
 - world map of levels, conquer region by region · in the slice
-- army: races, unit cards, gold and diamonds · in the UAT build (decided 2026-11-22)
+- army: races, unit cards, gold and diamonds · in UAT-2, after UAT-1 (decided 2026-11-22)
 - in-app purchase · after UAT
 - ads · after UAT
 - gods, goddesses and guardians · after UAT
@@ -97,7 +97,7 @@ Level 1 is a gentle race for neutrals. From level 2 the rival attacks your thinn
 - Gods, goddesses and guardian powers: build order step 3 (after UAT)
 
 ## Build order
-1. **UAT build** (offline, for testing; 20 systems, decided 2026-11-22): the match (link/cut, generation, levels, marching and clashes, capture, win and lose, rival AI), the world map with regions and stars, save, HUD and menus, and the army layer (races, unit cards, gold, diamonds from region conquest); anime pixel art for keeps, troops and monsters.
+1. **UAT-1 build** (offline, for testing; the 13 core systems, no deadline, decided 2026-11-22): the match (link/cut, generation, levels, marching and clashes, capture, win and lose, rival AI), the world map with regions (a win unlocks the next node), save, HUD and menus, all keeps sending the baseline unit; anime pixel art for keeps, troops and monsters. **UAT-2** (no deadline, after UAT-1): the army layer (races, unit cards, gold, stars, diamonds from region conquest) and its screens.
 2. Polish after UAT: juice and sound, tutorial, settings, mobile platform integration, accessibility.
 3. Guardian castles and god / goddess powers.
 4. Store build for the App Store and Google Play; in-app purchases and ads.

@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 3. Paint the map, grow the army (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -144,7 +144,7 @@ None. The level and region ids used for validation come from Campaign Level Data
 ### Consistency to fix
 
 - `systems-index.md` lists World Map & Regions, Currencies & Economy, Mobile Platform Integration, Unit Cards & Upgrades and Faction Collection & Unlocks as depending on Save & Progress. It does not yet list Level State & Match Flow, Stars & Rewards, Settings, Tutorial & Onboarding or Menus & Screens; add them when those GDDs are written.
-- Level State & Match Flow's GDD must record the result here and call `flush()` **before** asking Screen Flow for the overlay (Core Rule 6), call `record_level_played` on a loss only, record nothing on `match_quit`, and define what the result record holds so this GDD's stored shape matches it.
+- Level State & Match Flow's GDD must record the result here and call `flush()` **before** asking Screen Flow for the overlay (Core Rule 6), call `record_level_played` on a loss only, record nothing on `match_quit`, and define what the result record holds so this GDD's stored shape matches it. **Done (2026-11-22):** its result record is `{outcome, level_id, stars, time}`; `stars` is `win_stars` (a fixed 1 in UAT-1, Stars & Rewards supplies it from UAT-2), `time` is seconds to 0.1 (≥ 0.0); a Restart records nothing, like a Quit. Both fit the 0–3 and ≥ 0 ranges validated here.
 - Screen Flow's GDD says "Progress is written by Level State and Stars & Rewards before the result overlay opens": consistent with Core Rule 6.
 
 ## Visual/Audio Requirements

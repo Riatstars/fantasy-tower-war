@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 3. Paint the map, grow the army (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -116,7 +116,7 @@ Any trigger not in this table is ignored. While a transition is in progress ever
 
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
-| Level State & Match Flow | both | Out: the pause state (match frozen or running), "start this level" with a level id, "restart", `match_quit` (Quit confirmed: tear the match down, record nothing). In: the request to open the Win or Lose overlay with the result record | Screen Flow owns the pause state and the transitions; Level State owns the result record |
+| Level State & Match Flow | both | Out: the pause state (match frozen or running), "start this level" with a level id, "restart", `match_quit` (Quit confirmed: tear the match down, record nothing). In: the request to open the Win or Lose overlay with the result record `{outcome, level_id, stars, time}`; `pause_allowed` (false during Level State's Ending state, from the deciding step until the overlay is requested: Pause, Back and the app going to the background open nothing then, and Screen Flow calls Touch & Mouse Input's `lock()`). Pause is allowed while a level is Armed (waiting for the first rope); resuming returns to Armed (added 2026-11-22 from that GDD) | Screen Flow owns the pause state and the transitions; Level State owns the result record |
 | World Map & Regions | in/out | In: "open this level" (level id), "return to the map". Out: where the player came from | World Map & Regions |
 | Menus & Screens | both | Draws every screen and overlay; its buttons send requests. Screen Flow tells it which screen or overlay to show | Menus & Screens draws; Screen Flow decides |
 | Mobile Platform Integration | in | Back event, app to background and foreground events. Screen Flow sends nothing back | Mobile Platform Integration reports events; Screen Flow decides what they mean |

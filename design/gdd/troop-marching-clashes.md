@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 2. A tug-of-war you read at a glance (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -109,6 +109,7 @@ God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19)
 | # | Phase | Owner |
 |---|---|---|
 | 1 | Generation beats | Troop Generation |
+| 1b | Rival decision pass, when its think timer fires (cuts, then ties; added 2026-11-22) | Rival AI |
 | 2 | Rope timers, sends, then cuts requested this step; a launched pawn has `marches` 0 | Rope Links |
 | 3 | **March**: every pawn in flight, including those launched in phase 2, gains one march (F1) | this GDD |
 | 4 | **Clashes** (F4); a clash beats an arrival on the same step | this GDD |
@@ -433,5 +434,5 @@ Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_m
 | 5 | Keep the clash at the gate, or give a pawn near its target a free arrival? | Keep (prototype; it makes roping back a real defence) | user | After the first playable |
 | 6 | Pawns launched before an opposite rope stay on the centre line | Keep lanes frozen (Rope Links) | ux-designer, art-director | First Godot playable |
 | 7 | Arrive at the keep's centre or its wall? | Centre until keep art exists | art-director | Art pass |
-| 8 | Pawns in flight at match end: freeze, clear or finish? | Freeze (prototype) | Level State & Match Flow | That GDD |
+| 8 | Closed (2026-11-22): pawns in flight **freeze** in place at the deciding step and stay drawn behind the result overlay; discarded with the match (Level State & Match Flow, Core Rule 4) | Freeze | — | — |
 | 9 | Unmeasured: backstop 600, 0.5 ms budget, 20 px spacing; AC-M29 hand estimate | Measure and simulate | gameplay-programmer | First phone build |

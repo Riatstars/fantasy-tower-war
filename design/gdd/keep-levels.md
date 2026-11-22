@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 2. A tug-of-war you read at a glance (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -188,6 +188,8 @@ Troop Generation, Rope Links, Touch & Mouse Input and Troop Marching & Clashes h
 |--------|------|------------------------|--------|
 | Troop Generation | Hard | `troops` of every keep at the end of each step. The cycle (Troop Generation needs the level) is resolved by per-step order: Keep Levels recomputes first, Troop Generation uses the result on its next beat. Both GDDs state it | Checked: Troop Generation Core Rule 3, Interactions, Dependencies and AC11b say the same |
 | Campaign Level Data | Soft (data only) | Initial troops per keep, for the starting level | Provisional |
+| Level State & Match Flow | Soft | Asks for initialisation at match build: every keep's level from its starting troops with no history (rule 8); a Restart or Retry rebuilds from the same data | Added 2026-11-22 from that GDD |
+| Rival AI | Soft (read-only) | Reads every keep's `level` and `max_ropes[level]` to find free rope slots (its Core Rule 6) | Added 2026-11-22 from that GDD |
 | Factions (Alpha) | Soft | `LevelModifiers`, identity by default | Provisional |
 
 ### Depended on by (downstream)

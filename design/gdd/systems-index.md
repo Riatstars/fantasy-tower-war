@@ -13,8 +13,12 @@ Tower War is a mobile real-time conquest game. The player ties rope links betwee
 march down the ropes to take neutral and rival keeps. A keep grows from level 1 to 3 as it holds
 more troops, and its level sets how many ropes it can hold. Each match is one level on a fantasy
 world map; levels are grouped into regions that end at a guardian's castle. The first release is
-an offline **UAT build** of 20 systems (the MVP tier: match, campaign, save, HUD, menus and the
-army layer; the player's decision, 2026-11-22). In-app purchases and ads come with the store build
+an offline **UAT build** of 20 systems (the MVP tier; the player's decision, 2026-11-22) in two
+steps: **UAT-1**, the 13 core systems (match, campaign, save, HUD, menus), no deadline;
+**UAT-2**, the 7 army-layer systems (races, cards, gold, stars, diamonds, collection), no deadline.
+UAT-1 design order skips the army layer: Level State & Match Flow, Rival AI (baseline unit, no
+race), Campaign Level Data, World Map & Regions, Level HUD, Menus & Screens. In-app purchases and
+ads come with the store build
 after UAT; online play and accounts stay out of scope.
 
 The scope has four layers. The **match layer** (Troop Generation, Keep Levels, Rope Links, Troop
@@ -65,8 +69,8 @@ Brief paragraph per system (balanced density):
 | 5 | Keep Levels | Gameplay | MVP | In Review | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
 | 6 | Rope Links | Gameplay | MVP | In Review | design/gdd/rope-links.md | Keep Levels, Touch & Mouse Input, Troop Generation (soft), Troop Marching & Clashes (runtime callback) |
 | 7 | Troop Marching & Clashes | Gameplay | MVP | Designed | design/gdd/troop-marching-clashes.md | Rope Links, Keep Levels, Troop Generation |
-| 8 | Level State & Match Flow (inferred) | Core | MVP | Not Started | — | Troop Marching & Clashes, Screen Flow & Scene Manager, Save & Progress |
-| 9 | Rival AI | Gameplay | MVP | Not Started | — | Rope Links, Troop Marching & Clashes, Keep Levels, Level State & Match Flow |
+| 8 | Level State & Match Flow | Core | MVP | Designed | design/gdd/level-state-match-flow.md | Troop Marching & Clashes, Troop Generation, Rope Links, Screen Flow & Scene Manager, Save & Progress, Keep Levels (soft), Campaign Level Data (soft: level record contract) |
+| 9 | Rival AI | Gameplay | MVP | Designed | design/gdd/rival-ai.md | Rope Links, Troop Marching & Clashes, Troop Generation, Keep Levels, Level State & Match Flow, Campaign Level Data (soft: think, aggro, rival_seed per level) |
 | 10 | Campaign Level Data (inferred) | Progression | MVP | Not Started | — | Keep Levels, Rival AI, Level State & Match Flow, Touch & Mouse Input (soft: keep spacing rule I2), Rope Links (soft: invariant R3) |
 | 11 | World Map & Regions | Progression | MVP | Not Started | — | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager |
 | 12 | Level HUD (inferred) | UI | MVP | Not Started | — | Keep Levels, Rope Links, Level State & Match Flow, Touch & Mouse Input (soft) |
@@ -113,7 +117,7 @@ build after UAT), online versus, cloud save and accounts.
 
 | Tier | Definition | Target Milestone | Design Urgency |
 |------|------------|------------------|----------------|
-| **MVP** | The UAT build (decided 2026-11-22): the core loop plus the campaign and army layers. Without these, you can't test "is this fun, and does the map and army pull you on?" | UAT build (offline) | Design FIRST |
+| **MVP** | The UAT build (decided 2026-11-22), in two steps: UAT-1 = the core loop plus the campaign, 13 systems; UAT-2 = the army layer, 7 systems; no deadline for either. Without these, you can't test "is this fun, and does the map and army pull you on?" | UAT build (offline) | Design FIRST |
 | **Vertical Slice** | Required for one complete, polished area. Demonstrates the full experience. | Vertical slice / demo | Design SECOND |
 | **Alpha** | All features present in rough form. Complete mechanical scope, placeholder content OK. | Alpha milestone | Design THIRD |
 | **Full Vision** | Polish, edge cases, nice-to-haves, and content-complete features. | Beta / Release | Design as needed |
@@ -211,9 +215,11 @@ Integration, Tutorial & Onboarding, Collection & Upgrade Screens, Guardian Castl
 | 27 | Guardian Castles | Alpha | Feature | level-designer, game-designer | M |
 | 28 | Accessibility | Alpha | Polish | accessibility-specialist | M |
 
-Effort: S = 1 session, M = 2–3 sessions, L = 4+ sessions. Unit Roster & Stats and Factions come
-before Rival AI (re-ordered 2026-11-22) because the rival must play a race in the UAT build. Troop
-Marching & Clashes (order 7) defines the `UnitStats` contract that Unit Roster (order 9) fills in.
+Effort: S = 1 session, M = 2–3 sessions, L = 4+ sessions. Unit Roster & Stats and Factions were
+ordered before Rival AI (2026-11-22) because the rival must play a race; with the UAT-1 / UAT-2 split
+(later the same day) Rival AI was designed first for UAT-1, playing the baseline unit with no race
+(its Core Rule 11), and the race question moved to UAT-2. Troop Marching & Clashes (order 7)
+defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 
 ---
 
@@ -254,10 +260,10 @@ Marching & Clashes (order 7) defines the `UnitStats` contract that Unit Roster (
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 7 |
-| Design docs reviewed | 6 (all Needs Revision, revised, now In Review) |
-| Design docs approved | 0 |
-| MVP systems designed | 7/20 |
+| Design docs started | 9 |
+| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 3 Designed, pending review |
+| Design docs approved | 0 (the game concept is approved, 2026-11-22) |
+| MVP systems designed | 9/20 (UAT-1: 9/13) |
 | Vertical Slice systems designed | 0/5 |
 | Alpha systems designed | 0/3 |
 

@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 2. A tug-of-war you read at a glance (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -46,7 +46,9 @@ Troop Marching & Clashes do).
    gains again on its next beat rather than waiting a full interval.
 5. Generation is unconditional. It does not pause while the keep is under attack, has ropes tied, is
    sending pawns or is receiving allied pawns. Sending is free: launching a pawn never reduces
-   `troops`.
+   `troops`. **One exception, decided 2026-11-22 (`game-concept.md` § Rival):** on level 1 no keep
+   generates until the player's first rope is tied; the level clock starts then. Level State &
+   Match Flow owns the clock and the start trigger; before it starts, every timer stays at 0.
 6. Other systems change `troops` only in these ways, all applied by Troop Marching & Clashes: an enemy
    pawn arriving removes 1; an allied pawn arriving adds 1 while below `troop_cap` (at or above the cap
    it is reported for Rope Links to relay, or lost past the relay limit); capture sets `troops` to 1.

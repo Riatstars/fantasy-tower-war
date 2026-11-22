@@ -208,6 +208,7 @@ formulas:
     referenced_by:
       - design/gdd/keep-levels.md
       - design/gdd/rope-links.md
+      - design/gdd/rival-ai.md
     variables:
       - level
       - max_ropes_table
@@ -223,6 +224,7 @@ formulas:
       - design/gdd/rope-links.md
       - design/gdd/touch-mouse-input.md
       - design/gdd/keep-levels.md
+      - design/gdd/rival-ai.md
     variables:
       - origin
       - target
@@ -235,6 +237,110 @@ formulas:
     added: 2026-11-22
     revised: ""
 
+  - name: win_test
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+      - design/gdd/troop-marching-clashes.md
+    variables:
+      - owner
+    output_range: [0, 1]
+    expression: "won = all keeps k: owner(k) = player"
+    notes: "Boolean (0 or 1), tested once per step as phase 7 of Troop Marching's per-step order, on the final state of the step. Level data invariant L1 (at least one player keep and one other keep) keeps it from holding at step 0."
+    added: 2026-11-22
+    revised: ""
+  - name: loss_test
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+      - design/gdd/troop-marching-clashes.md
+    variables:
+      - owned_player
+      - pawns_in_flight_player
+    output_range: [0, 1]
+    expression: "lost = (owned_player = 0) and (pawns_in_flight_player = 0)"
+    notes: "Boolean (0 or 1), phase 7. A player with no keep and pawns still marching has not lost. With no keep the player has no ropes or relays, so pawns_in_flight can only fall: lost within longest_rope / pawn_speed (about 13.4 s) unless a landing pawn captures a keep."
+    added: 2026-11-22
+    revised: ""
+  - name: match_time
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+    variables:
+      - deciding_step
+      - start_step
+    output_range: [0.0, 180.0]
+    expression: "round((deciding_step - start_step + 1) / 60, 1)"
+    notes: "Seconds, stored with a win (Save and Progress time, 0 or more) and shown on a loss. The range is normal play (2 to 3 minutes, Pillar 2); there is no upper bound because the match has no timer. One step is 1/60 s and rounds to 0.0."
+    added: 2026-11-22
+    revised: ""
+
+  - name: think_interval
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    variables:
+      - think
+      - ai_think_scale
+      - jitter
+    output_range: [4, 2160]
+    expression: "round(60 * think * ai_think_scale * (1 - jitter + 2 * jitter * rng()))"
+    notes: "Steps between rival decision passes; rng() is the rival's seeded stream. Baseline level 1: 259 to 389 steps (4.3 to 6.5 s). Floor 4 steps at every knob minimum; safe floor about 1 s. think is per-level data (Campaign Level Data)."
+    added: 2026-11-22
+    revised: ""
+  - name: threat
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+      - design/gdd/troop-marching-clashes.md
+    variables:
+      - incoming
+    output_range: [0, 600]
+    expression: "threat(k) = incoming(k, enemy_of(k.owner))"
+    notes: "Enemy strength marching at keep k, read from Troop Marching rule 15. Strength-based, so unchanged at UAT-1 (strength 1) and correct from UAT-2."
+    added: 2026-11-22
+    revised: ""
+  - name: target_score
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    variables:
+      - dist
+      - dist_scale
+      - w_defend
+      - w_counter
+      - w_neutral
+      - w_attack
+      - aggro_eff
+      - noise_max
+    output_range: [-80, 86]
+    expression: "case-based: defend w_defend - d; counter w_counter - d; neutral w_neutral - 2*troops - d +/- bonus; attack w_attack - 1.5*troops - d + 22*aggro_eff; plus noise_max*rng(); tie if max > 0"
+    notes: "d = dist / dist_scale (baseline 25 px per point). Baseline weights 80 / 46 / 52 / 40. The attack case is a candidate only when origin.troops * aggro_eff > target.troops + attack_margin (4). Refined from the prototype's aiThink."
+    added: 2026-11-22
+    revised: ""
+  - name: aggro_eff
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+      - design/gdd/level-state-match-flow.md
+    variables:
+      - aggro
+      - stall_steps
+      - stall_time
+      - stall_boost
+    output_range: [0, 1]
+    expression: "min(1, aggro + stall_boost * floor(stall_steps / (60 * stall_time)))"
+    notes: "The stall breaker. stall_steps counts steps since the last keep_captured by either side (or clock_started); any capture resets it. Answers Level State's open question 1 (no draw rule, no match timer)."
+    added: 2026-11-22
+    revised: ""
+
 constants:
   - name: troop_cap
     status: active
@@ -244,6 +350,7 @@ constants:
       - design/gdd/rope-links.md
       - design/gdd/keep-levels.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/rival-ai.md
     value: 60
     unit: troops
     added: 2026-11-22
@@ -253,6 +360,7 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/level-state-match-flow.md
     value: 2.5
     unit: seconds
     added: 2026-11-22
@@ -364,6 +472,7 @@ constants:
       - design/gdd/keep-levels.md
       - design/gdd/troop-generation.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/level-state-match-flow.md
     value: 15
     unit: troops
     added: 2026-11-22
@@ -374,6 +483,7 @@ constants:
     referenced_by:
       - design/gdd/keep-levels.md
       - design/gdd/troop-generation.md
+      - design/gdd/level-state-match-flow.md
     value: 35
     unit: troops
     added: 2026-11-22
@@ -441,6 +551,7 @@ constants:
     referenced_by:
       - design/gdd/troop-marching-clashes.md
       - design/gdd/rope-links.md
+      - design/gdd/level-state-match-flow.md
     value: 110
     unit: px/s
     added: 2026-11-22
@@ -463,5 +574,60 @@ constants:
       - design/gdd/rope-links.md
     value: 6
     unit: relays
+    added: 2026-11-22
+    revised: ""
+  - name: end_delay
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+    value: 1.5
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: win_stars
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+    value: 1
+    unit: stars
+    added: 2026-11-22
+    revised: ""
+  - name: ai_think_scale
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    value: 1.8
+    unit: multiplier
+    added: 2026-11-22
+    revised: ""
+  - name: ai_min_send
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    value: 6
+    unit: troops
+    added: 2026-11-22
+    revised: ""
+  - name: stall_time
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+      - design/gdd/level-state-match-flow.md
+    value: 45
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: stall_boost
+    status: active
+    source: design/gdd/rival-ai.md
+    referenced_by:
+      - design/gdd/rival-ai.md
+    value: 0.2
+    unit: aggro per stall period
     added: 2026-11-22
     revised: ""

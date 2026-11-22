@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 1. One verb, standing choices (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -252,7 +252,7 @@ None. Every keep (with its owner flag) and the player's cuttable ropes arrive th
 | System | Kind | What it takes from this system |
 |--------|------|-------------------------------|
 | Rope Links | Hard | `tie_released(from, to)` (with the F6 target), `cut_tapped`, `cut_swiped`, the drag feedback and the swipe trail |
-| Screen Flow & Scene Manager | Soft | `lock()`, `unlock()` and the current-screen routing; the `back_pressed` and `pause_pressed` events. Contract written in Screen Flow's GDD |
+| Screen Flow & Scene Manager | Soft | `lock()`, `unlock()` and the current-screen routing; the `back_pressed` and `pause_pressed` events. Contract written in Screen Flow's GDD. Screen Flow also calls `lock()` for Level State & Match Flow during a match's Ending state (deciding step to result overlay) and `unlock()` when the next match is built (added 2026-11-22) |
 | Level HUD | Soft | The drag feedback and swipe trail for drawing the rope preview and the swipe line |
 | Tutorial & Onboarding | Soft | Gesture events, to tell when the first drag or cut was done |
 | Campaign Level Data | Soft (a rule it must obey) | Invariant I2: keep spacing of at least twice `keep_hit_radius` |

@@ -5,7 +5,7 @@
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
-> **Implements Pillar**: none (no game-pillars.md yet)
+> **Implements Pillar**: 1. One verb, standing choices (`design/gdd/game-concept.md` § Pillars)
 
 ## Summary
 
@@ -228,6 +228,7 @@ Keep Levels, Touch & Mouse Input, Troop Generation and Troop Marching & Clashes 
 |--------|------|------------------------|--------|
 | Keep Levels | Hard | `max_ropes[level]`; `level_dropped` to know what to cut (capture cuts come from Troop Marching) | Checked: its Core Rules 5–7, F3, F4 and AC9–AC12 match rules 2, 7 and F1 |
 | Touch & Mouse Input | Hard | `tie_released` with the F6 target, `cut_tapped`, `cut_swiped`; it expects the hit-test provider and the preview legality in return | Checked: its Core Rules 4, 7, 8, 14, Interactions and AC14 match rules 3, 9 and F1 |
+| Level State & Match Flow | Hard | Initialisation at build (no ropes, `relay_count` 0); the match state. Rope timers run only while the match is Running: not while Armed (before the first rope on a level that waits) and not after the deciding step. `rope_tied` from the first accepted tie starts the level clock on an Armed level (its Core Rule 2) | Added 2026-11-22 from that GDD; not yet re-checked here |
 | Troop Generation | Soft (data read) | `troops` and `troop_cap` to detect a full keep | Checked: its Core Rule 6, Interactions and edge case "at the cap … Rope Links relays it" match rule 10 |
 | Troop Marching & Clashes | Hard (runtime) | `ally_arrived_full(keep, pawn)` with the pawn's origin, unit, `hp` and relays; `keep_captured`; `pawn_speed` / `speed_min`; the relay limit | Checked: its rules 1, 10–13, F6, F8, F9 match rules 6, 7, 10, F5 and R3. Not a design cycle: Rope Links launches, Marching delivers and reports |
 
