@@ -15,7 +15,7 @@ delegates vs. handles directly. Include which gates it triggers (if any).]
 
 - [ ] Agent file exists at `.claude/agents/[name].md`
 - [ ] Frontmatter has `name`, `description`, `model`, `tools` fields
-- [ ] Model tier is `[opus | sonnet | haiku | inherit]` — frontmatter `model:` reads exactly that alias (tiers: `.claude/docs/model-tiers.md`)
+- [ ] Model tier is `[opus | sonnet | haiku | fable | inherit]` — frontmatter `model:` reads exactly that alias (tiers: `.claude/docs/model-tiers.md`)
 - [ ] Domain clearly stated
 - [ ] Escalation path documented
 - [ ] Does not make decisions outside its domain

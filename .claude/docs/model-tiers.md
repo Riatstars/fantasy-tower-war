@@ -42,7 +42,17 @@ model ships.
 | **Haiku** | `haiku` | Read-only status checks, formatting, simple lookups — no creative judgment needed |
 | **Sonnet** | `sonnet` | Implementation, design authoring, analysis of individual systems — default for most work |
 | **Opus** | `opus` | Multi-document synthesis, high-stakes phase gate verdicts, cross-system holistic review |
+| **Fable** | `fable` | **All design work** — every skill and agent in the design set (`.claude/rules/design-model.md`). Resolves to Fable 5.2 today |
 | **Session** | `inherit` | Agents only — runs on whatever model the session runs |
+
+> **Design runs on Fable** (the user's rule, 2026-11-22; `.claude/rules/design-model.md`).
+> The design set is 13 agents and 19 skills, listed in that rule and below. It
+> takes precedence over the Sonnet and Opus rows for its members:
+> `/review-all-gdds` and `creative-director` moved from `opus` to `fable`.
+> Because a skill's `model:` is only used when the user types it (table above),
+> design work Claude starts through the Skill tool is kept on Fable by
+> delegating it to the Fable-pinned design agents or by passing `model: "fable"`
+> on the `Agent` call.
 
 Skills with `model: haiku` (6): `/next-step`, `/onboard`, `/project-stage-detect`,
 `/scope-check`, `/sprint-status`, and `/help`, the old name of `/next-step`
@@ -61,19 +71,32 @@ Skills with `model: haiku` (6): `/next-step`, `/onboard`, `/project-stage-detect
 > configured rigor against the project's observable working practice. That is
 > synthesis, which is what the Haiku row is defined as excluding.
 
-Skills with `model: opus` (3): `/architecture-review`, `/gate-check`, `/review-all-gdds`
+Skills with `model: opus` (2): `/architecture-review`, `/gate-check`
 
-All other skills are Sonnet. When creating a new skill, assign Haiku if it only
-reads and formats; assign Opus if it must synthesize 5+ documents with
-high-stakes output; otherwise write `model: sonnet` explicitly. Every skill
+Skills with `model: fable` (19, the design set): `/brainstorm`, `/map-systems`,
+`/design-system`, `/quick-design`, `/design-review`, `/review-all-gdds`,
+`/consistency-check`, `/balance-check`, `/propagate-design-change`,
+`/ux-design`, `/ux-review`, `/art-bible`, `/asset-spec`, `/reverse-document`,
+`/team-combat`, `/team-level`, `/team-narrative`, `/team-audio`, `/team-ui`
+
+All other skills are Sonnet. When creating a new skill, assign Fable if it does
+design work (and add it to `.claude/rules/design-model.md`); otherwise assign
+Haiku if it only reads and formats; assign Opus if it must synthesize 5+
+documents with high-stakes output; otherwise write `model: sonnet` explicitly. Every skill
 declares a tier except `/prototype`, which has no `model:` line, so it runs on
 the session's model. Whether the tier takes effect depends on how the skill starts
 (see the table at the top of this file).
 
-**Agent model tiers.** 30 agents use `model: inherit` and run on the session's
-model. 19 are pinned:
+**Agent model tiers.** 18 agents use `model: inherit` and run on the session's
+model. 31 are pinned:
 
-- **opus (3):** `creative-director`, `producer`, `technical-director`. Under an
+- **fable (13, the design set):** `game-designer`, `systems-designer`,
+  `level-designer`, `economy-designer`, `live-ops-designer`, `ux-designer`,
+  `creative-director`, `narrative-director`, `world-builder`, `writer`,
+  `art-director`, `audio-director`, `sound-designer`
+  (`.claude/rules/design-model.md`). A new design agent is pinned to `fable` and
+  added there.
+- **opus (2):** `producer`, `technical-director`. Under an
   Opus session an `opus` pin runs on the session's exact model, `[1m]` included,
   so it never gets a smaller window than its parent.
 - **sonnet (16):** `lead-programmer`, `prototyper`, `devops-engineer`,
@@ -109,6 +132,7 @@ the session's model with one line in your `.claude/settings.local.json`
 { "env": { "CLAUDE_CODE_SUBAGENT_MODEL_FORCE": "1" } }
 ```
 
-It applies to **every** pin, the three `opus` directors included: under a
-Sonnet session they run on Sonnet too. `CLAUDE_CODE_SUBAGENT_MODEL` alone does
+It applies to **every** pin, the `opus` directors and the 13 `fable` design
+agents included: under a Sonnet session they run on Sonnet too, which suspends
+the design rule for agents (say so when it is set). `CLAUDE_CODE_SUBAGENT_MODEL` alone does
 not do it: it applies only to agents that set no model of their own.

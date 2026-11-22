@@ -31,6 +31,12 @@ pin in auto mode. Started by Claude through the Skill tool: no. Never tell a
 user a `haiku` skill saves money; an `opus` skill typed in a Sonnet session
 costs more. The agent-side `model:` is a different mechanism, and is applied.
 
+**Design work runs on Fable** (`.claude/rules/design-model.md`): the 13 design
+agents and 19 design skills declare `model: fable`. When Claude starts a design
+skill itself (Skill tool, so the pin is not used), it keeps the rule by doing the
+design drafting and review through those Fable-pinned agents, or by passing
+`model: "fable"` on the `Agent` call — never by claiming the skill ran on Fable.
+
 ## Subagents vs Agent Teams
 
 This project uses two distinct multi-agent patterns:

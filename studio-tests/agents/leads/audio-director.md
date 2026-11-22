@@ -13,7 +13,7 @@ Verified by reading the agent's `.claude/agents/audio-director.md` frontmatter:
 
 - [ ] `description:` field is present and domain-specific (references music direction, sound design, mix, audio implementation — not generic)
 - [ ] `tools:` reads Read, Glob, Grep, Write, Edit, WebSearch and `disallowedTools:` lists Bash
-- [ ] Model tier is `inherit` — frontmatter `model:` reads exactly `inherit` (tiers: `.claude/docs/model-tiers.md`)
+- [ ] Model tier is `fable` — frontmatter `model:` reads exactly `fable` (tiers: `.claude/docs/model-tiers.md`)
 - [ ] Agent definition does not claim authority over visual design, code implementation, or narrative content
 
 ---

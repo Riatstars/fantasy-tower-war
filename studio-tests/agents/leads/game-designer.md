@@ -13,7 +13,7 @@ Verified by reading the agent's `.claude/agents/game-designer.md` frontmatter:
 
 - [ ] `description:` field is present and domain-specific (references core loop, progression, combat rules, economy, player-facing design — not generic)
 - [ ] `tools:` reads Read, Glob, Grep, Write, Edit, WebSearch and `disallowedTools:` lists Bash
-- [ ] Model tier is `inherit` — frontmatter `model:` reads exactly `inherit` (tiers: `.claude/docs/model-tiers.md`)
+- [ ] Model tier is `fable` — frontmatter `model:` reads exactly `fable` (tiers: `.claude/docs/model-tiers.md`)
 - [ ] Agent definition does not claim authority over code implementation, visual art style, or standalone narrative lore decisions
 
 ---

@@ -13,7 +13,7 @@ Verified by reading the agent's `.claude/agents/systems-designer.md` frontmatter
 
 - [ ] `description:` field is present and domain-specific (references formulas, progression curves, balance math, economy — not generic)
 - [ ] `tools:` list is read/write-focused with Bash excluded (`disallowedTools:` lists Bash); every Write/Edit is gated by its "May I write" step or the orchestrator named-path exception
-- [ ] Model tier is `inherit` — frontmatter `model:` reads exactly `inherit` (tiers: `.claude/docs/model-tiers.md`)
+- [ ] Model tier is `fable` — frontmatter `model:` reads exactly `fable` (tiers: `.claude/docs/model-tiers.md`)
 - [ ] Agent definition does not claim authority over narrative, visual design, or conceptual mechanic rule ownership
 
 ---

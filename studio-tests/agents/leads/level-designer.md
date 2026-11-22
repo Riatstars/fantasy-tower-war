@@ -13,7 +13,7 @@ Verified by reading the agent's `.claude/agents/level-designer.md` frontmatter:
 
 - [ ] `description:` field is present and domain-specific (references level layout, encounter design, pacing, environmental storytelling — not generic)
 - [ ] `tools:` reads Read, Glob, Grep, Write, Edit and `disallowedTools:` lists Bash
-- [ ] Model tier is `inherit` — frontmatter `model:` reads exactly `inherit` (tiers: `.claude/docs/model-tiers.md`)
+- [ ] Model tier is `fable` — frontmatter `model:` reads exactly `fable` (tiers: `.claude/docs/model-tiers.md`)
 - [ ] Agent definition does not claim authority over narrative dialogue, AI behavior code, or visual art style
 
 ---

@@ -2,7 +2,7 @@
 
 # AD-CONCEPT-VISUAL — Visual Identity Anchor
 
-Agent: `art-director` | Model tier: session (inherit) | Domain: Visual identity, art bible, visual production readiness
+Agent: `art-director` | Model tier: Fable | Domain: Visual identity, art bible, visual production readiness
 
 **Trigger**: After game pillars are locked (brainstorm Phase 4), in parallel with CD-PILLARS
 

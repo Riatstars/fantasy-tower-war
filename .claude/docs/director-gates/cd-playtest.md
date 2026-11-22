@@ -2,7 +2,7 @@
 
 # CD-PLAYTEST — Player Experience Validation
 
-Agent: `creative-director` | Model tier: Opus | Domain: Vision, pillars, player experience
+Agent: `creative-director` | Model tier: Fable | Domain: Vision, pillars, player experience
 
 **Trigger**: After playtest reports are generated (`/playtest-report`), or after
 any session that produces player feedback
