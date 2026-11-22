@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Engine Version** | Godot 4.7 |
-| **Installed at pin time** | NOT DETERMINED — `godot` is not on PATH and no editor was found in the usual install folders (probed 2026-11-21). |
+| **Installed at pin time** | 4.7.2.stable.official.ed1daf0bf — installed 2026-11-22 at `C:/Users/APC/AppData/Local/Programs/Godot/Godot_v4.7.2-stable_win64.exe` (not on PATH; recorded in `project.yaml` as `engine.path` and in `commands.*`). Pin and install match. |
 | **Release Date** | June 2026 (latest patch: 4.7.2, August 2026) |
 | **Project Pinned** | 2026-10-17 |
 | **Last Docs Verified** | 2026-10-21 (Windows driver default and Compositor, against Godot source); 2026-10-17 (release timeline and 4.7 changes); 2026-02-12 (4.4-4.6 content) |
