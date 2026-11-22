@@ -281,7 +281,7 @@ Baseline data unless a criterion says otherwise: step 1/60 s; `think` 3.0 and `a
 | # | Question | Owner | Resolve by |
 |---|----------|-------|------------|
 | 1 | The scoring weights (F3) are the prototype's; the prototype was played by one person. Re-tune after UAT-1 with `/balance-check` and the AC23 answers | game-designer | After UAT-1 |
-| 2 | Should `rival_seed` vary per attempt (a different rival each Retry) or stay fixed (the same rival until you beat it)? Fixed is better for learning a level; varied is better for replay | Campaign Level Data | Its GDD |
+| 2 | Closed (2026-11-22): `rival.seed` is a fixed constant per level, so every attempt meets the same rival given the same player actions (Campaign Level Data rule 6) | — | — |
 | 3 | Does the rival pick a race, or does each region have one? (`game-concept.md` open question) | Factions | UAT-2 |
 | 4 | Should the stall breaker also lower `ai_min_send` so idle small keeps join in, or is aggression alone enough? Decide from UAT-1 stall observations | game-designer | After UAT-1 |
 | 5 | Multiple rival colours fighting each other (brief, "change it after play"): this GDD's one-mind rule would need a per-owner instance | game-designer | After UAT |

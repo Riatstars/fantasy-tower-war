@@ -257,7 +257,7 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 | # | Question | Owner | Resolve by |
 |---|----------|-------|------------|
 | 1 | Closed (2026-11-22): Rival AI's stall breaker (its F4, `aggro_eff`) raises the rival's aggression by `stall_boost` per `stall_time` (45 s) without a capture, reset by any capture. This system still adds no timer or draw | — | — |
-| 2 | Which levels wait for the first rope: only the first level of the whole game (baseline), or the first of each region? | Campaign Level Data | Its GDD |
+| 2 | Closed (2026-11-22): only the first level of the game (`gv-01`) waits; `wait_for_first_rope` is false elsewhere (Campaign Level Data rule 5) | — | — |
 | 3 | `win_stars` 1 is a placeholder for UAT-1; the star rule belongs to Stars & Rewards | Stars & Rewards | UAT-2 |
 | 4 | Should the Win overlay show the player's best `time` beside this attempt's? | Menus & Screens | Its GDD |
 | 5 | Can a loss be revived once (a rewarded ad or gems, in the brief as provisional)? It would add a state after Ending | Store build | After UAT |

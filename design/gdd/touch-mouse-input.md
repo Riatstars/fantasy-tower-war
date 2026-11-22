@@ -260,7 +260,7 @@ None. Every keep (with its owner flag) and the player's cuttable ropes arrive th
 
 ### Consistency to fix
 
-- Campaign Level Data's GDD must list the keep-spacing rule (I2) in its own rules.
+- Campaign Level Data's GDD must list the keep-spacing rule (I2) in its own rules. **Done (2026-11-22):** its F2 enforces I2 at load and Rejects a breaching level (never clamps), so this GDD's per-level radius fallback runs only when `keep_hit_radius` is raised at runtime (an accessibility setting) after the data was validated.
 
 ## Visual/Audio Requirements
 
