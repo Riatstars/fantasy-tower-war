@@ -54,9 +54,7 @@ back button and background events would have no single place to be handled.
    requests are rejected; input comes back when the new screen is ready.
 5. Overlays pause the game. While any overlay is open the match does not advance (no generation, no
    marching). Screen Flow raises the pause state; Level State & Match Flow obeys it.
-6. Back (Android Back button, iOS back swipe, Esc on a computer). While Level State reports `pause_allowed`
-   false (its Ending, from the deciding step until the result overlay opens), Back, the Pause button,
-   `pause_pressed` and the app going to the background open nothing:
+6. Back (Android Back button, iOS back swipe, Esc on a computer):
    - in the Level with no overlay: opens Pause;
    - in Pause: resumes the match (the Pause key, `pause_pressed`, also resumes);
    - in a Win or Lose overlay: goes to the World Map;
@@ -64,6 +62,10 @@ back button and background events would have no single place to be handled.
    - in Settings: closes it (back to where it was opened);
    - in a message box: Continue;
    - on the World Map and on the Title: ignored.
+
+   While Level State reports `pause_allowed` false (its Ending, from the deciding step until the result
+   overlay opens), none of the above happens in the Level: Back, the Pause button, `pause_pressed` and the
+   app going to the background open nothing.
 7. When the app goes to the background during a Level with no overlay (and `pause_allowed` true), Screen Flow opens Pause. On
    return the player is still in Pause and resumes by choice. On other screens nothing happens. If the
    phone ends the app, the unfinished match is lost (matches are not saved) and the next start is a

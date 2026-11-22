@@ -108,7 +108,7 @@ God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19)
 
 | # | Phase | Owner |
 |---|---|---|
-| 0 | Player input: ties and cuts from Touch & Mouse Input received since the last step, applied in the order received (added 2026-11-22). On an Armed level the first accepted tie, and what arrives after it in the same frame, is step 0's phase 0 (Level State & Match Flow rule 2) | Rope Links |
+| 0 | Player input: ties and cuts from Touch & Mouse Input received since the last step, applied in the order received (added 2026-11-22). On an Armed level step 0's phase 0 holds the first accepted tie and every tie and cut received after it before step 0 runs, in the order received (Level State & Match Flow rule 2) | Rope Links |
 | 1 | Generation beats | Troop Generation |
 | 1b | Rival decision pass, when its think timer fires (cuts, then ties; added 2026-11-22) | Rival AI |
 | 2 | Rope timers and sends in ascending `rope_id` (each launch takes the next `seq`); then the ropes cut in phases 0 and 1b turn Fading. A cut frees its slot when requested, but a rope cut this step still launches a pawn due this step (the last pawn leaves, decided 2026-11-22; Rope Links rule 8). A launched pawn has `marches` 0 | Rope Links |

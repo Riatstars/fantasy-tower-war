@@ -122,3 +122,29 @@ Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): delete_p
 
 ## Revision — 2026-11-22 (cross-GDD review round 4)
 Revisions applied 2026-11-22 (user-approved, cross-GDD review round 4): Screen Flow row is both ways, naming its delete_progress() call (R4B1); on Yes the Title stays with the fresh profile (R4S1). Status In Review, pending re-review.
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 7
+Summary: All five prior blockers are resolved and agree with Level State rule 6, Screen Flow rules 1 and 12 with its AC23 and AC26, World Map rule 9 and Menus F1. The record, flush and overlay order, the failure paths and the read-only Delete flow each have a test. Remaining items are a missing state-table row, a merge clarification and bookkeeping; one (Settings file rules) needs a design decision.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] States and Transitions: no read-only state; a reported change would sit in Dirty forever in a newer-version session; the newer-version-backup case is also unspecified
+- [RECOMMENDED] Rule 5: say stars keep the maximum and time keeps the minimum independently; add a criterion
+- [RECOMMENDED] Rule 2 / Edge Cases: the Settings file has no read, damage or version rules of its own (needs a design decision)
+- [RECOMMENDED] AC5: mixes a UAT-1 unit-testable part and a Vertical Slice Settings part; split the tags
+- [RECOMMENDED] Dependencies: "Depends on (upstream): None" sits above a table listing Campaign Level Data as Soft
+- [RECOMMENDED] Dependencies: "Consistency to fix" is stale (Level State and Menus are already in the index)
+- [RECOMMENDED] Rule 3: state the purpose of `plays`
+Reviewed-Content-Hash: design/gdd/save-progress.md 4fae9c32ae275a32e5f32897582a798247ffe4ac
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/world-map-regions.md 2195ae16b3c46c9b0b8a432d9c329c29c266f297
+Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: docs/engine-reference/godot/breaking-changes.md 9b8d8f98f4813a2374bc8e43598bc9b6e2191a3a

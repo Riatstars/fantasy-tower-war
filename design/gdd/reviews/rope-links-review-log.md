@@ -105,3 +105,65 @@ Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae
 Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
 Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
 Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; independent subagent review)
+Blocking items: 2 | Recommended: 11
+Summary: Both prior blockers are fixed, and blocked/F6 arithmetic, tie-breaks and termination hold and match the registry. Still blocking: ties accepted while Armed do not reserve their slot, so two on one frame can break the rope limit, duplicate a rope or rope two allies both ways; and the cut-requested-but-Active rope frees its slot under rule 8 while F1 still counts it.
+Prior verdict resolved: Yes
+Not run: gdd-structure-check.sh (subagent had no Bash tool); touch-mouse-input, troop-marching-clashes and rival-ai not read (claims judged on this GDD and the registry)
+Findings:
+- [BLOCKING] Detailed Rules: ties accepted while Armed are judged against a board without the pending ones (slots, duplicate, both-ways breaches)
+- [BLOCKING] Formulas / States: the cut-requested, not-yet-Fading state is unnamed; F1 counts it while rule 8 frees its slot (AC32d fails literally)
+- [RECOMMENDED] Acceptance Criteria: AC19, AC20 and an edge case set up an impossible both-ways allied state (prior item)
+- [RECOMMENDED] Detailed Rules: ties and cuts during Ending unspecified (prior item, partly open)
+- [RECOMMENDED] Edge Cases: R1 and R4 shipped clamps underspecified; R4 can have no valid clamp
+- [RECOMMENDED] Overview / rule 1 / AC5: "any other keep" contradicts the F6 blocked check
+- [RECOMMENDED] Formulas: F6 uses keep_hit_radius, which Input can change at runtime
+- [RECOMMENDED] Formulas: F6 lets a rope pass visually through a keep without blocking
+- [RECOMMENDED] Interactions: tie_refused has no side field
+- [RECOMMENDED] Interactions: a pawn lost with no rope raises no event here; say who raises pawn_lost
+- [RECOMMENDED] Acceptance Criteria: AC6c's align_tolerance 0 is a float equality test
+- [RECOMMENDED] Acceptance Criteria: AC31 "(target to confirm)"
+- [RECOMMENDED] Tuning Knobs: add a table (advisory at standard)
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+Reviewed-Content-Hash: design/registry/entities.yaml 41f062f6645bf0d3c1230986fbfcdda9b7ded370
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; independent subagent re-review). A separate lean review by session my-game-tower-war-39 on the same bytes also gave APPROVED (0 blocking, 7 recommended).
+Blocking items: 0 | Recommended: 13
+Summary: Both prior blockers are resolved: ties while Armed are queued and judged in order in step 0's phase 0 (AC32e), and the Cutting state agrees across rule 8, the States table, F1/F3/F4 and rule 9 (AC32d). Rope age (tied_step) matches Rival AI F5, F6 uses the fixed keep_hit_radius, and every recomputed number holds.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present). review-receipts.sh check: target and registry CHANGED, so a full review ran.
+Not run: Phase 3b specialists (lean). NOT ASSESSED by re-read: level-hud.md, troop-generation.md (judged against this GDD and the registry); keep-levels.md grep only.
+Findings:
+- [RECOMMENDED] Acceptance Criteria: AC12 still uses the old cut timing (Fading "on that step"); should be Cutting, then Fading at the end of the step
+- [RECOMMENDED] Interactions: the no_rope loss has no return path here; AC21 checks only a log line (Troop Marching rule 15 raises pawn_lost)
+- [RECOMMENDED] Dependencies: Level State missing from the Quick reference and systems-index row 6
+- [RECOMMENDED] Cross-doc (Troop Marching F9): B_send "~1,035" (45 × 23) is stale; this GDD's F5 gives 945 (45 × 21)
+- [RECOMMENDED] Detailed Rules: ties and cuts during Ending unspecified
+- [RECOMMENDED] Acceptance Criteria: AC19 and AC20 set up an impossible both-ways allied state
+- [RECOMMENDED] Edge Cases: R1 and R4 shipped clamps underspecified; R4 can have no valid clamp
+- [RECOMMENDED] Overview / rule 1: "any other keep" contradicts the blocked check
+- [RECOMMENDED] Formulas: per-rope sent count undefined
+- [RECOMMENDED] Formulas: F6 lets a rope pass visually through a keep without blocking
+- [RECOMMENDED] Interactions: tie_refused has no side field
+- [RECOMMENDED] Acceptance Criteria: AC6c float equality; AC22 and AC31 wording
+- [RECOMMENDED] Tuning Knobs / Player Fantasy: absent (advisory)
+Reviewed-Content-Hash: design/gdd/rope-links.md 2809263e1cbc6e0c7e0df2b65a63821831714ab3
+Reviewed-Content-Hash: design/registry/entities.yaml 66d85eeae3216b38ef327139f1e3a34bd6b95d2e
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md adac1973d70d40a0cd666255a063366e7da640fb
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 04e30da7c4624d59c6218de5ae1fe1c6f698aac6
+Reviewed-Content-Hash: design/gdd/rival-ai.md af05107644367237afaf937104b63bc600160cb1
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md a2c3be40cf617e0be62c6fd2470cd7f08539f06e
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 222f45a25408ce350f951e1d96756882331277b6
+Reviewed-Content-Hash: design/gdd/keep-levels.md 10dd42f92d3902779121446a7d6c3be7f86446f4

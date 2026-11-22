@@ -11,7 +11,7 @@
 
 Touch & Mouse Input turns a finger or mouse into the game's gestures: drag from one of the player's keeps to another to tie a rope, and tap or swipe across a rope to cut it (left button ties and right button cuts on a computer). When the player aims at a far keep and a nearer one lies on the same line, it picks the nearer. It exists so a thumb on a phone and a cursor on a desktop behave as one game, and so Rope Links and the menus never read raw touches.
 
-> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `None`
+> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Rope Links (injected hit-test provider)`
 
 ## Overview
 
@@ -43,16 +43,16 @@ desktop would behave like two different games.
    - *Cut by tap*: a press on a rope (F2, touch radius) released without having moved `drag_threshold` reports `cut_tapped(rope)`.
    - *Cut by swipe*: a press on empty space, or on a keep that is not the player's, followed by movement starts a swipe (rule 7).
    - A press on a keep that is not the player's, released without moving, does nothing.
-5. **Mouse gestures** in a Level: the **left** button ties exactly as touch does and taps UI controls; it never cuts. The **right** button cuts: a right press on a rope (F2, mouse radius) released without moving reports `cut_tapped(rope)`, and a right press anywhere (including on a keep) followed by movement starts a swipe. A left press on empty space or on a rope does nothing; the first such press in a session raises `hint_shown("cursor")`, once per session, and Level HUD shows the hint "Right mouse cuts a rope" (its F2; event named 2026-11-22).
+5. **Mouse gestures** in a Level: the **left** button ties exactly as touch does and taps UI controls; it never cuts. The **right** button cuts: a right press on a rope (F2, mouse radius) released without moving reports `cut_tapped(rope)`, and a right press anywhere (including on a keep) followed by movement starts a swipe. A left press on empty space or on a rope does nothing; the first such press in a session raises `hint_shown("cursor")`, once per session, and Level HUD shows the hint "Right mouse cuts a rope" (its F2; event named 2026-11-22). A left press that moves past `drag_threshold` never swipes: from a rope or empty space it is ignored like a left tap and raises the same hint under the same once-per-session rule; from a rival or neutral keep it is ignored with no hint (the player was trying to tie, not cut).
 6. **Drag feedback.** While a drag is active Input publishes, every rendered frame and in every match state including Armed (Input is not a match system and keeps running when match steps stop; decided 2026-11-22), the pointer position, the origin keep and the resolved target (F1 then F6) or none, so the preview always shows the rope that a release would tie. It does not judge legality: Rope Links owns it, and Level HUD reads the preview's legality from Rope Links' `tie_legal(origin, target)` and draws the preview from this data and that answer.
 7. **Swipe.** While a swipe is active each step takes the segment from the previous pointer position to the current one and tests it against every cuttable rope (F3). Each rope crossed is reported once as `cut_swiped(rope, t)` with `t` the crossing point along the rope (0 to 1), and cannot be reported again in the same swipe. A trail of recent pointer positions is published for drawing.
-8. **The hit-test provider is Rope Links** (its rule 9; the player's decision, 2026-11-22): every frame, in every match state including Armed, it lists every keep with its owner flag and the player's cuttable ropes (Extending and Active, lane-adjusted). Input never tests the rival's ropes; it reads ownership only from the provider's flags.
+8. **The hit-test provider is Rope Links** (its rule 9; the player's decision, 2026-11-22): every frame, in every match state including Armed, it lists every keep with its owner flag and the player's cuttable ropes (Extending and Active, lane-adjusted). Input never tests the rival's ropes; it reads ownership only from the provider's flags. The provider also answers `blocking_keep(o, t)` (Rope Links F6) for target resolution (rule 14).
 9. **A drag or swipe is cancelled** (`gesture_cancelled`, nothing else) when Input is locked, the operating system cancels the pointer, or a drag's origin keep is no longer flagged as the player's in the provider on a step (it was captured). Screen Flow locks Input on every screen or overlay change (its rule 4) and in Ending; when the app goes to the background during a Level with no overlay and `pause_allowed` true, it opens Pause, which is an overlay change (its rule 7). Those cases cancel gestures through the lock; Input itself never listens for them.
 10. **Input lock** (Screen Flow Rule 4): `lock()` discards every pointer and key event and cancels any gesture in progress; `unlock()` resumes. A pointer that is already down when `unlock()` runs is ignored until it is released, so a finger held through a transition cannot act on the next screen. Gestures go only to the screen Screen Flow names as current.
 11. **UI controls** are handled by the screen that owns them, through the engine's standard UI controls: buttons and overlay buttons by Menus & Screens, level nodes and fog by World Map & Regions. They must work with touch and with the mouse separately from keyboard focus. Input's gestures are for the Level playfield, plus the global keys in rule 12.
 12. **Keyboard fallback** (desktop and automated tests; it never replaces touch on a phone): Tab, Left and Right select one of the player's keeps; Up and Down cycle the target through every other keep in ascending id; Space or Enter ties the selected pair (after F6, like a release); X cuts the selected keep's ropes; P emits `pause_pressed` (Screen Flow opens Pause); M emits `mute_toggled` (Audio, from Vertical Slice); Esc is Back: Input emits `back_pressed` and Screen Flow listens for it. The keyboard produces the same `tie_released` and cut events as the pointer, so Rope Links sees one kind of event.
 13. **Back is not a gesture.** The phone's Back button and the iOS back swipe go straight to Screen Flow (in UAT-1 from the engine's own back-request notification, which Screen Flow reads; from the Vertical Slice through Mobile Platform Integration). Only Esc on a computer is produced here, as the event `back_pressed`.
-14. **Target resolution (F6).** When a tie is released or previewed over a keep, Input asks Rope Links for the keep in the way (`blocking_keep`, its F6: a keep nearer the origin within `align_tolerance` degrees of the same direction and within `keep_hit_radius` of the straight line) and repeats the question until none blocks; that keep becomes the target. It applies to every owner. Rope Links owns the rule (moved there 2026-11-22), so the rival obeys it too and a player's tie is never refused with `blocked`. If the nearer keep cannot be tied, Rope Links refuses the tie; it never moves on to the farther keep.
+14. **Target resolution (F6).** When a tie is released or previewed over a keep, Input asks the hit-test provider for the keep in the way (`blocking_keep`, Rope Links F6: a keep nearer the origin within `align_tolerance` degrees of the same direction and within `keep_hit_radius` of the straight line) and repeats the query until none blocks; that keep becomes the target. It applies to every owner. Rope Links owns the rule (moved there 2026-11-22), so the rival obeys it too and a player's tie is never refused with `blocked`. If the nearer keep cannot be tied, Rope Links refuses the tie; it never moves on to the farther keep. The query belongs to the provider Rope Links registers (rule 8), so Input still calls no system by name; a provider that does not answer it (a test stub) gives none, and the target is the keep hit.
 15. Input identifies events by their type and never by `device == 0` (Godot 4.7 changed device ids for mouse and keyboard).
 
 ### States and Transitions
@@ -60,7 +60,7 @@ desktop would behave like two different games.
 | State | Meaning | Leaves when |
 |-------|---------|-------------|
 | Idle | No pointer down | A press → Pressed (when unlocked and no other pointer is active) |
-| Pressed | Pointer down, has not moved `drag_threshold`; remembers what it landed on | Moves ≥ `drag_threshold` on an own keep → Dragging; on a rope, empty space or a non-own keep (or a right press) → Swiping; released → Idle, reporting a cut tap if it landed on a rope (a press on a UI control never reaches Input: the engine's UI control takes it, rule 11); lock → Locked |
+| Pressed | Pointer down, has not moved `drag_threshold`; remembers what it landed on | Moves ≥ `drag_threshold`: from an own keep (touch or left) → Dragging; a touch press on a rope, empty space or a non-own keep, or a right press anywhere → Swiping; a left press on a rope, empty space or a non-own keep → Idle with no gesture event (rule 5: the cursor hint from a rope or empty space, none from a keep). Released without moving → Idle, reporting a cut tap if a touch or right press landed on a rope (a left press never cuts; a left press on a rope or empty space raises the hint, rule 5). A press on a UI control never reaches Input (the engine's UI control takes it, rule 11); lock → Locked |
 | Dragging | A tie is being drawn from an origin keep | Release over a keep → Idle (`tie_released` with a target); release elsewhere or on the origin → Idle (`tie_released` with none); lock, the operating system cancelling the pointer, or the origin no longer the player's (rule 9) → Idle (`gesture_cancelled`) |
 | Swiping | A cut swipe is in progress | Release → Idle; lock or the operating system cancelling the pointer → Idle (`gesture_cancelled`) |
 | Locked | Input is locked by Screen Flow | `unlock()` → Idle, except that a pointer still down is ignored until released |
@@ -69,7 +69,7 @@ A second pointer pressing while the state is not Idle or Locked is ignored and c
 
 ### Interactions with Other Systems
 
-**Direction rule.** Input never calls another system. Rope Links registers the Level's hit-test provider (what is under a point) and Input emits events that systems listen to. That keeps it a foundation with no upstream dependency.
+**Direction rule.** Input never calls another system by name. Rope Links registers the Level's hit-test provider (what is under a point, and which keep is in the way, `blocking_keep`), Input queries that provider, and Input emits events that systems listen to. Its one upstream need is that injected provider (Depends on).
 
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
@@ -80,7 +80,7 @@ A second pointer pressing while the state is not Idle or Locked is ignored and c
 | Level HUD | out | The drag feedback and the swipe trail, for drawing the rope preview and the swipe line; `hint_shown("cursor")` (rule 5). Preview legality comes from Rope Links, not Input | Level HUD draws |
 | Tutorial & Onboarding | out | The same gesture events, so the first-minute hint can tell that the first drag or cut was done | Tutorial & Onboarding |
 | Mobile Platform Integration | none | No direct link. App to background reaches Input as a lock from Screen Flow; a pointer cancelled by the operating system comes from the engine | Screen Flow and the engine |
-| Accessibility (Alpha) | in | Larger touch radii, and possibly a tap-then-tap way to tie for players who cannot drag | Accessibility, within the invariants in Formulas |
+| Accessibility (Alpha) | in | A larger touch radius (`touch_radius_setting`, F1b), and possibly a tap-then-tap way to tie for players who cannot drag | Accessibility, within the invariants in Formulas |
 
 ## Formulas
 
@@ -90,14 +90,23 @@ Distances are in the table's logical pixels (720 by 1280). Values come from the 
 
 The keep_hit formula is defined as:
 
-`on_keep(p, k) = dist(p, (k.x, k.y − keep_hit_lift)) ≤ keep_hit_radius`; if several keeps match, the one with the nearest centre wins.
+`on_keep(p, k) = dist(p, (k.x, k.y − keep_hit_lift)) ≤ keep_touch_radius`; if several keeps match, the one with the nearest centre wins.
+
+**F1b. Touch radius per level:**
+
+`keep_touch_radius = max(keep_hit_radius, min(touch_radius_setting, smallest_spacing / 2))`
+
+The touch area is the only thing the accessibility setting changes (decided 2026-11-22). With no setting `touch_radius_setting` is `keep_hit_radius`, so the two are equal. Because every level passed I2 at `keep_hit_radius`, `smallest_spacing / 2 ≥ keep_hit_radius` and the touch area never shrinks below the keep's rule size.
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | p | point (x, y) | 0–720 by 0–1280 | calculated | Pointer position |
 | k.x, k.y | float | on the table | data file (level layout) | Keep's base position |
-| keep_hit_radius | float, px | 48–120 (baseline 78) | data file (`keep_radius`) | Radius of the touch area |
+| keep_hit_radius | float, px | 48–120 (baseline 78) | data file (`keep_radius`) | The keep's size for every rule: Rope Links F6 and R2, I2, Campaign Level Data B2, B6 and `longest_rope`; never changed at runtime |
+| keep_touch_radius | float, px | `keep_hit_radius`–120 | calculated (F1b), per level | Radius of the touch area in this level |
+| touch_radius_setting | float, px | `keep_hit_radius`–120 (default `keep_hit_radius`) | Accessibility setting (Alpha) | The player's chosen touch radius |
+| smallest_spacing | float, px | ≥ 2 × `keep_hit_radius` (I2) | calculated (F5) | Smallest keep centre distance in the level |
 | keep_hit_lift | float, px | 0–`keep_hit_radius` (baseline 35) | data file (`keep_hit_lift`) | How far above the base the area is centred, so it covers the keep's body |
 
 **Output Range:** a keep, or none. Invariants I1–I3 keep it usable.
@@ -173,7 +182,7 @@ The target_resolution formula is defined as:
 |----------|------|-------|--------|-------------|
 | origin | keep | | calculated | The keep the drag started from |
 | hit | keep | | calculated (F1) | The keep under the pointer on release, or on the preview |
-| blocking_keep | keep or none | | calculated (Rope Links F6) | The nearest keep in the way, using `align_tolerance` (Rope Links, baseline 5°) and `keep_hit_radius` (F1) |
+| blocking_keep | keep or none | | calculated (Rope Links F6) | The nearest keep in the way, using `align_tolerance` (Rope Links, baseline 5°) and `keep_hit_radius` (F1 variables; the fixed rule size, never `keep_touch_radius`) |
 
 **Output Range:** one keep, never farther from the origin than `hit`. Each repeat moves strictly nearer the origin, so it ends after at most (keeps − 2) repeats: 9 on an 11-keep level.
 **Example:** origin A (360, 1060), B (360, 760), C (360, 520). Releasing on C: Rope Links F6 gives B and nothing blocks A→B, so the target is B. With C′ (400, 520), 4.2° off B's bearing: still B. With C″ (440, 520), 8.4° > 5°: the target stays C″. A repeat: with D (391, 862), B (391, 661) and C (360, 440), C is blocked by B (4.4°) and B by D (4.5°), and nothing blocks D, so the target is D (D alone is 8.9° off the line to C).
@@ -203,7 +212,7 @@ None. The formulas are stateless tests on the current pointer position and the c
 
 **Presses and priority**
 - **If a press lands on a UI control and a keep at once** (for example a pause button over the table): the control wins, and no world gesture starts.
-- **If a press lands on a keep that is not the player's and is released without moving**: nothing happens. If it moves, a swipe starts.
+- **If a press lands on a keep that is not the player's and is released without moving**: nothing happens. If it moves, a touch or right-button press starts a swipe; a left press is ignored with no hint (rule 5).
 - **If the right mouse button is pressed on one of the player's own keeps**: no drag starts; the right button only cuts, so it starts a swipe if it moves.
 - **If a left mouse press lands on empty space or on a rope**: nothing happens (the "Right mouse cuts a rope" hint shows, once per session). The left button never cuts.
 
@@ -233,7 +242,7 @@ None. The formulas are stateless tests on the current pointer position and the c
 **Data**
 - **If the loader finds a breach of I1, I3 or I4** (global tuning, checked once at app start): development builds stop with an error naming the rule and the values; shipped builds clamp to the nearest valid value and log it. This follows the one bad-data policy (Campaign Level Data rule 8, decided 2026-11-22): global tuning clamps, level data is Rejected.
 - **If a level breaches I2 at the baseline radius** (keeps closer than twice the data file's `keep_hit_radius`): it is level data, so Campaign Level Data's loader Rejects it (its F2 and rule 8): development builds stop with an error naming the two keeps; shipped builds do not load the level and Screen Flow shows its load-failure box (Screen Flow Core Rule 11). Nothing is clamped.
-- **If the accessibility setting raises `keep_hit_radius` at runtime and a level then breaches I2**: in every build that level plays with `keep_hit_radius` lowered to half its smallest spacing, and the reduction is logged. The level passed I2 at the baseline radius, so the lowered radius is always at least the baseline 78, above I1's floor 48. This is the only per-level radius change.
+- **If the accessibility setting raises the touch radius**: each level plays with `keep_touch_radius` from F1b: the setting, lowered to half the level's smallest keep spacing where it would overlap two touch areas, and the reduction is logged. The level passed I2 at `keep_hit_radius`, so `keep_touch_radius` never falls below it (78 at baseline, above I1's floor 48). Nothing else changes: `keep_hit_radius`, and with it Rope Links F6 and every level check, stays the data value, so the setting never changes which ties are legal.
 
 **Open, owned by other GDDs** (not decided here):
 - Whether a tie to the F6-chosen keep is legal (slots, duplicates, ally reverse): Rope Links.
@@ -243,11 +252,13 @@ None. The formulas are stateless tests on the current pointer position and the c
 
 Every system here that has a GDD (Screen Flow & Scene Manager, Rope Links, Level HUD, Level State & Match Flow, Campaign Level Data, Menus & Screens, World Map & Regions) was checked in the 2026-11-22 cross-GDD review. Tutorial & Onboarding, Accessibility and Mobile Platform Integration have no GDD yet, so their contracts are provisional.
 
-**Direction rule.** Input never calls another system. Rope Links registers the hit-test provider, and Input emits events that systems listen to. Screen Flow calls `lock()` and `unlock()` on Input and listens for `back_pressed` and `pause_pressed`. Input listens for nothing from Mobile Platform Integration (see Interactions), so there is no cycle.
+**Direction rule.** Input never calls another system. Rope Links registers the hit-test provider (including `blocking_keep`), which Input queries, and Input emits events that systems listen to. Screen Flow calls `lock()` and `unlock()` on Input and listens for `back_pressed` and `pause_pressed`. Input listens for nothing from Mobile Platform Integration (see Interactions), so there is no cycle.
 
 ### Depends on (upstream)
 
-None. Every keep (with its owner flag) and the player's cuttable ropes arrive through the hit-test provider that Rope Links registers, not through a call from Input.
+| System | Kind | What this system takes from it |
+|--------|------|-------------------------------|
+| Rope Links | Hard at runtime, injected | The hit-test provider (rule 8): every keep with its owner flag, the player's cuttable ropes, and `blocking_keep(o, t)` for target resolution (rule 14, F6). Registered when a Level starts; outside a Level there is none and no keep or rope press is reported |
 
 ### Depended on by (downstream)
 
@@ -260,11 +271,11 @@ None. Every keep (with its owner flag) and the player's cuttable ropes arrive th
 | World Map & Regions | Soft | The touch minimum (I1) for level nodes |
 | Tutorial & Onboarding | Soft | Gesture events, to tell when the first drag or cut was done |
 | Campaign Level Data | Soft (a rule it must obey) | Invariant I2: keep spacing of at least twice `keep_hit_radius` |
-| Accessibility (Alpha) | Soft | The touch radii and `drag_threshold` as settings, within I1–I4 |
+| Accessibility (Alpha) | Soft | `touch_radius_setting` (F1b) and `drag_threshold` as settings, within I1–I4 |
 
 ### Consistency to fix
 
-- Campaign Level Data's GDD must list the keep-spacing rule (I2) in its own rules. **Done (2026-11-22):** its F2 enforces I2 at load and Rejects a breaching level (never clamps), so this GDD's per-level radius fallback runs only when `keep_hit_radius` is raised at runtime (an accessibility setting) after the data was validated.
+- Campaign Level Data's GDD must list the keep-spacing rule (I2) in its own rules. **Done (2026-11-22):** its F2 enforces I2 at load and Rejects a breaching level (never clamps), so this GDD's per-level touch-radius reduction (F1b) changes only `keep_touch_radius`, when the accessibility setting raises it, never `keep_hit_radius`.
 
 ## Visual/Audio Requirements
 
@@ -313,7 +324,7 @@ Every referenced GDD that exists was checked in the 2026-11-22 cross-GDD review;
 | Keep positions and spacing | Campaign Level Data | Invariant I2 (F5) |
 | Preview, ring and trail drawing | Level HUD | Visual/Audio and UI Requirements |
 | Gesture events | Tutorial & Onboarding | First-minute hints |
-| Touch radii and `drag_threshold` as settings | Accessibility | Larger values, within I1–I4 |
+| `touch_radius_setting` (F1b) and `drag_threshold` as settings | Accessibility | Larger values, within I1–I4 |
 | UI controls and touch focus | Menus & Screens (buttons, overlay buttons); World Map & Regions (level nodes, fog) | Rule 11; AC30 |
 | Engine behaviour | `docs/engine-reference/godot/modules/input.md` | 4.6 dual focus; 4.7 device ids (Rule 15) |
 
@@ -337,9 +348,9 @@ Baseline data unless a criterion says otherwise: `keep_hit_radius` 78, `keep_hit
 - **AC9 [Logic] (Rule 4)**: GIVEN a drag from A, WHEN released over empty space or over A, THEN `tie_released(A, none)` is emitted and no tie is made.
 - **AC10 [Logic] (F1 boundary)**: GIVEN a keep with base (360, 1060), THEN a press 78.0 px from its area centre (360, 1025) hits it and 78.5 px misses; a press at the base (360, 1060) hits it.
 - **AC11 [Logic] (Rule 6)**: GIVEN a drag from A held over keep C, THEN the published hover target on each rendered frame, Armed included, is the F6-resolved keep, so the preview always shows the rope a release would tie.
-- **AC12 [Logic] (F6)**: GIVEN A (360, 1060), B (360, 760), C (360, 520), WHEN a drag from A is released on C, THEN the tie goes to B. With C′ (400, 520) it still goes to B (4.2° ≤ 5°). With C″ (440, 520) it goes to C″ (8.4° > 5°). With `align_tolerance` 0 it goes to C′.
-- **AC13 [Logic] (F6)**: GIVEN two keeps B1 and B2 equally near the origin on the line to C, THEN the lower id is chosen. GIVEN the redirected keep belongs to the rival, THEN the target is still that keep.
-- **AC13b [Logic] (F6 repeat)**: GIVEN A (360, 1060), D (391, 862), B (391, 661), C (360, 440), WHEN a drag from A is released on C, THEN the target is D (C blocked by B, B by D), and Rope Links' `tie_legal(A, D)` is not `blocked`.
+- **AC12 [Integration: Rope Links] (F6 through the provider)**: GIVEN A (360, 1060), B (360, 760), C (360, 520), WHEN a drag from A is released on C, THEN the tie goes to B. With C′ (400, 520) it still goes to B (4.2° ≤ 5°). With C″ (440, 520) it goes to C″ (8.4° > 5°). With `align_tolerance` 0 it goes to C′.
+- **AC13 [Integration: Rope Links] (F6 through the provider)**: GIVEN two keeps B1 and B2 equally near the origin on the line to C, THEN the lower id is chosen. GIVEN the redirected keep belongs to the rival, THEN the target is still that keep.
+- **AC13b [Integration: Rope Links] (F6 repeat through the provider)**: GIVEN A (360, 1060), D (391, 862), B (391, 661), C (360, 440), WHEN a drag from A is released on C, THEN the target is D (C blocked by B, B by D), and Rope Links' `tie_legal(A, D)` is not `blocked`.
 - **AC14 [Integration: Rope Links] (F6, Rule 14)**: GIVEN B is already roped from A, WHEN a drag from A is released on C beyond B, THEN Rope Links refuses the tie to B with its message and no rope is made to C.
 
 **Cutting (Rules 4, 5, 7, 8; F2, F3, F4)**
@@ -348,6 +359,8 @@ Baseline data unless a criterion says otherwise: `keep_hit_radius` 78, `keep_hit
 - **AC16 [Logic] (F2 boundary)**: GIVEN the same rope, THEN a touch tap 40.0 px from it cuts and 40.5 px does not; a mouse click 14.0 px cuts and 14.5 px does not.
 - **AC17 [Logic] (Rule 3, F2)**: GIVEN a tap within reach of the player's rope, THEN inside one of the player's keeps' areas it is a keep press and nothing is cut; inside a rival or neutral keep's area it emits `cut_tapped(rope)`.
 - **AC18 [Logic] (Rule 5)**: GIVEN a left-button click on the rope, THEN no gesture event is emitted and `hint_shown("cursor")` is raised exactly once; a second left click on a rope in the same session raises nothing.
+- **AC18b [Logic] (Rule 5, left drag)**: GIVEN a left press on empty space that moves 100 px, THEN no gesture event and no swipe trail are emitted, and `hint_shown("cursor")` is raised if it has not been this session (else nothing).
+- **AC18c [Logic] (Rule 5, left drag from a keep)**: GIVEN a left press on a rival keep that moves 100 px and is released on empty space, THEN no gesture event, no swipe trail and no `hint_shown` are emitted.
 - **AC19 [Logic] (F3)**: GIVEN a swipe from (300, 880) to (420, 880) across that rope, THEN one `cut_swiped(rope, t)` is emitted with t = 0.5 within 0.01; sweeping back across the same rope in the same swipe emits nothing.
 - **AC20 [Logic] (F3, Rule 8)**: GIVEN a swipe crossing two of the player's ropes in one step, THEN both are reported, nearest crossing first; a rope of the rival's is never reported.
 - **AC21 [Logic] (F3)**: GIVEN a swipe of zero length, or one parallel to a rope, THEN nothing is cut and no error occurs.
@@ -363,7 +376,7 @@ Baseline data unless a criterion says otherwise: `keep_hit_radius` 78, `keep_hit
 
 - **AC26 [Logic] (Rule 9)**: GIVEN a drag from keep A, WHEN the provider stops flagging A as the player's (captured) or the level ends, THEN `gesture_cancelled` is emitted.
 - **AC27 [Logic] (I1, I3, I4)**: GIVEN `keep_hit_radius` 30, THEN a development build stops with an error naming I1 and the value (a shipped build clamps to 48 and logs); GIVEN `keep_hit_lift` 80 with radius 78, I3; GIVEN `drag_threshold` 0 or 50, I4.
-- **AC28 [Logic] (I2)**: GIVEN two keeps 150 px apart at the baseline radius 78, THEN a development build stops with an error naming both keeps and a shipped build Rejects the level (Screen Flow's load-failure box), with no radius change. GIVEN a level whose smallest spacing is 180 px and the accessibility setting raising `keep_hit_radius` to 100, THEN the level loads in either build with `keep_hit_radius` 90 for that level and one log line; the next level with spacing ≥ 200 px uses 100.
+- **AC28 [Logic] (I2)**: GIVEN two keeps 150 px apart at the baseline radius 78, THEN a development build stops with an error naming both keeps and a shipped build Rejects the level (Screen Flow's load-failure box), with no radius change. GIVEN a level whose smallest spacing is 180 px and the accessibility setting at 100, THEN the level loads in either build with `keep_touch_radius` 90 and one log line, `keep_hit_radius` stays 78, and `blocking_keep` gives the same answers as with no setting; the next level with spacing ≥ 200 px uses `keep_touch_radius` 100.
 - **AC29 [Logic] (F5)**: GIVEN the five prototype layouts, THEN the validator reports spacings of 262, 206, 226, 220 and 180 px and passes all of them.
 
 **Feel, UI and device**

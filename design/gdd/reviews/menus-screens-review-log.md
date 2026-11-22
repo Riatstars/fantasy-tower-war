@@ -75,3 +75,28 @@ Reviewed-Content-Hash: design/gdd/rival-ai.md 8f0066ad441e1b50a073383b5333d67856
 Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae08d1de9296edd3f96
 Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
 Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 5
+Summary: Both prior blockers are resolved (the best time is read through Save's `best_time(level_id)`; the Pause key as Resume is in Screen Flow's table). Registered values, the D + 90 overlay timing, the dims and the Back and Resume behaviour all agree with Screen Flow, Level State, Save and the art bible. F3's tenths derivation is the one real precision gap.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] F3: define on integer tenths (n = round(t × 10)); the naive float form gives "3:05.2" for 185.3; clamp t below 0; add a 0.3 or 70.1 case
+- [RECOMMENDED] Dependencies: Level HUD is missing (rule 11 and Edge Cases constrain the Pause panel against it); Level HUD's own row says "none"
+- [RECOMMENDED] Timings and layout: `min_font_px` (18) is used in Edge Cases but is not tabled or registered
+- [RECOMMENDED] AC15: "highest-contrast element" is judged by eye; give a measure
+- [RECOMMENDED] Edits list: check that item 6 (production/task-list.md) exists, or drop it
+Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/save-progress.md 4fae9c32ae275a32e5f32897582a798247ffe4ac
+Reviewed-Content-Hash: design/gdd/world-map-regions.md 2195ae16b3c46c9b0b8a432d9c329c29c266f297
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md ae3160009d7bceb2d0857fcdaf7236602ed146c8
+Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
+Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283

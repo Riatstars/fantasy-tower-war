@@ -109,3 +109,30 @@ Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): I3 resta
 
 ## Revision — 2026-11-22 (cross-GDD review round 3)
 Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): Dependencies and Interactions refreshed (R3A3: statuses, Rival AI reads level from Keep Levels, checked-against lines, index note); Open Questions 3 and 4 retiered to UAT-2 (R3A3, R3A8). Status In Review, pending re-review.
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 8
+Summary: Both prior blockers are resolved (F1 now leaves a count at or above the cap unchanged, agreeing with the lowered-cap edge case and AC22; AC26 covers the first-rope exception). All registered values match and every worked number recomputes; Keep Levels, Rope Links, Troop Marching, Level State, Rival AI, Level HUD and Campaign Level Data all name Troop Generation. Only wording and staleness items remain.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] Rules 6, 7 and AC8: "removes 1 / adds 1 / troops becomes 1" are hardcoded; Troop Marching defines them by strength and `capture_troops` (baseline 1)
+- [RECOMMENDED] F4: the two-rope example still carries a stale 15.6 s figure marked "re-run before tuning"
+- [RECOMMENDED] Visual/Audio: says there is no art bible; design/art/art-bible.md exists
+- [RECOMMENDED] Edge Cases: a lowered `gen_interval` can fire a beat on each following step until the timer falls below the new interval; state it or cap it
+- [RECOMMENDED] AC5: state the concrete result (58) instead of "55 plus its level's gen_amount"
+- [RECOMMENDED] Open Questions: OQ6 (ring of full allied keeps) is decided by Troop Marching rule 13; close it
+- [RECOMMENDED] Dependencies: "Consistency to fix" now lists only checked items; rename
+- [RECOMMENDED] Dependencies: refresh the Campaign Level Data status when it is approved
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md a07a7f4075c2cd1f812e6e1c181dda20600171a3
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/rival-ai.md af05107644367237afaf937104b63bc600160cb1
+Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace

@@ -74,3 +74,30 @@ Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae
 Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
 Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
 Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: game-designer (independent subagent review)
+Blocking items: 0 | Recommended: 10
+Summary: All 3 prior blockers are fixed (no_rope loss has an owner and state, M2/M3 are level checks, pawns_in_flight counts Marching only). F1–F9 hand-check, the phase 0–7 step order has no contradictions, and there are no registry conflicts. AC-M32's recount gives step 3,493 (58.2 s) against the doc's 3,541 (59.0 s), both inside the 55–63 s band.
+Prior verdict resolved: Yes
+Not run: gdd-structure-check.sh (subagent had no Bash tool; sections checked by heading read)
+Findings:
+- [RECOMMENDED] Acceptance Criteria: AC-M32 pin the simulation (owner, first-send step, timer meaning, beat reset) or check the script in; recount 3,493 vs 3,541
+- [RECOMMENDED] Acceptance Criteria: AC-M12 does not say when the ropes are tied
+- [RECOMMENDED] Acceptance Criteria: AC-M43 and AC-M45 not independently testable (prior item)
+- [RECOMMENDED] Detailed Rules: rule 1 launch signature omits a relay's unit, hp and relays; the no_rope handshake is never described
+- [RECOMMENDED] Formulas: F9 uses an unqualified pawns_in_flight; say total across owners
+- [RECOMMENDED] Dependencies: add Touch & Mouse Input upstream (prior item)
+- [RECOMMENDED] Registry: register capture_troops and pawns_in_flight_max (prior item)
+- [RECOMMENDED] Acceptance Criteria: AC-M29 is a hand estimate; simulate before it gates
+- [RECOMMENDED] Formulas: F9 B_send "up to ~1,035" has no derivation
+- [RECOMMENDED] Detailed Rules: confirm rule 11's own-side-first outcome at a full keep is intended
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md a07a7f4075c2cd1f812e6e1c181dda20600171a3
+Reviewed-Content-Hash: design/registry/entities.yaml 41f062f6645bf0d3c1230986fbfcdda9b7ded370
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a

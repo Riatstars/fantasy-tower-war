@@ -80,7 +80,7 @@ The think_interval formula is defined as:
 | jitter | float | 0–0.5 (baseline 0.2) | data file | Half-width of the interval's spread |
 | rng() | float | [0, 1) | calculated (seeded) | The rival's stream |
 
-**Output Range:** at baseline level 1: 3.0 × 1.8 = 5.4 s, jittered 4.32–6.48 s (259–389 steps). Level 5: 1.4 × 1.8 = 2.52 s, 2.02–3.02 s. At the minimum of every knob (0.5 × 0.3 × 0.5) the interval is 0.075 s, 4–5 steps: the rival re-decides almost every frame, legal but unreadable; the safe floor is about 1 s. Never 0: `round` of a positive value with `think ≥ 0.5` and `ai_think_scale ≥ 0.3` is at least 4 steps, and `jitter ≤ 0.5` keeps the factor positive.
+**Output Range:** at baseline level 1: 3.0 × 1.8 = 5.4 s, jittered 4.32–6.48 s (259–389 steps). Level 5: 1.4 × 1.8 = 2.52 s, 2.02–3.02 s. At the minimum of every knob (0.5 × 0.3 × 0.5) the interval is 0.075 s, 4–5 steps: the rival re-decides almost every frame, legal but unreadable; the safe floor is about 1 s. Never 0: `round` of a positive value with `think ≥ 0.5` and `ai_think_scale ≥ 0.3` is at least 4 steps, and `jitter ≤ 0.5` keeps the factor positive. At the maximum of every knob (`think` 10, `ai_think_scale` 4, `jitter` 0.5) the interval is 60 s, 3,600 steps.
 **Example:** level 1, `rng()` = 0.25: factor 0.8 + 0.4 × 0.25 = 0.9; 60 × 3.0 × 1.8 × 0.9 = 291.6 → 292 steps, 4.87 s.
 
 ### F2. Threat to a keep

@@ -91,3 +91,30 @@ Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): re-captu
 
 ## Revision — 2026-11-22 (cross-GDD review round 4)
 Revisions applied 2026-11-22 (user-approved, cross-GDD review round 4): defend case requires threat >= relieve_ratio x troops, so a relieved rope is not re-tied on the next pass (R3A5; F3, AC17c); guarantee sentence names the ai_min_send and blocked filters (R3A4); F4 output range wording covers a first capture (R4A4); the slow stall loophole is accepted and documented (R4H1, R4A3; rule 8, Game Feel, AC20 boundary at 45 s, Open Question 8). Status In Review, pending re-review.
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 8
+Summary: Both prior blockers are resolved (clamp-at-app-start bad-data policy; hybrid stall gate). Stall-gate thresholds, the X6 guarantee (7.3 / 11.7) and AC1, AC2, AC6, AC9, AC13, AC15, AC16 and AC24 all recompute. One registry range was stale and was fixed by session 7a; after this review the F1 Output Range gained one sentence stating the 3,600-step maximum (user-approved), so the stamped hash includes that edit.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] F5 / AC14: rope `age` has no provider; agreed with 7a that Rope Links records the tie step and exposes age
+- [RECOMMENDED] Registry think_interval range was [4, 2160]; the maximum is 3,600 steps (fixed in the registry by 7a; F1 sentence added)
+- [RECOMMENDED] Boundary check and Edge Cases: the X6 safe-range check hardcodes 0.8 (stall_boost × stall_full at baseline only)
+- [RECOMMENDED] F2: `enemy_of` text covers player and neutral keeps, which nothing reads; trim to rival keeps
+- [RECOMMENDED] Safe floor for the think interval is stated three ways (1 s, 2 s, think under 1 s)
+- [RECOMMENDED] AC19 "sends its first pawn from S" vs rule 4 "sends nothing on this step"
+- [RECOMMENDED] Cross-References: Level State "Core Rules 2, 4, 9, 11" cites rule 9 (Quit); likely rule 1
+- [RECOMMENDED] No performance note (add a budget line)
+Reviewed-Content-Hash: design/gdd/rival-ai.md af05107644367237afaf937104b63bc600160cb1
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md a07a7f4075c2cd1f812e6e1c181dda20600171a3
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde

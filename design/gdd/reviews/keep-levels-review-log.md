@@ -92,3 +92,61 @@ Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae
 Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
 Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
 Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent review)
+Blocking items: 1 | Recommended: 10
+Summary: The max_ropes range disagrees with itself: F3 and the registry say 1–3 per level, OQ 6 says the table allows up to 5, and K4 sets no upper bound for the loader to check. Rules, formulas and dependencies otherwise hold; most recommendations sharpen boundary wording and untestable ACs.
+Prior verdict resolved: Yes (prior was APPROVED; of its 2 recommendations the stale Campaign Level Data text is fixed, the K1–K4 timing one is partly addressed)
+Not run: gdd-structure-check.sh (subagent had no Bash tool; sections checked by heading grep and a full read)
+Findings:
+- [BLOCKING] Formulas / Open Questions: F3 and the registry cap max_ropes_table at 1–3, OQ 6 says up to 5; K4 has no upper bound, shipped clamp or AC
+- [RECOMMENDED] Detailed Design: rules 6 and 9 disagree on whether level_dropped is raised on every level change or only when ropes must be cut
+- [RECOMMENDED] Edge Cases: say whether the end-of-step recompute runs on a keep captured this step (lv2_at at its minimum of 2)
+- [RECOMMENDED] Formulas: lv3_at range 5–120 allows values Troop Generation I1 forbids; the K1 clamp can breach I1
+- [RECOMMENDED] Formulas: F4 output range "0 to 3" is unreachable; the maximum cut is 2
+- [RECOMMENDED] Game Feel: "a single enemy pawn never costs a rope" is false at the drop boundary
+- [RECOMMENDED] Dependencies: add Troop Marching & Clashes upstream (keep_captured), plus the missing downstream rows
+- [RECOMMENDED] UI Requirements: the refusal text "Grow it" is shown at level 3, where growing is impossible
+- [RECOMMENDED] Acceptance Criteria: AC21, AC22, AC23 not independently testable; AC14 omits the prior level
+- [RECOMMENDED] Edge Cases: say whether K1–K4 are checked once at app start or when Factions modifiers are applied (prior item, partly open)
+- [RECOMMENDED] Tuning Knobs / Player Fantasy: add both (advisory at standard)
+Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
+Reviewed-Content-Hash: design/registry/entities.yaml 41f062f6645bf0d3c1230986fbfcdda9b7ded370
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md a07a7f4075c2cd1f812e6e1c181dda20600171a3
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review). A separate lean review by session my-game-tower-war-39 on the same bytes also gave APPROVED (0 blocking, 7 recommended).
+Blocking items: 0 | Recommended: 9
+Summary: The prior blocker is resolved: K4 caps max_ropes_table at 3 with a shipped clamp and AC18b. F3, OQ 6, the registry [1, 3] and Rope Links all agree. Nothing new blocks; one new recommendation (K4's floor has no clamp or AC) joins eight carried items.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present; Player Fantasy, Tuning Knobs absent, advisory). review-receipts.sh check: target and registry CHANGED, so a full review ran.
+Not run: Phase 3b specialists (lean). Grep only: level-hud.md, troop-generation.md, design/game-brief.md.
+Findings:
+- [RECOMMENDED] Detailed Rules: rule 6 reads as raising level_dropped only when ropes must be cut; rule 9, the States table, AC3 and Level HUD's crumble need it on every drop
+- [RECOMMENDED] Game Feel: "a single enemy pawn never costs a rope" is false at exactly 10 troops on a level 2 keep
+- [RECOMMENDED] Formulas: F4 output range "0 to 3" is unreachable; the maximum cut is 2
+- [RECOMMENDED] Formulas: K4's max_ropes_table[1] ≥ 1 floor has no shipped clamp and no AC, though the coverage line claims one
+- [RECOMMENDED] Formulas: lv3_at / lv2_at ranges allow values Troop Generation I1 forbids
+- [RECOMMENDED] Dependencies: Troop Marching & Clashes (keep_captured) missing upstream
+- [RECOMMENDED] Edge Cases: arrivals after a capture in the same step
+- [RECOMMENDED] UI Requirements: "Grow it" refusal text shown at level 3
+- [RECOMMENDED] Acceptance Criteria: AC21, AC22, AC23 not testable; AC14 omits the prior level
+Reviewed-Content-Hash: design/gdd/keep-levels.md 10dd42f92d3902779121446a7d6c3be7f86446f4
+Reviewed-Content-Hash: design/registry/entities.yaml 66d85eeae3216b38ef327139f1e3a34bd6b95d2e
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/game-brief.md 7d90b94906b28807d72b86ade5f754d9a7c62b75
+Reviewed-Content-Hash: design/gdd/rope-links.md 2809263e1cbc6e0c7e0df2b65a63821831714ab3
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 04e30da7c4624d59c6218de5ae1fe1c6f698aac6
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 222f45a25408ce350f951e1d96756882331277b6
+Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e

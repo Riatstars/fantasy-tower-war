@@ -100,3 +100,58 @@ Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae
 Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
 Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
 Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent review)
+Blocking items: 1 | Recommended: 12
+Summary: The prior blocker is fixed: unlock() happens when the result overlay opens, matching Level State and Touch & Mouse Input. Rule 6 contradicts itself: the pause_allowed guard sentence ends in a colon that leads into the normal Back list. The engine back and background notifications could not be sourced.
+Prior verdict resolved: Yes
+Not run: gdd-structure-check.sh (subagent had no Bash tool). NOT ASSESSED: engine back-request and background notifications (NOT SOURCEABLE: not covered by docs/engine-reference/godot/)
+Findings:
+- [BLOCKING] Detailed Rules: rule 6's pause_allowed guard sentence ends in a colon that introduces the normal Back list
+- [RECOMMENDED] Interactions: engine back/background notifications, Android default quit-on-Back and the iOS back swipe are NOT SOURCEABLE
+- [RECOMMENDED] Detailed Rules: in the Vertical Slice, Settings calls delete_progress() after Settings is already closed (one overlay at a time)
+- [RECOMMENDED] Direction rule: still reads as false ("tells match_quit / start / restart" reads as calls) (prior item)
+- [RECOMMENDED] Direction rule: "two exceptions" vs "one" in Interactions and save-progress rule 11; Delete button scope vs UAT-1 limit
+- [RECOMMENDED] Acceptance Criteria: AC26 expects no overlay after Yes, but queued messages would show
+- [RECOMMENDED] Edge Cases: delete_progress() write failure not covered on the Screen Flow side
+- [RECOMMENDED] Dependencies / UI: tier labels mix Alpha and UAT-2 (prior item)
+- [RECOMMENDED] Acceptance Criteria: AC25 and AC26 sit before AC23 and AC24
+- [RECOMMENDED] Acceptance Criteria: AC22 "(target to confirm)"; AC12 and AC21 defer their checks
+- [RECOMMENDED] Detailed Rules: rule 1's pause_allowed hold should apply only while the Level is current
+- [RECOMMENDED] Detailed Rules: say whether input is accepted during the 0.2 s overlay fade
+- [RECOMMENDED] Detailed Rules: say whether Restart, Retry or Next level records a play, and what Level State is told
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
+Reviewed-Content-Hash: design/registry/entities.yaml 41f062f6645bf0d3c1230986fbfcdda9b7ded370
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/save-progress.md 4fae9c32ae275a32e5f32897582a798247ffe4ac
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md ae3160009d7bceb2d0857fcdaf7236602ed146c8
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 7
+Summary: The prior blocker is resolved: rule 6's pause_allowed guard is its own paragraph and lists what opens nothing in Ending (AC25). The transitions table, the Back table (AC8), the pause_allowed guard and the message-queue rules agree with Level State, Save, World Map, Menus and Level HUD; cover_fade 0.15 s and overlay_fade 0.2 s match the registry. Reviewed while session 7a had uncommitted edits in the file; the stamped hash is the text as of 22:32:38 (git blob f6461833858f).
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] Interactions / Dependencies: the Direction rule says Screen Flow never calls another system, but the table has it sending Level State start, restart, match_quit and the pause state; reword as events (flagged in three reviews)
+- [RECOMMENDED] Rule 12: in the Vertical Slice "Settings calls delete_progress()", but the table closes Settings into the confirmation; name Screen Flow as the caller in both tiers
+- [RECOMMENDED] Rule 4: Menus & Screens says Screen Flow locks input during the 0.2 s overlay fades; rule 4 covers screen changes only
+- [RECOMMENDED] Dependencies: "Depended on by" omits Level HUD (it raises pause_pressed); "Consistency to fix" is stale
+- [RECOMMENDED] Interactions: say which of start or restart Restart, Retry and Next level send (Level State and Save say a Restart records nothing)
+- [RECOMMENDED] Rule 6 / Interactions: engine back and background notifications, the Android quit-on-back project setting and any iOS back event are not covered by docs/engine-reference; verify before Technical Setup
+- [RECOMMENDED] Acceptance Criteria: AC25 and AC26 sit before AC23 and AC24; AC22 is "target to confirm"; AC12 and AC21 defer their checks
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md f6461833858f23a9738cc3b41bd941f2290f8a06
+Reviewed-Content-Hash: design/registry/entities.yaml c230cff1ab6f6e84c7bf457fb988a14a8c29079c
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md a2c3be40cf617e0be62c6fd2470cd7f08539f06e
+Reviewed-Content-Hash: design/gdd/save-progress.md 4fae9c32ae275a32e5f32897582a798247ffe4ac
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md adac1973d70d40a0cd666255a063366e7da640fb
+Reviewed-Content-Hash: design/gdd/world-map-regions.md 47c67389c2c54bacb6ae78afa4b082ac1b845c38
+Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
+Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93

@@ -248,6 +248,7 @@ formulas:
       - design/gdd/keep-levels.md
       - design/gdd/rival-ai.md
       - design/gdd/level-hud.md
+      - design/gdd/level-state-match-flow.md
     variables:
       - origin
       - target
@@ -301,10 +302,11 @@ formulas:
       - deciding_step
       - start_step
     output_range: [0.0, 180.0]
-    expression: "round((deciding_step - start_step + 1) / 60, 1)"
-    notes: "Seconds, stored with a win (Save and Progress time, 0 or more) and shown on a loss. The range is normal play (2 to 3 minutes, Pillar 2); there is no upper bound because the match has no timer. One step is 1/60 s and rounds to 0.0."
+    # was round((deciding_step - start_step + 1) / 60, 1); 2026-11-22: whole tenths, halves up (level-state-match-flow.md F3)
+    expression: "floor((deciding_step - start_step + 1 + 3) / 6) / 10"
+    notes: "Seconds, stored with a win (Save and Progress time, 0 or more) and shown on a loss. The range is normal play (2 to 3 minutes, Pillar 2); there is no upper bound because the match has no timer. Whole tenths, halves up (integer arithmetic: 6 steps a tenth, +3 rounds up). 1 or 2 steps give 0.0; 3 steps give 0.1."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
 
   - name: think_interval
     status: active
@@ -315,11 +317,12 @@ formulas:
       - think
       - ai_think_scale
       - jitter
-    output_range: [4, 2160]
+    # was [4, 2160] (old think ceiling 6); 2026-11-22: think up to 10 (Rival AI F1, Campaign Level Data B4), so 60 x 10 x 4 x 1.5 = 3600
+    output_range: [4, 3600]
     expression: "round(60 * think * ai_think_scale * (1 - jitter + 2 * jitter * rng()))"
     notes: "Steps between rival decision passes; rng() is the rival's seeded stream. Baseline level 1: 259 to 389 steps (4.3 to 6.5 s). Floor 4 steps at every knob minimum; safe floor about 1 s. think is per-level data (Campaign Level Data)."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: threat
     status: active
     source: design/gdd/rival-ai.md
@@ -390,13 +393,14 @@ formulas:
       - design/gdd/rope-links.md
       - design/gdd/level-state-match-flow.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/rival-ai.md
     variables:
       - dist
     output_range: [156, 1258]
     expression: "max over keep pairs of dist(k_i, k_j); R3 holds when send_interval >= longest_rope / (speed_min * (pawns_per_rope_max - 1))"
     notes: "Measured per level by the loader to enforce Rope Links invariant R3. Green Vale: 810 to 932 px, needing send_interval >= 0.189 to 0.217 s; the longest legal rope (diagonal of the Campaign B2 box, sqrt((720 - 2r)^2 + (1280 - 2r)^2)) is 1258 px at keep_hit_radius 78 and needs 0.293 s at speed_min 110. A level that fails is Rejected, never clamped."
     added: 2026-11-22
-    revised: ""
+    revised: 2026-11-22
   - name: min_spacing
     status: active
     source: design/gdd/campaign-level-data.md
@@ -635,8 +639,22 @@ constants:
       - design/gdd/troop-marching-clashes.md
       - design/gdd/campaign-level-data.md
       - design/gdd/level-hud.md
+      - design/gdd/level-state-match-flow.md
     value: 78
     unit: px
+    notes: "The keep's size for every rule (Rope Links F6, R2; Touch & Mouse Input I2; Campaign Level Data B2, B6, longest_rope). Never changed at runtime; the touch area is keep_touch_radius."
+    added: 2026-11-22
+    revised: 2026-11-22
+  - name: keep_touch_radius
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+      - design/gdd/rope-links.md
+      - design/gdd/campaign-level-data.md
+    value: 78
+    unit: px
+    notes: "Touch area radius per level (Touch & Mouse Input F1b): max(keep_hit_radius, min(touch_radius_setting, smallest_spacing / 2)). Equals keep_hit_radius with no accessibility setting. Only Input's hit test reads it; F6, R2, I2, B2, B6 and longest_rope use keep_hit_radius."
     added: 2026-11-22
     revised: ""
   - name: cut_tap_radius_touch

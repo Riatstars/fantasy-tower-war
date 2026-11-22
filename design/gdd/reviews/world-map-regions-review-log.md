@@ -98,3 +98,27 @@ Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): States t
 
 ## Revision — 2026-11-22 (cross-GDD review round 4)
 Revisions applied 2026-11-22 (user-approved, cross-GDD review round 4): the return highlight comes from the return payload at once and only the write waits for Idle (R4B2; rule 9, AC12). Status In Review, pending re-review.
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 5
+Summary: All three prior blockers are resolved (a sequence starts only when no overlay is open, the AC10 hint text, AC13 against rule 12). F1 to F4, the sequence, fog-clear and record ordering, and the return-highlight rule agree with Save, Screen Flow, Campaign Level Data and Menus. Session 7a's pending change (region records drop their level list, regions get an order field) will reword lines 40, 151 and 166 and was treated as expected, not a defect.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] Rule 8 / AC10: the locked-node hint names `prev`, which can itself be Locked and nameless; name the current node or the first unbeaten level instead (needs a UX choice)
+- [RECOMMENDED] Dependencies: the bidirectional-check text is stale (Campaign Level Data already carries the fields; the Menus & Screens row exists)
+- [RECOMMENDED] Edge Cases line 147: two bullets are merged into one line (missing line break)
+- [RECOMMENDED] Rule 13 / F2 / Edge Cases: pending 7a change to region records and the region `order` field (lines 40, 151, 166; F2 and rule 7 wording)
+- [RECOMMENDED] Rule 13: when the "More to come" mark appears relative to the conquest sequence is unstated
+Reviewed-Content-Hash: design/gdd/world-map-regions.md 2195ae16b3c46c9b0b8a432d9c329c29c266f297
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace
+Reviewed-Content-Hash: design/gdd/save-progress.md 4fae9c32ae275a32e5f32897582a798247ffe4ac
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283

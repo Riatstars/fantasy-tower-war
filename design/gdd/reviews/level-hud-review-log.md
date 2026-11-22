@@ -91,3 +91,32 @@ Revisions applied 2026-11-22 (user-approved, cross-GDD review round 2): strip ti
 
 ## Revision — 2026-11-22 (cross-GDD review round 3)
 Revisions applied 2026-11-22 (user-approved, cross-GDD review round 3): AC22 Armed clause no longer relies on an unreachable not_yours refusal (R3B4); plaque_width and plaque_min_height_px registered (B21). Status In Review, pending re-review.
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; session my-game-tower-war-39, third pass)
+Blocking items: 0 | Recommended: 7
+Summary: All four prior blockers are resolved (slots refusal moved to a Running level, F1 rounding rule, F3 digit width follows the font, cursor hint with a source event and AC22). Registered values and derived step counts match and the HUD agrees with Screen Flow, Level State, Rope Links and Touch & Mouse Input. Remaining items are an art-bible mismatch and cross-document wording.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] F3 / registry plaque_min_height_px: the HUD uses a 30 px plaque, art bible §3 says 28 px; reconcile
+- [RECOMMENDED] Art bible §7 (UI/HUD Visual Direction) is still "[To be designed]"; plaque_font_px and digit_aspect depend on the chosen font
+- [RECOMMENDED] Troop Generation Visual/Audio describes a steady "full" mark; HUD rule 5 and the art bible give a periodic glint, never steady
+- [RECOMMENDED] Level State UI Requirements (line 194) still calls the clock "optional to show"; sent to 7a
+- [RECOMMENDED] Pixel sizes and offsets named in rules and edge cases have no range table
+- [RECOMMENDED] Edge Cases: the beat pop is dropped on a capture step; state the exception once (Troop Generation says beat effects are not suppressed by combat)
+- [RECOMMENDED] AC1 allows ±1 px although F1 now fixes the rounding (AC21 is exact)
+Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
+Reviewed-Content-Hash: design/registry/entities.yaml 167b97a34b6523bffa93706905c8f17c8bb70997
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+Reviewed-Content-Hash: design/gdd/keep-levels.md 3ca233dfd0a4a7dae40864251feb45ad8d925fd5
+Reviewed-Content-Hash: design/gdd/rope-links.md 7b5d310afb0be438c29a5e751b897a9e25afbf6a
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md a07a7f4075c2cd1f812e6e1c181dda20600171a3
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md ae3160009d7bceb2d0857fcdaf7236602ed146c8
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 278b4a5562e3058864875073434324c5881885aa
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a3971f228afb17f33cace
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
+Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
+Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283
