@@ -1,6 +1,6 @@
 # Save & Progress
 
-> **Status**: In Review (revised 2026-11-22, pending re-review)
+> **Status**: In Review (revised 2026-11-22 after the second review and the cross-GDD review, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -38,16 +38,16 @@ first level.
 
 1. **One profile per device.** There is exactly one progress profile; no profile picker exists. A second player on the same phone shares it.
 2. **Two stores, written separately:** the **progress file** (everything earned in the campaign) and the **settings file** (everything the player chose about the app: volume, mute, vibration, language if added). Deleting progress never touches settings.
-3. **What the progress file holds in MVP:** a schema version; for each level id, its best result (`beaten` yes or no, best stars 0–3, best time in seconds, times played, counting wins and losses but not quits); the set of conquered region ids (meaning "the conquest sequence has been shown"; conquest itself is derived by World Map & Regions from the level results, its F2, decided 2026-11-22); the level the world map last showed, so the map opens where the player left it; `first_run_done` for the tutorial (false in a fresh profile); and the save's last-written time. Later tiers add currencies (gold, diamonds), owned and upgraded unit cards, unlocked races, the selected race and unlocked god powers. Each of those is added as its own named block by the GDD that owns it, with a schema version bump.
+3. **What the progress file holds in MVP:** a schema version; for each level id, its best result (`beaten` yes or no, best stars 0–3 (0 until the level is first won), best time in seconds (**none** until the level is first won; a level with only losses has no time), times played, counting wins and losses but not quits); the set of conquered region ids (meaning "the conquest sequence has been shown"; conquest itself is derived by World Map & Regions from the level results, its F2, decided 2026-11-22); the level the world map last highlighted, so the map opens with the node the player left from highlighted (World Map & Regions rule 9: a highlight only, the map never scrolls); `first_run_done` for the tutorial (false in a fresh profile); and the save's last-written time. Later tiers add currencies (gold, diamonds), owned and upgraded unit cards, unlocked races, the selected race and unlocked god powers. Each of those is added as its own named block by the GDD that owns it, with a schema version bump.
 4. **What it never holds:** a match in progress, the current screen, the rival's state, or anything derivable from level data (which levels exist, their layouts, their star thresholds). A level is "unlocked" because the one before it is beaten; that is derived by World Map & Regions, not stored.
-5. **Progress only ever grows.** Writes merge: a worse result never replaces a better one (stars, time), `beaten` never goes back to no, a conquered region stays conquered. The only way to lower anything is the explicit "Delete progress" action.
-6. **Who writes:** every owning system reports its change (`record_level_result`, `record_region_conquered`, `set_map_position`, later `add_currency` and the rest); Save & Progress merges it into the in-memory profile and returns at once. **`flush()`** writes every pending change in one synchronous write and returns success or failure; it runs at the end of every frame that has pending changes, and any caller may call it at once. Writes never overlap. Level State calls `flush()` after recording a result and before asking Screen Flow for the result overlay, so a crash during the overlay loses nothing. Screen Flow never writes (its GDD, Interactions).
+5. **Progress only ever grows.** Writes merge: a worse result never replaces a better one (stars, time), `beaten` never goes back to no, a conquered region stays conquered. A level's first win always sets its time: a stored **none** is replaced by any time, and a loss (`record_level_played`) never creates or changes the time or the stars. The only way to lower anything is the explicit "Delete progress" action.
+6. **Who writes:** every owning system reports its change (`record_level_result`, `record_region_conquered`, `set_map_position`, later `add_currency` and the rest); Save & Progress merges it into the in-memory profile and returns at once. **`flush()`** writes every pending change in one synchronous write and returns success or failure; it runs at the end of every frame in which a change was reported since the last flush attempt, and any caller may call it at once. A failed write is therefore retried only by the next reported change, an explicit `flush()` or the app going to the background, never every frame. **Reads** are read-only getters on the in-memory profile, for example `best_time(level_id)` (a time or none) for Menus & Screens' Win overlay; a getter never writes. Writes never overlap. Level State calls `flush()` after recording a result and before asking Screen Flow for the result overlay, so a crash during the overlay loses nothing. Screen Flow never writes (its GDD, Interactions).
 7. **Write safely.** Every write goes to a temporary file first, is checked to have been fully written (the engine's write calls return success since 4.4), and only then replaces the live file; the previous live file becomes the single backup. A write that fails leaves the live file and the backup untouched and is reported by `flush()` and the log; the in-memory profile keeps the change and the next flush retries it.
 8. **Read on launch, once.** The profile is loaded before the Title shows and kept in memory for the session. If the live file is missing, a fresh profile is created (a new install). If it is present but unreadable or fails validation, the backup is tried; if the backup loads, the game tells the player once that progress was restored from a backup. If both fail, the damaged files are kept under a `.corrupt` name for support, a fresh profile starts, and the player is told once that progress could not be read.
 9. **Schema versions.** The file carries a version number. A file older than the current version is migrated step by step on load (each step is a function from version N to N+1 written by the GDD that changed the schema) and written back. A file newer than the game understands (a downgrade) is not loaded: it is kept, a fresh profile starts in memory, writes are refused for the session, and the player is told that progress this session will not be saved (the player's decision, 2026-11-22).
-10. **Validation on load:** every value must be in range (stars 0–3, times ≥ 0, level ids and region ids known to Campaign Level Data). An unknown level or region id (content removed in an update) is kept in the file but ignored, so an update that reorders content never destroys results. An out-of-range value is clamped and logged; a file that cannot be parsed at all is treated as damaged (rule 8).
-11. **Delete progress** is a Settings action, offered only when Settings is opened over the Title or the World Map, never during a match (the player's decision, 2026-11-22). It needs Screen Flow's confirmation box, deletes the progress file and its backup, and starts a fresh profile at once; the settings file is kept and the app goes to the Title. There is no undo.
-14. **Messages are events.** The one-time messages (restored from backup, could not be read, newer version, could not be saved) are raised as events; Screen Flow shows each as a message box (its Core Rule 12), over the Title at launch.
+10. **Validation on load:** every value must be in range (stars 0–3, times ≥ 0 or none, level ids and region ids known to Campaign Level Data). A time or stars above 0 stored on a level that is not beaten is cleared (time none, stars 0) and logged. An unknown level or region id (content removed in an update) is kept in the file but ignored, so an update that reorders content never destroys results. An out-of-range value is clamped and logged; a file that cannot be parsed at all is treated as damaged (rule 8).
+11. **Delete progress** is a Settings action, offered only when Settings is opened over the Title or the World Map, never during a match (the player's decision, 2026-11-22). It needs Screen Flow's confirmation box, deletes the progress file and its backup, and starts a fresh profile at once; the settings file is kept and the app goes to the Title. There is no undo. In a read-only session (rule 9, a file from a newer version) Delete progress is still offered, but its confirmation text says it deletes a save from a newer version of the game (the player's decision, 2026-11-22); on Yes both files are deleted, the session stops being read-only and the fresh profile is written normally.
+14. **Messages are events.** The one-time messages (restored from backup, could not be read, newer version, could not be saved) are raised as events; Screen Flow shows each as a message box (its Core Rule 12), over the Title at launch. **Could not be saved** is raised at once by the first failed `flush()` after a successful write (or after launch); further failures in the same streak raise nothing more, and the next successful write ends the streak. Screen Flow holds it until no overlay is open (its rule 1), so a failure on a match's deciding step shows after the result overlay, never over it (Level State rule 6).
 12. **Export and import** are not in scope. Progress lives on the device only; there is no account and no cloud copy (brief: Out of scope).
 13. **Portability guard.** Nothing in the profile depends on the device (no absolute paths, no screen size), so a future cloud copy could carry the same bytes.
 
@@ -58,7 +58,7 @@ first level.
 | Not loaded | App starting; no profile in memory | Load succeeds → Loaded; live and backup both fail or the file is newer than the game → Fresh (with a one-time message) |
 | Fresh | A new profile in memory, nothing on disk yet | First write → Loaded (the file now exists) |
 | Loaded | Profile in memory matches the live file | A change is reported → Dirty |
-| Dirty | Memory has a change the file does not | `flush()` succeeds → Loaded; fails → Dirty (retry on the next flush, and on app-to-background) |
+| Dirty | Memory has a change the file does not | `flush()` succeeds → Loaded; fails → Dirty (retried by the next reported change, an explicit `flush()` or app-to-background; never every frame) |
 | Migrating | An older file is being upgraded step by step | Last step done and written back → Loaded; a step fails → the file is treated as damaged (rule 8) |
 
 Deleting progress goes from any state to Fresh. The settings file has the same states, kept separately.
@@ -76,8 +76,8 @@ Deleting progress goes from any state to Fresh. The settings file has the same s
 | Settings (Vertical Slice) | both | In: every setting change. Out: the settings on launch. Also the "Delete progress" action | Settings owns the values; Save & Progress owns the file |
 | Currencies & Economy, Unit Cards & Upgrades, Faction Collection & Unlocks (later) | both | Each adds its own named block and a schema migration step | Each owning GDD |
 | Screen Flow & Scene Manager | out | The one-time message events, which Screen Flow shows as message boxes; it reads and writes nothing here; the confirmation box for Delete progress is its UI | Save & Progress raises; Screen Flow shows |
-| Mobile Platform Integration | in | App-to-background event: if the profile is Dirty from a failed write, retry once | Mobile Platform Integration reports; Save & Progress retries |
-| Menus & Screens | out | Draws the message boxes Screen Flow opens for the one-time messages | Menus & Screens draws |
+| Mobile Platform Integration | in | App-to-background event: if the profile is Dirty from a failed write, retry once. In UAT-1, before that GDD exists, Save & Progress reads the engine's own application-background notification directly (as Screen Flow does for Pause, its Interactions); Mobile Platform Integration takes that glue over from the Vertical Slice | Mobile Platform Integration reports (UAT-1: the engine notification); Save & Progress retries |
+| Menus & Screens | out | Draws the message boxes Screen Flow opens for the one-time messages; reads `best_time(level_id)` for the Win overlay (its F1), read-only | Menus & Screens draws and reads; Save & Progress owns the getter |
 
 ## Formulas
 
@@ -88,7 +88,7 @@ None. This system defines no numeric rule a balance pass would tune. Its numbers
 `systems-designer` not consulted — Lean mode. Review manually before production.
 
 **Writing**
-- **If the device is out of space or the write fails for any reason**: the live file and backup are untouched; the change stays in memory (Dirty); the caller is told the write failed; the failure is logged. The next reported change retries, and the app-to-background event retries once. The player sees no error unless the retry on background also fails, when the one-time message "Progress could not be saved" is raised and Screen Flow shows it over the next screen.
+- **If the device is out of space or the write fails for any reason**: the live file and backup are untouched; the change stays in memory (Dirty); the caller is told the write failed; the failure is logged. The next reported change, an explicit `flush()` and the app-to-background event each retry once; nothing retries every frame. The first failure of a streak raises the one-time message "Progress could not be saved" at once (Rule 14), and Screen Flow shows it when no overlay is open; later failures in the same streak raise nothing.
 - **If the app is killed between the temporary write and the replace**: the live file is still the previous good one; the temporary file is deleted on the next launch. At most the last reported change is lost, never the file.
 - **If two changes are reported on the same frame** (a level result and a region conquered): both are merged in memory, then the end-of-frame flush writes once with both.
 - **If a change is reported after a flush in the same frame**: it is merged and written by the next flush (the end of that frame); flushes are synchronous, so writes never overlap.
@@ -137,9 +137,9 @@ None. The level and region ids used for validation come from Campaign Level Data
 | Stars & Rewards (Vertical Slice) | Hard | Star storage; later `add_currency` |
 | Settings (Vertical Slice) | Hard | The settings file and the Delete progress action |
 | Tutorial & Onboarding (Vertical Slice) | Soft | `first_run_done` |
-| Mobile Platform Integration (Vertical Slice) | Soft | The retry on app-to-background |
-| Currencies & Economy, Unit Cards & Upgrades, Faction Collection & Unlocks (Alpha) | Hard | Their own blocks and migration steps |
-| Menus & Screens | Soft | Draws the message boxes |
+| Mobile Platform Integration (Vertical Slice) | Soft | The retry on app-to-background (in UAT-1 Save reads the engine notification itself) |
+| Currencies & Economy, Unit Cards & Upgrades, Faction Collection & Unlocks (UAT-2) | Hard | Their own blocks and migration steps |
+| Menus & Screens | Soft | Draws the message boxes; reads `best_time(level_id)` |
 
 ### Consistency to fix
 
@@ -164,9 +164,9 @@ The player should never think about saving. The feel targets are absence targets
 
 ## UI Requirements
 
-- **Delete progress**: one entry in Settings, followed by Screen Flow's confirmation box with the text "Delete all progress? Stars and conquered regions will be lost. Settings are kept." Yes deletes at once and the app goes to the Title; No is the default and matches Back. Not offered when Settings is opened from Pause.
+- **Delete progress**: one entry in Settings, followed by Screen Flow's confirmation box with the text "Delete all progress? Stars and conquered regions will be lost. Settings are kept." Yes deletes at once and the app goes to the Title; No is the default and matches Back. Not offered when Settings is opened from Pause. In a read-only session (newer-version file) the text is instead "This save is from a newer version of the game. Delete it and all progress? Settings are kept."
 - **Three launch messages**, each Screen Flow's message box with one Continue button, shown over the Title one at a time: "Your progress was restored from a backup." / "Your progress could not be read and has been reset." / "This save is from a newer version of the game. Progress this session will not be saved."
-- **Write-failure message**, shown once per session over the next screen if the retry on background also failed: "Progress could not be saved. Check free space on your device."
+- **Write-failure message**, raised by the first failed write of a streak and shown by Screen Flow when no overlay is open (Rule 14): "Progress could not be saved. Check free space on your device."
 
 > **UX Flag — Save & Progress**: This system has UI requirements. In Pre-Production, run `/ux-design` for the Settings entry, the confirmation box and the message boxes before writing epics. Stories that reference UI should cite `design/ux/[screen].md`, not this GDD directly.
 
@@ -184,7 +184,7 @@ Screen Flow & Scene Manager's GDD exists and is checked against this one; every 
 | Known level and region ids | Campaign Level Data | Validation (Rule 10) |
 | Setting values; the Delete progress entry | Settings | Rules 2, 11 |
 | First-run flag | Tutorial & Onboarding | Rule 3 |
-| App-to-background event | Mobile Platform Integration | Retry (Interactions) |
+| App-to-background event | Mobile Platform Integration (UAT-1: the engine notification, read directly, as Screen Flow does) | Retry (Interactions) |
 | Message boxes | Menus & Screens | UI Requirements |
 | `FileAccess.store_*` return `bool` since 4.4 | `docs/engine-reference/godot/breaking-changes.md` | Rule 7 (check every write) |
 
@@ -217,16 +217,19 @@ Section D defines no formulas, so the criteria come from Sections C and E alone.
 - **AC18 [Logic]**: GIVEN a migration step that throws, THEN the original file is unchanged and the load follows the damaged-file path (AC9 or AC10).
 - **AC19 [Logic]**: GIVEN the same result recorded twice, THEN the second call raises plays to 2 and writes once more; no other field changes.
 - **AC25 [Logic] (Rule 3; plays)**: GIVEN level 2 at 1 play, WHEN a loss is recorded (`record_level_played`), THEN plays is 2 and `beaten` is unchanged; WHEN a match is quit, THEN nothing is recorded and no write happens.
+- **AC26 [Logic] (Rules 3, 5; best time)**: GIVEN a fresh profile, WHEN level 2 is lost (`record_level_played`), THEN its entry has plays 1, `beaten` no, stars 0 and `best_time(level 2)` returns none; WHEN it is then won with 1 star in 95.0 s, THEN the entry holds `beaten` yes, 1 star, 95.0 s and plays 2, and `best_time` returns 95.0.
+- **AC27 [Logic] (Rules 6, 14; retry and message)**: GIVEN the file system refuses writes, WHEN a result is recorded and flushed (failure) and then 120 frames pass with no new change, THEN no further write is attempted and "could not be saved" was raised exactly once; WHEN a new change is reported, THEN one write is attempted at that frame's end and no second message is raised; WHEN writes are allowed and a write succeeds, THEN a later failure raises the message again.
+- **AC28 [Logic] (Rules 9, 11; read-only delete)**: GIVEN a read-only session (a file from a newer version), WHEN Settings over the Title opens, THEN Delete progress is offered and its confirmation reads the newer-version text; WHEN confirmed, THEN both files are deleted, a fresh profile is written and later writes succeed.
 
 **Cross-system, device and feel**
 
 - **AC20 [Integration: Level State & Match Flow]**: GIVEN a won match, THEN `record_level_result` and `flush()` complete before Screen Flow's result overlay opens, and killing the app during the overlay loses no result.
-- **AC21 [Integration: World Map & Regions]**: GIVEN level 3 beaten in the file, WHEN the World Map opens, THEN level 4 is unlocked and the map is centred on the stored map position.
-- **AC22 [Integration: Mobile Platform Integration] [Device]**: GIVEN a Dirty profile from a failed write, WHEN the app goes to the background, THEN one retry happens; on the target phone, a write of a full MVP profile completes in under 50 ms (target to confirm).
+- **AC21 [Integration: World Map & Regions]**: GIVEN level 3 beaten in the file, WHEN the World Map opens, THEN level 4 is unlocked and the stored map position is the highlighted node (World Map rule 9; the map has no camera).
+- **AC22 [Integration: Mobile Platform Integration; in UAT-1 the engine notification] [Device]**: GIVEN a Dirty profile from a failed write, WHEN the app goes to the background (UAT-1 build, no Mobile Platform Integration), THEN one retry happens; on the target phone, a write of a full MVP profile completes in under 50 ms (target to confirm).
 - **AC23 [Device]**: On the target Android and iOS devices, progress survives closing the app from the recent-apps list, a reboot, and an update of the app to a build with the same schema version.
 - **AC24 [Visual]**: Retained screenshots in `production/qa/evidence/` show each of the four one-time messages (as message boxes) and the Delete progress confirmation.
 
-**Coverage check:** every core rule (1–14) has at least one criterion (Rule 14 through AC9, AC10, AC12 and Screen Flow's AC23); each edge case that could ship broken has its own; no formula exists to cover. Cross-system: AC20, AC21, AC22.
+**Coverage check:** every core rule (1–14) has at least one criterion (Rule 14 through AC9, AC10, AC12, AC27 and Screen Flow's AC23; the best-time default through AC26; read-only delete through AC28); each edge case that could ship broken has its own; no formula exists to cover. Cross-system: AC20, AC21, AC22.
 
 ## Open Questions
 

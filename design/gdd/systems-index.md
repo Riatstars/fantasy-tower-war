@@ -63,18 +63,18 @@ Brief paragraph per system (balanced density):
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | Troop Generation | Gameplay | MVP | In Review | design/gdd/troop-generation.md | Keep Levels (level input; cycle resolved by per-step order) |
-| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | In Review | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft) |
-| 3 | Touch & Mouse Input | Core | MVP | In Review | design/gdd/touch-mouse-input.md | — |
+| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | Needs Revision | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft) |
+| 3 | Touch & Mouse Input | Core | MVP | Needs Revision | design/gdd/touch-mouse-input.md | — |
 | 4 | Save & Progress | Persistence | MVP | In Review | design/gdd/save-progress.md | Campaign Level Data (soft: id validation) |
-| 5 | Keep Levels | Gameplay | MVP | In Review | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
-| 6 | Rope Links | Gameplay | MVP | In Review | design/gdd/rope-links.md | Keep Levels, Touch & Mouse Input, Troop Generation (soft), Troop Marching & Clashes (runtime callback) |
-| 7 | Troop Marching & Clashes | Gameplay | MVP | Designed | design/gdd/troop-marching-clashes.md | Rope Links, Keep Levels, Troop Generation |
-| 8 | Level State & Match Flow | Core | MVP | Designed | design/gdd/level-state-match-flow.md | Troop Marching & Clashes, Troop Generation, Rope Links, Screen Flow & Scene Manager, Save & Progress, Keep Levels (soft), Campaign Level Data (soft: level record contract) |
-| 9 | Rival AI | Gameplay | MVP | Designed | design/gdd/rival-ai.md | Rope Links, Troop Marching & Clashes, Troop Generation, Keep Levels, Level State & Match Flow, Campaign Level Data (soft: think, aggro, rival_seed per level) |
-| 10 | Campaign Level Data | Progression | MVP | Designed | design/gdd/campaign-level-data.md | Keep Levels, Rival AI, Level State & Match Flow, Save & Progress (id registration), Touch & Mouse Input (invariant I2), Rope Links (invariant R3), Troop Marching & Clashes (soft: speed_min, keep id order) |
-| 11 | World Map & Regions | Progression | MVP | Designed (UX spec needed: `/ux-design world-map`) | design/gdd/world-map-regions.md | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager, Touch & Mouse Input (soft) |
-| 12 | Level HUD | UI | MVP | Designed (UX spec needed: `/ux-design level-hud`, which also closes the HUD-element UX flags of Troop Generation, Keep Levels, Rope Links, Troop Marching and Touch & Mouse Input) | design/gdd/level-hud.md | Keep Levels, Rope Links, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Touch & Mouse Input, Screen Flow & Scene Manager, Campaign Level Data (soft: title text) |
-| 13 | Menus & Screens | UI | MVP | Designed (UX spec needed: `/ux-design menus`) | design/gdd/menus-screens.md | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress, World Map & Regions (soft: is_unlocked), Campaign Level Data (soft: names), Touch & Mouse Input (soft: controls list) |
+| 5 | Keep Levels | Gameplay | MVP | Approved | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
+| 6 | Rope Links | Gameplay | MVP | Needs Revision | design/gdd/rope-links.md | Keep Levels, Touch & Mouse Input, Troop Generation (soft), Troop Marching & Clashes (runtime callback) |
+| 7 | Troop Marching & Clashes | Gameplay | MVP | Needs Revision | design/gdd/troop-marching-clashes.md | Rope Links, Keep Levels, Troop Generation |
+| 8 | Level State & Match Flow | Core | MVP | Needs Revision | design/gdd/level-state-match-flow.md | Troop Marching & Clashes, Troop Generation, Rope Links, Screen Flow & Scene Manager, Save & Progress, Keep Levels (soft), Campaign Level Data (soft: level record contract) |
+| 9 | Rival AI | Gameplay | MVP | Needs Revision | design/gdd/rival-ai.md | Rope Links, Troop Marching & Clashes, Troop Generation, Keep Levels, Level State & Match Flow, Campaign Level Data (soft: think, aggro, rival.seed per level) |
+| 10 | Campaign Level Data | Progression | MVP | Needs Revision | design/gdd/campaign-level-data.md | Keep Levels, Rival AI, Level State & Match Flow, Save & Progress (id registration), Touch & Mouse Input (invariant I2), Rope Links (invariant R3), Troop Marching & Clashes (soft: speed_min, keep id order) |
+| 11 | World Map & Regions | Progression | MVP | In Review (UX spec needed: `/ux-design world-map`) | design/gdd/world-map-regions.md | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager, Touch & Mouse Input (soft) |
+| 12 | Level HUD | UI | MVP | In Review (UX spec needed: `/ux-design level-hud`, which also closes the HUD-element UX flags of Troop Generation, Keep Levels, Rope Links, Troop Marching and Touch & Mouse Input) | design/gdd/level-hud.md | Keep Levels, Rope Links, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Touch & Mouse Input, Screen Flow & Scene Manager, Campaign Level Data (soft: title text) |
+| 13 | Menus & Screens | UI | MVP | Needs Revision (UX spec needed: `/ux-design menus`) | design/gdd/menus-screens.md | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress, World Map & Regions (soft: is_unlocked), Campaign Level Data (soft: names), Touch & Mouse Input (soft: controls list) |
 | 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | Save & Progress (settings file, Delete progress) |
 | 15 | Currencies & Economy | Economy | MVP | Not Started | — | Save & Progress |
 | 16 | Audio | Audio | Vertical Slice | Not Started | — | Settings |
@@ -90,6 +90,7 @@ Brief paragraph per system (balanced density):
 | 26 | Guardian Castles | Gameplay | Alpha | Not Started | — | Rival AI, Campaign Level Data, World Map & Regions |
 | 27 | Collection & Upgrade Screens (inferred) | UI | MVP | Not Started | — | Faction Collection & Unlocks, Unit Cards & Upgrades, Currencies & Economy |
 | 28 | Accessibility (inferred) | Meta | Alpha | Not Started | — | Level HUD, Menus & Screens, Settings, Touch & Mouse Input (soft) |
+| 29 | Localization (inferred) | Meta | Alpha | Not Started | — | Menus & Screens, Level HUD (soft: takes over the strings data file; UAT-1 uses one plain strings file in one language, decided 2026-11-22) |
 
 Out of scope for the UAT build (see the brief's Out of scope): in-app purchases and ads (store
 build after UAT), online versus, cloud save and accounts.
@@ -259,13 +260,13 @@ defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 
 | Metric | Count |
 |--------|-------|
-| Total systems identified | 28 |
+| Total systems identified | 29 |
 | Design docs started | 13 |
-| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 7 Designed, pending review |
-| Design docs approved | 0 (the game concept is approved, 2026-11-22) |
+| Design docs reviewed | 13 (lean /design-review, 2026-11-22): first pass 1 Approved, 12 Needs Revision (44 blocking items; 8 cross-document clusters, resolved); re-review 1 Approved, 12 Needs Revision (38 blocking; 11 cross-document problems, resolved). Troop Generation, Save & Progress, World Map and Level HUD then revised in full (In Review); the other 8 still carry per-document blockers |
+| Design docs approved | 1 (Keep Levels, 2026-11-22; the game concept is also approved, 2026-11-22) |
 | MVP systems designed | 13/20 (UAT-1: 13/13, all designed 2026-11-22; UAT-2 army layer 0/7) |
 | Vertical Slice systems designed | 0/5 |
-| Alpha systems designed | 0/3 |
+| Alpha systems designed | 0/4 |
 
 ---
 

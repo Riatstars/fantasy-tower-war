@@ -262,7 +262,7 @@ formulas:
       - pawns_in_flight
     output_range: [0, 1]
     expression: "lost = (owned_player = 0) and (pawns_in_flight_player = 0)"
-    notes: "Boolean (0 or 1), phase 7. A player with no keep and pawns still marching has not lost. With no keep the player has no ropes or relays, so pawns_in_flight can only fall: lost within longest_rope / pawn_speed (about 13.4 s) unless a landing pawn captures a keep."
+    notes: "Boolean (0 or 1), phase 7. A player with no keep and pawns still marching has not lost. With no keep the player has no ropes or relays, so pawns_in_flight can only fall: lost within longest_rope / pawn_speed (about 11.4 s at the 1258 px longest legal rope) unless a landing pawn captures a keep."
     added: 2026-11-22
     revised: "2026-11-22"  # variables were: owned_player, pawns_in_flight_player (renamed to the source GDD's names, /consistency-check)
   - name: match_time
@@ -354,9 +354,9 @@ formulas:
       - design/gdd/troop-marching-clashes.md
     variables:
       - dist
-    output_range: [156, 1470]
+    output_range: [156, 1258]
     expression: "max over keep pairs of dist(k_i, k_j); R3 holds when send_interval >= longest_rope / (speed_min * (pawns_per_rope_max - 1))"
-    notes: "Measured per level by the loader to enforce Rope Links invariant R3. Green Vale: 810 to 932 px, needing send_interval >= 0.189 to 0.217 s; the table diagonal 1470 px needs 0.343 s at speed_min 110. A level that fails is Rejected, never clamped."
+    notes: "Measured per level by the loader to enforce Rope Links invariant R3. Green Vale: 810 to 932 px, needing send_interval >= 0.189 to 0.217 s; the longest legal rope (diagonal of the Campaign B2 box, sqrt((720 - 2r)^2 + (1280 - 2r)^2)) is 1258 px at keep_hit_radius 78 and needs 0.293 s at speed_min 110. A level that fails is Rejected, never clamped."
     added: 2026-11-22
     revised: ""
   - name: min_spacing
@@ -368,7 +368,7 @@ formulas:
     variables:
       - dist
       - keep_hit_radius
-    output_range: [156, 1470]
+    output_range: [156, 1258]
     expression: "min over keep pairs of dist(k_i, k_j); I2 holds when min_spacing >= 2 * keep_hit_radius"
     notes: "Touch and Mouse Input calls this measurement keep_spacing (its F5); same value. Measured per level by the loader to enforce Touch and Mouse Input invariant I2 (its F5). Green Vale: 262, 206, 226, 220, 180 px against a 156 px bound. A level that fails is Rejected at load; Touch's per-level radius fallback runs only for a runtime radius change."
     added: 2026-11-22
@@ -451,10 +451,9 @@ formulas:
     variables:
       - t
       - best
-      - plays
-    output_range: [0, 2]
-    expression: "'First clear!' if plays = 1; 'New best!' if plays > 1 and t = best; else 'best ' + format(best)"
-    notes: "Win overlay time line. Evaluated after Save's merge (Level State rule 6 records before the overlay opens), so best <= t always holds. Encoded 0 first clear, 1 new best, 2 shows best."
+    output_range: [0, 0]
+    expression: "title 'Clear!'; line format(t) + ' · best ' + format(best)"
+    notes: "Win overlay time line. Evaluated after Save's merge (Level State rule 6 records before the overlay opens), so best <= t always holds. One fixed form on every win (revised 2026-11-22: no 'First clear!' or 'New best!' variants); on a first clear, a record or a tie best = t."
     added: 2026-11-22
     revised: ""
   - name: next_level_enabled
@@ -468,8 +467,8 @@ formulas:
       - next
       - is_unlocked
     output_range: [0, 1]
-    expression: "show_next = next(level) exists and is_unlocked(next(level))"
-    notes: "The Win overlay's Next level button. Hidden on a region's last level (next is none) and whenever World Map reports the next level locked, so a reordered campaign cannot offer a locked level."
+    expression: "show_next = next(level) exists and region(next(level)) = region(level) and is_unlocked(next(level))"
+    notes: "The Win overlay's Next level button. Hidden on a region's last level even when next() crosses into the next region (revised 2026-11-22, so the map plays the conquest), and whenever World Map reports the next level locked, so a reordered campaign cannot offer a locked level."
     added: 2026-11-22
     revised: ""
 

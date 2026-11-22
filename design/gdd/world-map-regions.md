@@ -1,6 +1,6 @@
 # World Map & Regions
 
-> **Status**: Designed (pending /design-review in a fresh session)
+> **Status**: In Review (revised 2026-11-22 after its review and the cross-GDD review, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -22,19 +22,19 @@ World Map & Regions is where the player is between levels. It shows the whole ca
 ### Core Rules
 
 1. **One fixed map** (decided 2026-11-22). The whole campaign is one portrait image in map pixels (720 × 1,280 logical, the same frame as the table); it never scrolls or zooms. Each region is an area of the image with a `fog_shape` (its silhouette under fog) and a `banner_anchor`; each level is a node at a `node` position. These are data fields this GDD adds to Campaign Level Data's region and level records (its Open Question 2); their values are content.
-2. **Node states are derived, never stored.** On every open, and after every change Save reports while the map is showing, each level is classified from Save & Progress's results and Campaign Level Data's `next()` (F1):
+2. **Node states are derived, never stored.** On every open, and again after each record this screen makes itself (rule 6), each level is classified from Save & Progress's results and Campaign Level Data's `next()` (F1). Save never calls back (its Interactions direction rule), and nothing else changes results while the map is showing: a match result is recorded before the map opens, and Delete progress sends the app to the Title (Save rule 11).
    - **Beaten**: the level's result has `beaten` true;
    - **Unlocked**: not beaten, and either it is the first level of the first region or `prev(level)` is beaten (`prev` is the inverse of `next`);
    - **Locked**: otherwise.
    A beaten level is always playable (replay), so Beaten implies tappable even if, through an edited file, its `prev` is not beaten.
 3. **The current node** is the unlocked, unbeaten level with the lowest campaign order (F3). It is the "next to play" and is drawn pulsing. With every level beaten there is none.
-4. **Region states are derived too** (F2): **Open** when its first level is unlocked or beaten; **Conquered** when every level in it is beaten; **Fogged** otherwise. Fogged regions show only their `fog_shape` under flat cool fog, with no nodes and no name (decided 2026-11-22). Open regions show every node, locked ones dim and nameless, so the player sees how far the region goes.
+4. **Region states are derived too** (F2): **Open** when its first level is unlocked or beaten; **Conquered** when every level in it is beaten; **Fogged** otherwise. Fogged regions show only their `fog_shape` under flat cool fog, with no nodes and no name (decided 2026-11-22). Open regions show every node, locked ones dim and nameless, so the player sees how far the region goes. Because unlocking is linear, beating a region's last level implies every level in it is beaten, so Screen Flow's last-level routing (its rule 10) and Campaign Level Data rule 7 agree with F2; F2 decides when they differ (an edited file).
 5. **Unlocking a level unlocks nothing else**: the next node lights when the map next derives states. The only "event" on the map is a region changing state (rules 6 and 7); a node simply reads differently than last time.
-6. **The conquest sequence plays once per region** (decided 2026-11-22). Save's stored "conquered regions" set means *celebration shown*, not conquest: conquest is F2. When the map opens (or a result arrives while it is showing) and a region is Conquered but not in Save's set, the map plays the sequence (Visual/Audio), then calls `record_region_conquered(region)` and `flush()` (Save rule 6). If the app is killed before the record, the sequence plays again next time: a repeat is the safe failure, a lost celebration is not.
-7. **Fog clears once per region**, right after the sequence for the region before it: the next region's fog lifts over `fog_clear_time` and its nodes appear. Clearing needs no stored flag: a region is drawn clear whenever it is Open, and the lifting animation plays only when the sequence that opened it has just played in this visit. Several conquered-but-uncelebrated regions (an imported or restored file) celebrate in campaign order, each followed by its fog clear.
+6. **The conquest sequence plays once per region** (decided 2026-11-22). Save's stored "conquered regions" set means *celebration shown*, not conquest: conquest is F2. When the map opens (or a result arrives while it is showing) and a region is Conquered but not in Save's set, the map plays the sequence (Visual/Audio), then calls `record_region_conquered(region)` and `flush()` (Save rule 6). If the app is killed before the record, the sequence plays again next time: a repeat is the safe failure, a lost celebration is not. **A sequence starts only when no overlay or message box is open over the map** (the player's decision, 2026-11-22): while one is open (for example a Save message held by Screen Flow rule 1), the map waits in Deriving and starts the sequence on the frame it closes. Once Settings exists (Vertical Slice; UAT-1 has no Settings button on the map), its map button is hidden while Celebrating or Clearing, so no overlay can open over a sequence.
+7. **Fog clears once per region**, right after the sequence for the region before it. `region_after(R)` is the next region in campaign order that has at least one level (none if there is none). Right after R's sequence, if `region_after(R)` exists, its fog lifts over `fog_clear_time` and its nodes appear. Clearing needs no stored flag. F2 already reads `region_after(R)` as Open once R's last level is beaten (Campaign Level Data's `next()` crosses regions), so the trigger is "R's sequence just ended and `region_after(R)` exists", not "the next region is Fogged". **Until its clear has played in this visit, a region whose predecessor is still pending celebration is drawn fogged, with no nodes**, even though F2 reads it Open; at any other time an Open region is drawn clear. **Catch-up:** several conquered-but-uncelebrated regions (an imported or restored file) are handled one at a time in campaign order: R's sequence, then R's fog clear if `region_after(R)` exists, then Deriving, then the next pending region. A tap skips only the sequence that is playing.
 8. **Tapping.** A tap on an Unlocked or Beaten node asks Screen Flow to open that level (payload: the level id) and calls `set_map_position(level)`. A tap on a Locked node shakes it and shows a one-line hint, "Beat [prev name] first", for `hint_time`; nothing else happens. A tap on fog does nothing. Taps during a sequence skip to its end (rule 11).
 9. **Map position** is the last node tapped or returned from. On open, that node is highlighted (an outline, distinct from the current node's pulse) if it still exists and is tappable; otherwise the current node is. `set_map_position` is also called when Screen Flow returns the player to the map from a level, with that level's id. With no scrolling there is no camera to restore; the position is a highlight only.
-10. **Replay is allowed** on any Beaten node; Save merges a better result and counts the play (its rule 5). The map shows the best result.
+10. **Replay is allowed** on any Beaten node; Save merges a better result and counts the play (its rule 5). The node stays Beaten and, in UAT-1, shows no time and no stars (rule 12): best stars are drawn from UAT-2, and the best time is shown on the Win overlay (Menus & Screens F1), not on the map.
 11. **Sequences are skippable and never block.** A tap during the conquest sequence or a fog clear jumps to its final frame; the record in rule 6 is made at the sequence's end whether reached or skipped. Input to nodes is ignored until the last sequence of the visit has ended or been skipped.
 12. **Stars** (UAT-2). Nodes carry the stored best stars (0–3) and draw them once Stars & Rewards exists. In UAT-1 a Beaten node shows the banner only; `win_stars` 1 is stored but not drawn as a star, so the first appearance of stars is a real reward, not a retro-fit.
 13. **UAT-1 content.** The Green Vale is region 1 with five nodes; regions 2–5 exist as `fog_shape` areas only, with no levels (Campaign Level Data has no records for them yet), so they are Fogged and stay fogged after gv-05 is conquered: the conquest sequence plays, `next` is none, and no fog clears. Whether to show a "more to come" mark on them is Open Question 1.
@@ -46,16 +46,16 @@ The screen's states while it is the current screen (Screen Flow owns entering an
 
 | State | Meaning | Node input | Enter when | Leave when |
 |---|---|---|---|---|
-| Deriving | Results read; node and region states computed (F1–F3); pending sequences listed in campaign order | Ignored | Screen Flow shows the map; or Save reports a change while showing | Done → Celebrating if any region is conquered and uncelebrated, else Idle |
-| Celebrating | The conquest sequence for the first pending region plays (`celebration_time`) | Tap skips to the end | A pending region | Ends or skipped → record and flush → Clearing if `next` leads to a Fogged region, else Deriving (to pick up the next pending region or go Idle) |
-| Clearing | The next region's fog lifts (`fog_clear_time`) | Tap skips to the end | A celebration ended and a region to open exists | Ends or skipped → Deriving |
+| Deriving | Results read; node and region states computed (F1–F3); pending sequences listed in campaign order | Ignored | Screen Flow shows the map; or a sequence, clear or record of this screen ends | Done → Celebrating if a region is pending and no overlay or message box is open (waits while one is open); else Idle |
+| Celebrating | The conquest sequence for the first pending region R plays (`celebration_time`) | Tap skips to the end | A pending region and no overlay open | Ends or skipped → record and flush → Clearing if `region_after(R)` exists, else Deriving (to pick up the next pending region or go Idle) |
+| Clearing | `region_after(R)`'s fog lifts (`fog_clear_time`); until then it is drawn fogged | Tap skips to the end | R's celebration ended and `region_after(R)` exists | Ends or skipped → Deriving |
 | Idle | Interactive: nodes tappable, hints, highlight and pulse | Full | No pending sequence | A node tap → Screen Flow transition (map leaves); Settings opens over it (Screen Flow) |
 
 | From | Trigger | To |
 |---|---|---|
 | Idle | Tap Unlocked or Beaten node | Screen Flow: Level (the map is left; `set_map_position` called first) |
 | Idle | Tap Locked node | Idle (shake and hint; no state change) |
-| Idle | Settings button | Settings overlay over the map (Screen Flow); the map state is kept |
+| Idle | Settings button (Vertical Slice; hidden in Celebrating and Clearing) | Settings overlay over the map (Screen Flow); the map state is kept |
 | Any | Screen Flow leaves the map | Gone; nothing is kept except through Save |
 
 Deriving is instantaneous within a frame (a few dozen records). Back on the map is ignored (Screen Flow rule 6).
@@ -68,7 +68,7 @@ Deriving is instantaneous within a frame (a few dozen records). Back on the map 
 | Campaign Level Data | in | Regions and levels in order, names, `next()` and its inverse `prev()`; the `node`, `fog_shape` and `banner_anchor` fields this GDD defines | Campaign Level Data carries the fields; this GDD defines them |
 | Screen Flow & Scene Manager | both | In: the map is shown (from Title, from a Win or Lose overlay, from Quit), with "where the player came from" (a level id or none). Out: "open this level" (level id). Settings opens over the map | Screen Flow (its rules 3, 7, 10; transitions table) |
 | Level State & Match Flow | none direct | Level State records results; this GDD reads them through Save. Screen Flow's rule 10 sends a win on a region's last level back to this map, which plays the sequence | Level State rule 7 |
-| Menus & Screens | out | The Win overlay's *Next level* button needs "is `next(level)` unlocked" (F1 on the result just recorded): this GDD exposes `is_unlocked(level_id)` for it | Menus & Screens asks; this GDD answers |
+| Menus & Screens | out | The Win overlay's *Next level* button needs "is `next(level)` unlocked" (F1 on the result just recorded): this GDD exposes `is_unlocked(level_id)` for it. It is a pure query over Save's results and Campaign Level Data (F1), so it answers whether or not the map screen exists | Menus & Screens asks; this GDD answers |
 | Stars & Rewards (UAT-2) | in | Stars per node from the stored results; the diamond reward on conquest is granted by Stars & Rewards when `record_region_conquered` fires | Stars & Rewards |
 | Guardian Castles (Alpha) | in | A region's last node may be drawn as the guardian's castle (data) | Guardian Castles |
 | God & Goddess Powers (Alpha) | in | A power unlocked on conquest is shown in the sequence (data) | God & Goddess Powers |
@@ -94,7 +94,7 @@ state(L)    = Beaten if beaten(L); Unlocked if unlocked(L); else Locked
 |----------|------|-------|--------|-------------|
 | result(L).beaten | bool | — | calculated (Save & Progress) | Whether the level has ever been won |
 | prev(L) | level or none | — | calculated (inverse of Campaign Level Data `next()`) | The level before L in campaign order |
-| first_of_campaign(L) | bool | — | data file | L is order 1 of the first region |
+| first_of_campaign(L) | bool | — | calculated (Campaign Level Data order; no stored field) | L is order 1 of the first region in campaign order |
 
 **Output Range:** one of three states per level. With no results, exactly one level is Unlocked (`gv-01`) and the rest Locked. Beaten implies tappable, so the set of tappable nodes only grows.
 **Example:** results {gv-01, gv-02 beaten}: gv-01 Beaten, gv-02 Beaten, gv-03 Unlocked, gv-04 and gv-05 Locked.
@@ -145,8 +145,8 @@ Worked at the extremes (lens: systems-designer): no results → one Unlocked nod
 
 - **If the app is killed during the conquest sequence, before `record_region_conquered`**: the set is unchanged, so the sequence plays again on the next visit. A repeat is accepted; a conquest that is never celebrated is not (rule 6).
 - **If `flush()` fails after the record**: the celebrated set is Dirty in memory (Save AC8); the map continues; Save writes it with the next change. A second kill before then repeats the sequence once more.
-- **If several regions are Conquered and uncelebrated at once** (a restored backup, an imported file): the sequences play in campaign order, each followed by its fog clear; one tap skips one sequence. Deriving runs again after each so a region opened by the previous clear is seen.
-- **If progress is deleted** (Save rule 11, from Settings over the map): on return every node relocks except `gv-01`, every region but the first fogs, the celebrated set is empty, and nothing plays: no region is Conquered.
+- **If several regions are Conquered and uncelebrated at once** (a restored backup, an imported file): they are handled one at a time in campaign order (rule 7): sequence, then its fog clear if `region_after(R)` exists, then Deriving; one tap skips one sequence. A region waiting for its clear stays drawn fogged until the clear plays.
+- **If progress is deleted** (Save rule 11, from Settings over the map, once Settings exists): the app goes to the Title. When the map next opens, every node relocks except `gv-01`, every region but the first fogs, the celebrated set is empty, and nothing plays: no region is Conquered.
 - **If the stored map position names a level that no longer exists or is Locked**: the highlight falls to the current node (F3); Save keeps the orphan id untouched (its rule 10).
 - **If a result exists for a level whose `prev` is not beaten** (an edited file, or content reordered by an update): the level is Beaten and tappable; its `prev` stays Unlocked or Locked by its own result. Nothing is "repaired".
 - **If a region has no levels** (regions 2–5 in UAT-1): Fogged, untappable, never celebrated. The art shows its `fog_shape` only.
@@ -155,7 +155,7 @@ Worked at the extremes (lens: systems-designer): no results → one Unlocked nod
 - **If the player taps a Locked node repeatedly**: the hint restarts its `hint_time` each tap; the shake does not stack.
 - **If the player returns from a Lose overlay**: the map opens with that level highlighted (Screen Flow passes where the player came from); no sequence can be pending from a loss.
 - **If the player returns from a Quit**: the same; `set_map_position` is called with the quit level, so the map opens there.
-- **If Settings is opened over the map during a sequence**: Screen Flow freezes the screen beneath its overlay (its rule 5); the sequence resumes where it stopped on close. Deleting progress from there ends the sequence (nothing is Conquered any more).
+- **If an overlay would open during a sequence**: it cannot. The Settings button is hidden while Celebrating or Clearing (rule 6), and UAT-1 has no Settings button on the map at all. A message box already held when the map opens (Screen Flow rule 1) shows first; the sequence starts on the frame it closes.
 - **If the display is not 9:16**: the map image is letterboxed or pillarboxed as the table is (Touch & Mouse Input's table scaling); node hit areas scale with it. No scrolling is introduced.
 - **If a node's `node` position lies in another region's area** (an authoring error): a development warning at campaign load from Campaign Level Data's loader (B5, added to its bounds by this GDD); not an invariant, because the map still works.
 
@@ -228,19 +228,21 @@ Baseline data: the Green Vale (gv-01 … gv-05) as the only region with levels; 
 - **AC5 [Logic] (F2 boundary, rule 6)**: GIVEN all five beaten and the celebrated set empty, THEN `celebrate(gv)` is true; GIVEN the set contains gv, THEN false.
 - **AC6 [Integration: Save & Progress] (rule 6)**: GIVEN the map opens with `celebrate(gv)` true, WHEN the sequence ends (or is skipped), THEN `record_region_conquered(gv)` and `flush()` are called once, in that order, and the file holds gv in its conquered set.
 - **AC7 [Integration: Save & Progress] (rule 6, kill)**: GIVEN the app is killed 1 s into the sequence, WHEN it restarts and the map opens, THEN the sequence plays again and the record is made at its end.
-- **AC8 [Logic] (rule 7)**: GIVEN a second region r2 with levels and gv just celebrated, THEN a fog clear for r2 of `fog_clear_time` follows, and r2's first node is Unlocked after it; GIVEN r2 has no levels (UAT-1), THEN no fog clear plays and r2 stays Fogged.
-- **AC9 [Logic] (rule 7 boundary)**: GIVEN gv and r2 both Conquered and uncelebrated, THEN two sequences play in order gv, r2, each followed by its clear where a next region exists, with Deriving between them.
-- **AC10 [Integration: Screen Flow] (rule 8)**: GIVEN Idle, WHEN gv-02 (Unlocked) is tapped, THEN `set_map_position(gv-02)` is called and Screen Flow receives "open this level" with gv-02; WHEN gv-04 (Locked) is tapped, THEN no transition, the node shakes and the hint "Beat The Ford first" shows for 2.0 s.
+- **AC8 [Logic] (rule 7)**: GIVEN a second region r2 with levels and gv's last level just beaten (so F2 reads r2 Open), WHEN the map opens, THEN r2 is drawn fogged with no nodes while gv's sequence plays, a fog clear for r2 of `fog_clear_time` follows, and after it r2's first node shows Unlocked; GIVEN r2 has no levels (UAT-1), THEN no fog clear plays and r2 stays Fogged.
+- **AC9 [Logic] (rule 7 boundary)**: GIVEN gv and r2 both Conquered and uncelebrated and r3 with levels, THEN the visit plays gv's sequence, r2's fog clear, r2's sequence and r3's fog clear in that order, with Deriving between them; r2 and r3 are drawn fogged until their own clears; one tap skips only the sequence playing.
+- **AC10 [Integration: Screen Flow] (rule 8)**: GIVEN Idle, WHEN gv-02 (Unlocked) is tapped, THEN `set_map_position(gv-02)` is called and Screen Flow receives "open this level" with gv-02; WHEN gv-04 (Locked) is tapped, THEN no transition, the node shakes and the hint "Beat Crossroads first" (`prev(gv-04)` = gv-03, Campaign Level Data names) shows for 2.0 s.
 - **AC11 [Logic] (rule 11)**: GIVEN the sequence is 0.5 s in, WHEN the screen is tapped, THEN the sequence is at its final frame on the next frame and the record is made; GIVEN a node is tapped during the sequence, THEN no transition happens.
 - **AC12 [Integration: Save & Progress] (rule 9)**: GIVEN the player quits gv-03, THEN the map opens with gv-03 highlighted; GIVEN the stored position names gv-09 (unknown), THEN the highlight is the current node and Save's file still holds gv-09.
-- **AC13 [Integration: Save & Progress] (rule 10)**: GIVEN gv-01 Beaten with time 95.0, WHEN it is replayed and won in 80.0, THEN the node shows 80.0 (where time is shown) and Save's plays for gv-01 is 2.
-- **AC14 [Integration: Save & Progress] (Edge: delete)**: GIVEN all five beaten and celebrated, WHEN progress is deleted from Settings over the map, THEN on return gv-01 is Unlocked, gv-02 … gv-05 Locked, gv is Open and no sequence plays.
+- **AC13 [Integration: Save & Progress] (rule 10)**: GIVEN gv-01 Beaten with time 95.0, WHEN it is replayed and won in 80.0, THEN the node stays Beaten and shows no time (rule 10), Save's `best_time(gv-01)` is 80.0 and its plays for gv-01 is 2.
+- **AC14 [Integration: Save & Progress] (Edge: delete)**: GIVEN all five beaten and celebrated, WHEN progress is deleted from Settings over the map (Vertical Slice), THEN the app goes to the Title, and when the map next opens gv-01 is Unlocked, gv-02 … gv-05 Locked, gv is Open and no sequence plays.
 - **AC15 [UI] (rules 1, 4, 12, 13)**: retained screenshots in `production/qa/evidence/` of the map on the minimum phone in portrait: fresh (gv-01 lit, four Locked dim nodes, r2–r5 fogged shapes), mid-region (two banners, a pulse, an outline), and after the conquest (five banners, the splash's final frame, r2–r5 still fogged). No stars drawn in UAT-1.
 - **AC16 [Playtest] (Game Feel)**: after conquering the Green Vale, each UAT-1 tester is asked "what do you think is under the fog?"; 4 of 5 giving any answer other than "nothing / I didn't notice" passes.
 - **AC17 [Logic] (Interactions, Menus & Screens)**: GIVEN gv-02 just beaten, THEN `is_unlocked(gv-03)` is true and `is_unlocked(gv-04)` is false; GIVEN gv-05 just beaten, THEN `is_unlocked(next(gv-05))` is false because `next` is none.
 - **AC18 [Logic] (rule 14)**: GIVEN `celebration_time` changed to 2.0 in the data file, THEN the unskipped sequence lasts 2.0 s with no code change.
+- **AC19 [Integration: Screen Flow, Save & Progress] (rule 6, overlays)**: GIVEN `celebrate(gv)` true and a held "could not be saved" message box when the map opens, THEN the box shows first, no sequence plays under it, and the sequence starts on the frame the box closes; GIVEN Celebrating or Clearing (with Settings present, Vertical Slice), THEN the map's Settings button is not drawn and cannot be tapped.
+- **AC20 [Logic] (rule 2)**: GIVEN the map is Idle, WHEN 600 frames pass with no tap, THEN no node or region state changes and Save is not called (there is no change signal to react to).
 
-**Coverage check.** Rules 1–14 each have a criterion (rule 1's fixed-map and rule 5's "nothing else unlocks" are AC15 and AC1); F1–F4 each have a typical and a boundary case; cross-system: AC6, AC7, AC10, AC12–AC14, AC17.
+**Coverage check.** Rules 1–14 each have a criterion (rule 1's fixed-map and rule 5's "nothing else unlocks" are AC15 and AC1); F1–F4 each have a typical and a boundary case; cross-system: AC6, AC7, AC10, AC12–AC14, AC17, AC19 (overlays during a sequence); rule 2's no-signal derivation is AC20.
 
 ## Open Questions
 

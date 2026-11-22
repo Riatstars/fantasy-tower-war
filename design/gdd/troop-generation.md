@@ -1,6 +1,6 @@
 # Troop Generation
 
-> **Status**: In Review (revised 2026-11-22, pending re-review)
+> **Status**: In Review (revised 2026-11-22 after the second review and the cross-GDD review, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -11,7 +11,7 @@
 
 Troop Generation makes owned keeps add troops automatically on a steady 2.5-second beat, faster at higher keep levels, up to a cap of 60; neutral keeps never grow. It is the income that drives the whole match: it sets how fast keeps level up and how many pawns the player's ropes can pour onto a target, while sending troops stays free so a keep only loses troops when attacked. Its invariant I3 keeps it from out-growing a single attacking rope.
 
-> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Keep Levels, Campaign Level Data, Factions (soft, Alpha)`
+> **Quick reference** — Layer: `Foundation` · Priority: `MVP` · Key deps: `Keep Levels, Campaign Level Data, Factions (soft, UAT-2)`
 
 ## Overview
 
@@ -33,22 +33,25 @@ Troop Marching & Clashes do).
 
 ### Core Rules
 
-1. Every keep carries four values: `owner` (neutral, player or rival), `troops` (a whole number from
-   0 to `troop_cap`), `level` (1–3, supplied by Keep Levels) and a generation timer counted in whole game steps,
+1. Every keep carries four values: `owner` (neutral, player or rival), `troops` (a whole number, normally
+   0 to `troop_cap`; it sits above the cap only when the cap was lowered under it, Edge Cases), `level` (1–3, supplied by Keep Levels) and a generation timer counted in whole game steps,
    from 0 up to `gen_interval_steps = round(gen_interval × 60)`.
 2. Only owned keeps generate. A neutral keep's timer does not run and its troops never rise on their
    own; attackers wear its garrison down and it does not grow back.
 3. Generation is discrete. Each fixed game step an owned keep's timer advances by 1. When the timer reaches
-   `gen_interval_steps`, that is subtracted from it and the keep gains `gen_amount[level]` troops,
-   clamped at `troop_cap`. The level used is the one Keep Levels computed at the end of the previous
+   `gen_interval_steps`, that is subtracted from it and the keep gains troops by F1: up to
+   `troop_cap`, and nothing if it already holds `troop_cap` or more (a count above a lowered cap is kept, never cut). The level used is the one Keep Levels computed at the end of the previous
    step. Beats are phase 1 of the shared per-step order in Troop Marching & Clashes § Formulas.
 4. At `troop_cap` a beat adds nothing, but the timer keeps running, so a keep knocked below the cap
    gains again on its next beat rather than waiting a full interval.
 5. Generation is unconditional. It does not pause while the keep is under attack, has ropes tied, is
    sending pawns or is receiving allied pawns. Sending is free: launching a pawn never reduces
-   `troops`. **One exception, decided 2026-11-22 (`game-concept.md` § Rival):** on level 1 no keep
-   generates until the player's first rope is tied; the level clock starts then. Level State &
-   Match Flow owns the clock and the start trigger; before it starts, every timer stays at 0.
+   `troops`. **One exception, decided 2026-11-22 (`game-concept.md` § Rival):** on a level whose
+   `wait_for_first_rope` is true (only `gv-01` at baseline, Campaign Level Data) no keep generates
+   until the player's first rope is accepted. That step is step 0 of the level clock and runs the
+   full per-step order, beat phase included, so every owned keep's timer reads 1 after it. Level
+   State & Match Flow owns the clock and the start trigger (its rule 2); before it starts, every
+   timer stays at 0. On every other level timers run from the match's step 0 (AC26).
 6. Other systems change `troops` only in these ways, all applied by Troop Marching & Clashes: an enemy
    pawn arriving removes 1; an allied pawn arriving adds 1 while below `troop_cap` (at or above the cap
    it is reported for Rope Links to relay, or lost past the relay limit); capture sets `troops` to 1.
@@ -58,7 +61,7 @@ Troop Marching & Clashes do).
 8. Timing counts fixed game steps, never the wall clock, so a paused game generates nothing and the
    same seed gives the same result. Generation uses no randomness.
 9. Initial owner and troop counts come from Campaign Level Data; every timer starts at 0.
-10. The numbers in Formulas are the neutral baseline. In Alpha, Factions may supply
+10. The numbers in Formulas are the neutral baseline. From UAT-2 (the army layer), Factions may supply
     `GenerationModifiers` (interval multiplier, per-level amount offsets, cap offset); with none
     supplied they are the identity and the baseline applies unchanged.
 
@@ -83,7 +86,7 @@ There is no state in which an owned keep stops generating for any other reason.
 | Rival AI | out | Reads `troops` and `level` of every keep; follows the same generation rules | Troop Generation |
 | Campaign Level Data | in | Initial `owner` and `troops` per keep | Campaign Level Data |
 | Level HUD, Feedback & Juice | out | Event "keep gained troops" (keep, amount) and "keep reached cap" | Troop Generation |
-| Factions (Alpha) | in | `GenerationModifiers`: interval multiplier, per-level amount offsets, cap offset (identity by default) | Factions defines values, Troop Generation defines the hook |
+| Factions (UAT-2) | in | `GenerationModifiers`: interval multiplier, per-level amount offsets, cap offset (identity by default) | Factions defines values, Troop Generation defines the hook |
 
 ## Formulas
 
@@ -91,19 +94,19 @@ There is no state in which an owned keep stops generating for any other reason.
 
 The generation_beat formula is defined as:
 
-`troops_after = min(troop_cap, troops + gen_amount[level])`, applied each time the timer reaches `gen_interval_steps` (the timer then loses `gen_interval_steps`; baseline 150 steps).
+`troops_after = troops` if `troops ≥ troop_cap`, else `min(troop_cap, troops + gen_amount[level])`, applied each time the timer reaches `gen_interval_steps` (the timer then loses `gen_interval_steps`; baseline 150 steps).
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
-| troops | int | 0–`troop_cap` | calculated | Keep's troop count before the beat |
+| troops | int | 0–`troop_cap` (above it only after the cap was lowered) | calculated | Keep's troop count before the beat |
 | level | int | 1–3 | calculated (Keep Levels) | Keep's level; neutral keeps never beat |
 | gen_amount[level] | int | 1–8 (baseline 1 / 2 / 3) | data file (`gen_l1`..`gen_l3`, registered as `gen_amount_level_1`..`3`) | Troops gained per beat at that level |
 | gen_interval | float, seconds | 0.3–6 (baseline 2.5) | data file | Time between beats |
 | troop_cap | int | 20–200 (baseline 60) | data file | Most troops a keep holds from generation |
 
-**Output Range:** 0 to `troop_cap`. At the cap the beat adds 0. At `troops` 0 an owned keep still gains normally (it is not captured until an enemy pawn arrives).
-**Example:** a level 2 keep with 59 troops beats: `min(60, 59 + 2)` = 60.
+**Output Range:** 0 to `troop_cap`, or the unchanged count when the keep already holds `troop_cap` or more. At or above the cap the beat adds 0 and never removes troops. At `troops` 0 an owned keep still gains normally (it is not captured until an enemy pawn arrives).
+**Example:** a level 2 keep with 59 troops beats: `min(60, 59 + 2)` = 60. A keep holding 60 under a cap lowered to 50 beats: 60 (unchanged, AC22).
 
 ### F2. Generation rate
 
@@ -152,7 +155,7 @@ The bands come from Keep Levels' drop points (baseline: level 3 down to 30, leve
 | R_gen(level) | float | 0.4–1.2 | calculated (F2) | Keep's own generation |
 
 **Output Range:** `net_loss` must be positive for `n` ≥ 1 at every level (invariant I3). Baseline, one rope: 0.47 / 0.87 / 1.27 per second at levels 3 / 2 / 1.
-**Example:** level 3 keep with 40 troops, one enemy rope: 11 / 0.47 + 20 / 0.87 + 10 / 1.27 ≈ 23.6 + 23.1 + 7.9 ≈ 55 s (the step simulation gives the last send at 49.2 s, capture ≈ 52 s on a 300 px rope); two ropes: 11 / 2.13 + 20 / 2.53 + 10 / 2.93 ≈ 16.5 s (simulation: 15.6 s to the last send). Holding the level at 3 would give 88 s, which is why the bands matter.
+**Example:** level 3 keep with 40 troops, one enemy rope: 11 / 0.47 + 20 / 0.87 + 10 / 1.27 ≈ 23.6 + 23.1 + 7.9 ≈ 55 s (the step simulation, with Keep Levels' margin 5 holding the keep at level 3 down to 30 troops and at level 2 down to 10, gives the last send at 56.3 s and capture at step 3,541 = 59.0 s on a 300 px rope; the player decided on 2026-11-22 to keep the margin and this pace, replacing an earlier ≈ 52 s that had left the margin out); two ropes: 11 / 2.13 + 20 / 2.53 + 10 / 2.93 ≈ 16.5 s (an earlier simulation gave 15.6 s to the last send, but it predates the margin check: re-run it before tuning). Holding the level at 3 would give 88 s, which is why the bands matter.
 
 ### Invariants (checked when the data is loaded; the loader reports a breach)
 
@@ -194,7 +197,7 @@ Keep Levels, Rope Links and Troop Marching & Clashes have GDDs and are checked a
 |--------|------|------------------------|--------|
 | Keep Levels | Hard | The keep's `level` (1–3), to pick `gen_amount`. Resolved without a cycle by per-step order: Keep Levels recomputes the level from `troops`, then Troop Generation uses it | Checked: Keep Levels Core Rule 4 states the same order |
 | Campaign Level Data | Hard (data only) | Initial `owner` and `troops` of each keep | Provisional |
-| Factions (Alpha) | Soft | `GenerationModifiers`, identity by default | Provisional |
+| Factions (UAT-2) | Soft | `GenerationModifiers`, identity by default | Provisional |
 
 ### Depended on by (downstream)
 
@@ -207,7 +210,7 @@ Keep Levels, Rope Links and Troop Marching & Clashes have GDDs and are checked a
 | Rival AI | Hard | `troops` and `level` of every keep |
 | Level HUD | Soft | `troops` for the on-screen count; works without events by reading each frame |
 | Feedback & Juice | Soft | Events "keep gained troops" and "keep reached cap" |
-| Factions (Alpha) | Soft | Defines `GenerationModifiers` values; must keep invariants I1–I3 |
+| Factions (UAT-2) | Soft | Defines `GenerationModifiers` values; must keep invariants I1–I3 |
 
 ### Consistency to fix
 
@@ -285,7 +288,8 @@ Baseline data unless a criterion says otherwise: `gen_interval` 2.5 s, `gen_l1` 
 - **AC12 [Logic] (Rule 10)**: GIVEN a Factions modifier that doubles `gen_interval` (and satisfies I1–I3), WHEN 5.0 s of steps run on a level 1 keep, THEN it has beaten exactly once, at 5.0 s.
 - **AC13 [Logic] (F2)**: GIVEN baseline data, WHEN `R_gen` is computed for levels 1, 2 and 3, THEN it returns 0.4, 0.8 and 1.2 troops per second.
 - **AC14 [Integration: Keep Levels] (F3, boundary)**: GIVEN a player keep at 10 troops with no combat, WHEN the game runs, THEN it has 59 troops at 57.5 s and 60 at 60.0 s, and its level is 2 from 12.5 s and 3 from 37.5 s.
-- **AC15 [Integration: Troop Marching & Clashes, Keep Levels] (F4, I3)**: GIVEN a level 3 keep with 40 troops and timer 0, attacked by one enemy rope of 300 px tied at t = 0 and no other change, WHEN the game runs with Keep Levels' margin 5, THEN it is captured between 48 s and 56 s (step simulation; same case as Troop Marching AC-M32).
+- **AC15 [Integration: Troop Marching & Clashes, Keep Levels] (F4, I3)**: GIVEN a level 3 keep with 40 troops and timer 0, attacked by one enemy rope of 300 px tied at t = 0 and no other change, WHEN the game runs with Keep Levels' margin 5, THEN it is captured between 55 s and 63 s (step simulation: step 3,541 = 59.0 s; same case as Troop Marching AC-M32).
+- **AC26 [Integration: Level State & Match Flow] (Rule 5 exception)**: GIVEN `gv-01` (`wait_for_first_rope` true) with every timer at 0, WHEN 600 frames pass while the match is Armed and no rope is tied, THEN every keep's `troops` equals its start value and every timer reads 0; WHEN the player's first rope is accepted on clock step 0, THEN after that step every owned keep's timer reads 1, and its first beat fires on clock step 149. GIVEN a level whose `wait_for_first_rope` is false, THEN timers advance from the match's step 0.
 
 **Invariants and loader**
 
@@ -308,7 +312,7 @@ Baseline data unless a criterion says otherwise: `gen_interval` 2.5 s, `gen_l1` 
 
 **Performance budget (target to confirm on a phone):** generation for every keep in a level (up to about 15 on the largest planned layout) costs under 0.1 ms per frame on the mid-range Android target.
 
-**Coverage check:** every core rule (1–10) and every formula (F1–F4, invariants I1–I3) has at least one criterion; boundary values are covered at the cap (AC4), at 0 troops (AC20) and at invariant limits (AC16–18).
+**Coverage check:** every core rule (1–10, Rule 5's first-rope exception through AC26) and every formula (F1–F4, invariants I1–I3) has at least one criterion; boundary values are covered at the cap (AC4), at 0 troops (AC20) and at invariant limits (AC16–18).
 
 ## Open Questions
 

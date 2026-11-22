@@ -29,3 +29,87 @@ Reviewed-Content-Hash: design/gdd/rope-links.md f6816232d25eee1e737641dd0b6294ad
 Reviewed-Content-Hash: design/gdd/systems-index.md a57dea8a6c59ab9c163c83673a824f8f37f9dcca
 Reviewed-Content-Hash: design/gdd/game-concept.md 9638f7a1f3394f38352472bfc9b57753fccbb83f
 Reviewed-Content-Hash: design/game-brief.md 302532346c1d5c9a7fd1778bbd12b7fe277630c2
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent reviewer subagent per GDD, batch review of all 13 UAT-1 GDDs)
+Blocking items: 3 | Recommended: 8 (logged; full report lists more)
+Summary: The prior write-model contradiction is fixed and all 8 recommended items are addressed. New: plays counts losses, which breaks Menus' 'First clear!' label; a failed flush retries every frame; Delete progress would destroy a newer-version file that every write is supposed to protect.
+Prior verdict resolved: Yes (prior blocking items resolved)
+Findings:
+- [BLOCKING] Core Rule 3 / AC25: plays counts losses, breaking best_time_label 'First clear!'; never-beaten best time/stars undefined (0.0 s is legal)
+- [BLOCKING] Core Rule 6 vs Edge Cases/AC8: failed flush retries every frame
+- [BLOCKING] Core Rules 9/11: Delete progress destroys newer-version file in a read-only session
+- [RECOMMENDED] Core Rules 8/10: load vs Campaign id registration order unspecified
+- [RECOMMENDED] Detailed Design: settings file write policy and damage handling missing
+- [RECOMMENDED] API: record_region_conquered means 'celebrated'; naming
+- [RECOMMENDED] Edge Cases: migration write-back failure uncovered
+- [RECOMMENDED] Edge Cases: write-failure message never shown without backgrounding
+- [RECOMMENDED] AC25: Restart records nothing not stated
+- [RECOMMENDED] AC3: independent best stars/time tested one direction only
+- [RECOMMENDED] Core Rules: numbering out of order; record_region_conquered idempotence
+Reviewed-Content-Hash: design/gdd/save-progress.md 3b92d24ced6af243a993988b6efce966e26168eb
+Reviewed-Content-Hash: design/registry/entities.yaml b7664dbf04df5012d7e1f5b7b57847ac142c8b18
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md b9ec7dd07d6d43c3e9abb1208bac711ad23ae758
+Reviewed-Content-Hash: design/gdd/systems-index.md 54c5d0974e9b80218fa4082ceb37e11bdc86e243
+Reviewed-Content-Hash: design/game-brief.md 7d90b94906b28807d72b86ade5f754d9a7c62b75
+Reviewed-Content-Hash: design/gdd/troop-generation.md d2ba2132b296666c69bd0b6d907fd2cefcb86807
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 9975a503dc7d44abe22ef17ff94d0493e64a9c3b
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md de1ed35ff80383c98c2c10d44ca5e85879e374cd
+Reviewed-Content-Hash: design/gdd/keep-levels.md 433e135e0ec091348cab95776797287a08b45452
+Reviewed-Content-Hash: design/gdd/rope-links.md b1365d0079062d78e6df7717049529eed24684ce
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 87568f6fda3fd88a5ebb4037f76a1452d059af2f
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 0afcc7e7fd677decb4695e9ce54e31cc2b507482
+Reviewed-Content-Hash: design/gdd/rival-ai.md e0e287ad97d596b9b8d052cda2223f92ac34b7b2
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 7567d1fa919a440208355e083ec8ce685b34a552
+Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
+Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
+Reviewed-Content-Hash: design/gdd/menus-screens.md 2ff1faab335ff570b4796954f02788d5649c17f0
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; target unchanged since its last review, cross-document facts re-verified by an independent subagent against the 8 edited GDDs and the registry)
+Blocking items: 5 | Recommended: 2 (logged; full report lists more)
+Summary: Plays counting losses is now harmless (Menus F1 no longer reads it), but the other GDDs now assume a failed flush on the deciding step raises the write-failure message, which this GDD never says. Never-beaten best time, per-frame retry and Delete in a read-only session remain; AC21's map centring cannot pass.
+Prior verdict resolved: Partly (plays half of blocker 1 resolved by the Clear! decision)
+Findings:
+- [BLOCKING] Edge Cases / UI: when the write-failure message is raised contradicts Level State rule 6, Screen Flow rule 1/AC23 and Menus (escalated)
+- [BLOCKING] Core Rules 3/5 / AC25: best time and stars of a level with only losses undefined; first win must replace the default (prior, reworded)
+- [BLOCKING] Core Rule 6 vs Edge Cases/AC8: failed flush retries every frame (prior)
+- [BLOCKING] Core Rules 9/11: Delete progress destroys a newer-version file in a read-only session (prior)
+- [BLOCKING] AC21: 'map centred on stored position' contradicts World Map rules 1 and 9 (escalated)
+- [RECOMMENDED] Interactions: Menus now reads the stored best time; row says only 'draws message boxes'
+- [RECOMMENDED] State the purpose of plays (no UAT-1 consumer but World Map AC13)
+Reviewed-Content-Hash: design/gdd/save-progress.md 3b92d24ced6af243a993988b6efce966e26168eb
+Reviewed-Content-Hash: design/registry/entities.yaml 7c078a61a2fe209d71cee39822db4cfe17d257ff
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md b9ec7dd07d6d43c3e9abb1208bac711ad23ae758
+Reviewed-Content-Hash: design/gdd/systems-index.md 51f7eff69a32aa0925544e25a07136f03d38cbdc
+Reviewed-Content-Hash: design/game-brief.md 7d90b94906b28807d72b86ade5f754d9a7c62b75
+Reviewed-Content-Hash: design/gdd/keep-levels.md 433e135e0ec091348cab95776797287a08b45452
+Reviewed-Content-Hash: design/gdd/troop-generation.md d2ba2132b296666c69bd0b6d907fd2cefcb86807
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md c8b26b4e46cf9a8ba069ffc75f27449a55b95cfb
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md d453343269b2416d6cbd716a7007db31148516c7
+Reviewed-Content-Hash: design/gdd/rope-links.md c06a1b8927af3ccfef88c465d044bf401ea36e4a
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 04ae0014fd6dd5849c0bfe1429a938a42ff32a0b
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 8da5b7c5570dba901a2a6e35f3df86e916ff7356
+Reviewed-Content-Hash: design/gdd/rival-ai.md 8f0066ad441e1b50a073383b5333d6785646140e
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae08d1de9296edd3f96
+Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
+Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
+Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Revision — 2026-11-22 — after the second review and the cross-GDD review (session my-game-tower-war-7a)
+Status after revision: In Review (pending re-review in a fresh session)
+Addressed:
+- [BLOCKING] Write-failure message timing: Rule 14 raises "could not be saved" at once on the first failed flush of a streak; Screen Flow holds it until no overlay is open (agrees with Level State rule 6, Screen Flow rule 1/AC23, Menus); Edge Cases and UI Requirements rewritten; AC27
+- [BLOCKING] Never-beaten best time/stars: stars 0 and time none until the first win; a loss never touches them; first win always sets the time (Rules 3, 5); validation clears time/stars on unbeaten levels (Rule 10); read-only getter `best_time(level_id)` for Menus F1 (Rule 6); AC26
+- [BLOCKING] Per-frame retry: end-of-frame flush runs only when a change was reported since the last attempt; retries by next change, explicit flush() or app-to-background (Rule 6, Dirty state row, Edge Cases); AC27
+- [BLOCKING] Delete in a read-only session: player decision (2026-11-22) — offered with a newer-version confirmation text; on Yes the session stops being read-only (Rule 11, UI Requirements); AC28
+- [BLOCKING] AC21: map position is a highlight (World Map rule 9), not a camera centre; Rule 3 wording aligned
+- [RECOMMENDED] Interactions/Dependencies: Menus reads `best_time`; army systems labelled UAT-2
+Not addressed (recommended): state the purpose of `plays`
+- Follow-up (same day): UAT-1 background retry had no event source; player decision — Save & Progress reads the engine's app-background notification itself in UAT-1 (Interactions, Dependencies, Cross-References, AC22); Mobile Platform Integration takes it over from the Vertical Slice

@@ -57,7 +57,7 @@ banner pop. It serves Challenge and Sensation (MDA) and is the match's Competenc
 12. **Capture.** Owner becomes the pawn's owner; `troops` becomes `capture_troops` (1); surplus strength is discarded (the user's decision). `keep_captured(keep, old_owner, new_owner)` is raised, and within the same step Troop Generation resets the timer, Keep Levels resets the level to 1 and Rope Links cuts the keep's outgoing ropes (reason `capture`); ropes into it stay. A captured keep is never neutral again.
 13. **Relay limit** (the user's decision; amends Rope Links' Core Rule 10). An allied pawn arriving at a full keep with `relays ≥ relay_hops_max` (6) is lost (`pawn_lost`, reason `hops`). As a safety net, one arriving while the table holds `pawns_in_flight_max` pawns is lost (reason `backstop`) and logged as a defect. Rope sends are never refused by this system.
 14. **The only changes this system makes to a keep** are those of rules 10 and 12. It never changes a level, rope or timer directly and never launches a pawn.
-15. **Reads for other systems.** Queries: `pawns_in_flight(owner)`, `marching_strength(owner)` (sum of `hp`), `incoming(keep, owner)` (sum of `hp` heading for the keep), `pawns()` (position, lane, owner, unit). Events: `pawn_clashed(position, pawn_a, pawn_b, loss)`, `keep_reinforced(keep, amount)`, `keep_hit(keep, amount, attacker)`, `keep_captured(keep, old_owner, new_owner)`, `ally_arrived_full(keep, pawn)`, `pawn_lost(keep, pawn, reason: hops | backstop)`.
+15. **Reads for other systems.** Queries: `pawns_in_flight(owner)` (Marching pawns only: a Fallen pawn still fading on screen is not counted; Level State's loss test relies on this), `marching_strength(owner)` (sum of `hp`), `incoming(keep, owner)` (sum of `hp` heading for the keep), `pawns()` (position, lane, owner, unit). Events: `pawn_clashed(position, pawn_a, pawn_b, loss)`, `keep_reinforced(keep, amount)`, `keep_hit(keep, amount, attacker)`, `keep_captured(keep, old_owner, new_owner)`, `ally_arrived_full(keep, pawn)`, `pawn_lost(keep, pawn, reason: hops | backstop | no_rope)`; `no_rope` is an allied pawn at a full keep for which Rope Links' F3 finds no rope: this system raises it and removes the pawn on the same step (decided 2026-11-22).
 16. **The `UnitStats` contract.** One record per unit kind; this system reads nothing else about a unit.
 
     | Field | Type | Default (baseline pawn) | Hard range | Meaning |
@@ -80,7 +80,7 @@ banner pop. It serves Challenge and Sensation (MDA) and is the match's Competenc
 |-------|---------|-----------------------|-------------|
 | Marching | Launched; walking the line | Yes | `hp` 0 in a clash → Fallen; arrives → Arrived |
 | Fallen | Lost a clash; drawn fading for `pawn_fade_time` | No | Time elapses → Gone |
-| Arrived | Resolved on that step (outcomes: rule 10; events: rule 15) | No | Same step → Gone |
+| Arrived | Resolved on that step (outcomes: rule 10; events: rule 15). A lost pawn (`hops`, `backstop`, `no_rope`) is Arrived and Gone on the same step | No | Same step → Gone |
 
 A relay is a new launch by Rope Links carrying the pawn's unit, `hp` and `relays + 1`, with a new `seq`, origin, target and lane.
 
@@ -108,16 +108,17 @@ God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19)
 
 | # | Phase | Owner |
 |---|---|---|
+| 0 | Player input: ties and cuts from Touch & Mouse Input received since the last step, applied in the order received (added 2026-11-22) | Rope Links |
 | 1 | Generation beats | Troop Generation |
 | 1b | Rival decision pass, when its think timer fires (cuts, then ties; added 2026-11-22) | Rival AI |
-| 2 | Rope timers, sends, then cuts requested this step; a launched pawn has `marches` 0 | Rope Links |
+| 2 | Rope timers and sends in ascending `rope_id` (each launch takes the next `seq`); then the ropes cut in phases 0 and 1b turn Fading. A cut frees its slot when requested, but a rope cut this step still launches a pawn due this step (the last pawn leaves, decided 2026-11-22; Rope Links rule 8). A launched pawn has `marches` 0 | Rope Links |
 | 3 | **March**: every pawn in flight, including those launched in phase 2, gains one march (F1) | this GDD |
 | 4 | **Clashes** (F4); a clash beats an arrival on the same step | this GDD |
 | 5 | **Arrivals** (rule 11): keep by keep in ascending keep id; own side first, then the rest, each in ascending `seq`; each fully resolved (troops, capture and its same-step consequences, relay request) before the next. A relayed pawn has `marches` 0 and first marches next step | this GDD |
 | 6 | Level recompute, `level_dropped` cuts | Keep Levels, Rope Links |
 | 7 | Win and loss test | Level State & Match Flow |
 
-`seq` is one match-wide counter raised at every launch and relay. Lead pawn: largest `d`, ties by lower `seq`. Keep pairs are processed in ascending (lower id, higher id).
+`seq` is one match-wide counter raised at every launch and relay, in the order the launches happen (decided 2026-11-22): phase 2 sends in ascending `rope_id` (Rope Links § Order within a step), then phase 5 relays in the order arrivals resolve. Two pawns never share a `seq`, and the same inputs give the same `seq` values. Lead pawn: largest `d`, ties by lower `seq`. Keep pairs are processed in ascending (lower id, higher id).
 
 **Worked example (arrival order).** Rival keep K has 0 troops. Arriving in one step: player pawns `seq` 3, 4, 6 and a rival pawn `seq` 9. The rival pawn goes first (K's own side): 1 troop. `seq` 3 hits: 0. `seq` 4 captures: K is the player's with 1 troop. `seq` 6 now meets its own side: 2 troops. In the prototype's launch order K would have been captured by `seq` 3.
 
@@ -133,10 +134,10 @@ The march formula is defined as:
 | marches | int | 0–`arrive_marches` | calculated | March phases since launch or relay |
 | speed | float, px/s | 30–400 (baseline 110) | data file (`UnitStats.speed`) | Copied at launch |
 | step_dt | float, s | 1/60 | constant | The fixed step |
-| L | float, px | 156–1,470 | calculated | Centre-to-centre distance; minimum is twice `keep_hit_radius`, maximum the table diagonal. The lane does not change it |
+| L | float, px | 156–1,258 | calculated | Centre-to-centre distance at baseline `keep_hit_radius` r 78; minimum is twice r (I2), maximum the diagonal of Campaign Level Data's B2 box, √((720 − 2r)² + (1,280 − 2r)²). The lane does not change it |
 | ε | float | 0.000001 | constant | Guards the ceiling against float noise |
 
-**Output Range:** 86 to 802 marches at baseline (1.43 s to 13.37 s); 24 to 2,940 over the hard ranges. Fixed at launch, so no float drift; M1 and `max(1, …)` remove the zero cases.
+**Output Range:** 86 to 687 marches at baseline (1.43 s to 11.45 s, ropes of 156 to 1,258 px); 24 to 2,516 over the hard `speed` range (400 to 30 px/s). Fixed at launch, so no float drift; M1 and `max(1, …)` remove the zero cases.
 **Example:** L 300: 300 / 1.8333 = 163.6 → 164 marches = 2.73 s; launched on step 600, it arrives on step 763.
 
 ### F2. Pawn position
@@ -208,7 +209,7 @@ The sent_on_rope formula is defined as:
 `sent_on_rope ≤ ceil(L / (speed_min × send_interval)) + 1`
 
 Rope Links F5 with `speed_min` (slowest unit the level can launch) for `pawn_speed`. It bounds sent pawns only; a rope fed by `k` relayed streams carries up to `(1 + k)×`.
-**Example:** diagonal at baseline: 23.
+**Example:** longest legal rope at baseline (1,258 px): ceil(1,258 / 66) + 1 = 20 + 1 = 21.
 
 ### F9. Relay limit and total pawns in flight
 
@@ -228,7 +229,7 @@ The relay_limit formula is defined as, for an allied pawn at a full keep:
 ### Invariants (checked when the data is loaded; the loader reports a breach)
 
 - **M1.** `30 ≤ speed ≤ 400` (no division by zero; shortest rope takes ≥ 0.39 s).
-- **M2.** Per level: `ceil(longest_rope / (speed_min × send_interval)) + 1 ≤ pawns_per_rope_max` (40). Baseline 23; needs `speed_min` ≥ 62.8 on the diagonal.
+- **M2.** Per level: `ceil(longest_rope / (speed_min × send_interval)) + 1 ≤ pawns_per_rope_max` (40). Baseline 21 on the longest legal rope (1,258 px); needs `speed_min` ≥ 53.8 there.
 - **M3.** `speed_min × send_interval ≥ pawn_min_spacing × size_max`. Baseline 66 ≥ 20.
 - **M4.** `strength` whole, `1 ≤ strength ≤ troop_cap`; with Troop Generation I3, one rope still wears any keep down.
 - **M5.** `relay_hops_max ≥ 1`; `pawns_in_flight_max ≥ 200`.
@@ -271,12 +272,12 @@ Constants: `step_dt`, `ε`. Owned elsewhere, not duplicated: `send_interval`, `r
 - **If pawns of both sides arrive at one keep on one step**: rule 11. A keep at 0 troops receiving one allied and one enemy pawn ends at 0 and is not captured, whatever their `seq`.
 - **If the player's and the rival's pawns arrive on one step at a neutral keep with 0 troops**: neither is its side; the lower `seq` captures, the other hits, leaving it the first's with 0 troops.
 - **If a keep is captured while the old owner's reinforcements still march to it**: they now hit it; the second recaptures (1 troop after capture). Intended tug-of-war; each flip cuts the keep's ropes again.
-- **If an allied pawn arrives at a full keep with no Active rope**: `ally_arrived_full` is raised; Rope Links loses it.
+- **If an allied pawn arrives at a full keep with no Active rope**: `ally_arrived_full` is raised; Rope Links' F3 finds no candidate, so this system raises `pawn_lost(keep, pawn, no_rope)` and removes the pawn on that step (Arrived → Gone); the keep's troops are unchanged.
 - **If a pawn at the relay limit arrives at a keep with room**: it is absorbed; the limit matters only at a full keep.
 - **If the player's last keep falls with pawns still marching**: no loss yet (`pawns_in_flight` > 0); a later capture keeps the player in.
 - **If hits take a keep below its drop point, or a capture and a threshold coincide**: this system only changes `troops`; Keep Levels recomputes once at end of step; capture wins.
 - **If equal streams face each other**: a stand-off by design (F7, Feedback loop; OQ 4). Roping back defends but spends a slot.
-- **If data breaches M1–M7, or `unit_for` returns nothing**: development builds stop naming the invariant and value; shipped builds clamp (or use the baseline unit) and log. A level breaching M2 does not load.
+- **If data breaches M1–M7, or `unit_for` returns nothing**: development builds stop naming the invariant and value; shipped builds clamp (or use the baseline unit) and log. A level breaching M2 or M3 does not load: both read the level's `speed_min` (from UAT-2 the slowest unit the level can launch), so they are level checks, Rejected by Campaign Level Data and never clamped. M2 is the same inequality as Rope Links R3 (`ceil(L / (v × s)) + 1 ≤ 40` holds exactly when `s ≥ L / (39 × v)`), so the loader reports the two together. M1 and M4–M7 are global tuning and clamp at app start (the one bad-data policy, Campaign Level Data rule 8; M3 reclassified 2026-11-22).
 
 **Owned by other GDDs:** unit kinds per race and level (Unit Roster & Stats); guardian pawns (Guardian Castles).
 
@@ -303,7 +304,7 @@ Proposed edits, none applied.
 
 1. **Relay limit (decided).** `rope-links.md:49` rule 10: "none is lost" → "lost at the next full allied keep after `relay_hops_max` (6) relays (Troop Marching rule 13)". `:153`–`:161` (F5), `:168` (R3): "bounds sent pawns; relays ride on top, bounded by Troop Marching F9". `:213`: count sent pawns only. `:339` (AC22): "each pawn is relayed at most 6 times; the ring's count settles (AC-M29)". `:180`, `:367` follow.
 2. **Capture report.** `keep-levels.md:45` raises `level_dropped` on capture to cut all ropes; `rope-links.md:46` reads `level_dropped` as "newest until it fits" and capture as its own cause (`:73`). Edit: Rope Links cuts all on `keep_captured`; Keep Levels resets on it and raises no `level_dropped` for a capture.
-3. **Capture pace (decided: keep the faster pace).** `troop-generation.md:153` (F4 example, ≈ 88 s) and `:286` (AC15, 80–95 s) ignore the level drops of `keep-levels.md:41`, `:105`. Step simulation: last send at 49.2 s, capture ≈ 52 s on a 300 px rope (two ropes: 15.6 s to last send). Edit both to the level-drop-aware figure.
+3. **Capture pace (decided: keep the faster pace).** `troop-generation.md:153` (F4 example, ≈ 88 s) and `:286` (AC15, 80–95 s) ignore the level drops of `keep-levels.md:41`, `:105`. Step simulation (restated 2026-11-22): capture at step 3,541, ≈ 59 s, on a 300 px rope; the earlier 49.2 s last-send / ≈ 52 s figures and the two-rope 15.6 s figure are superseded and need re-running before they are quoted. Edit both to the level-drop-aware figure.
 4. **Arrival order (decided).** `troop-generation.md:319` (its OQ 5) is answered by rule 11; close it.
 5. **"Full" is at or above the cap.** `rope-links.md:49`, `troop-generation.md:69` say "equals"; `troop-generation.md:178` allows above. Edit both to "at or above".
 6. **Level read.** `keep-levels.md:199` "does not read the level" against `:79` (level picks the unit). Edit: "not at MVP; at launch from Alpha".
@@ -338,7 +339,7 @@ Alpha unit kinds differ by silhouette, not only `size`. Every figure is drawn; n
 - **The stream is the read-out**: direction, rate and, at the scuffle, who is ahead.
 - **The count never lies**: it changes on the arrival step, no tween.
 - **Capture is the pay-off**: run-up, then flip, banner and sting on one step.
-- **Committed, not twitchy**: no recall; travel time (1.4–13.4 s) is a rope's weight. A stand-off reads as "I need another rope here".
+- **Committed, not twitchy**: no recall; travel time (1.4–11.4 s at baseline) is a rope's weight. A stand-off reads as "I need another rope here".
 - **Calm at scale**: small effects, pooled sounds. References: Mushroom Wars, Galcon, Tentacle Wars.
 
 ## UI Requirements
@@ -367,7 +368,7 @@ Alpha unit kinds differ by silhouette, not only `size`. Every figure is drawn; n
 Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_max` 6, `pawns_in_flight_max` 600, `send_interval` 0.6 s, `rope_lane` 8, `troop_cap` 60, `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `gen_interval` 2.5 s, step 1/60 s. "Step N" counts from the launch step (step 0, on which the pawn also marches). Tags as in Rope Links. `qa-lead` lens not yet applied.
 
 **Marching**
-- **AC-M1 [Logic] (F1)**: a pawn on a 300 px rope launched on step 0 arrives in step 163; on 330 px on its 180th march; ropes of 156 and 1,470 px give 86 and 802 marches.
+- **AC-M1 [Logic] (F1)**: a pawn on a 300 px rope launched on step 0 arrives in step 163; on 330 px on its 180th march; ropes of 156 and 1,258 px (the shortest and longest legal at baseline) give 86 and 687 marches.
 - **AC-M2 [Logic] (F1)**: a pawn relayed in step 163 onto a 300 px rope has 0 marches at the end of that step and arrives in step 327.
 - **AC-M3 [Logic] (F2)**: origin (360, 1060), target (360, 760), lane (8, 0), 82 marches → (368, 909.67) within 0.01 px.
 - **AC-M4 [Logic] (F2)**: a pawn launched on a lone rope stays on the centre line when the opposite rope is tied; later pawns are 8 px right.
@@ -404,7 +405,7 @@ Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_m
 - **AC-M29 [Integration: Rope Links] (F9; hand estimate — needs simulation before it blocks)**: three full allied keeps 260 px apart in a ring → `pawns_in_flight` between 75 and 95 at 120 s and 240 s, never above 95.
 - **AC-M30 [Logic] (rule 13)**: a pawn with `relays` 6 at a full allied keep with an Active rope is removed with `pawn_lost` (hops), no `ally_arrived_full`, troops unchanged; with `relays` 5 it is relayed with `relays` 6 and the same `hp`.
 - **AC-M31 [Logic] (rule 13)**: at `pawns_in_flight_max`, an allied pawn at a full keep is lost (backstop) with one log line; rope sends are not refused.
-- **AC-M32 [Integration: Troop Generation, Keep Levels, Rope Links] (F5 with generation; step simulation, scratchpad sim)**: a level 3 keep with 40 troops and timer 0, attacked by one enemy rope of 300 px tied at t = 0, is captured between 48 s and 56 s.
+- **AC-M32 [Integration: Troop Generation, Keep Levels, Rope Links] (F5 with generation; step simulation, scratchpad sim)**: a level 3 keep with 40 troops and timer 0, attacked by one enemy rope of 300 px tied at t = 0, is captured between 55 s and 63 s (step simulation: step 3,541 = 59.0 s; restated 2026-11-22 with Troop Generation F4 and AC15, `level_drop_margin` kept at 5).
 - **AC-M33 [Logic] (F8)**: on the longest rope of each prototype layout, with no relays, sent pawns never exceed `ceil(L / 66) + 1`.
 - **AC-M34 [Integration: Unit Roster & Stats] (rule 3; Alpha, OQ 3)**: a launched pawn carries `unit_for`'s stats and keeps them and its `hp` through a relay from a keep of another level.
 
@@ -414,8 +415,8 @@ Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_m
 - **AC-M37 [Logic] (rule 17)**: during a 10 s pause no `marches` changes and no event is raised; arrivals keep F1's step counts.
 - **AC-M38 [Logic] (rule 17)**: two runs of the same level, data and scripted input for 120 s have equal pawn lists (`seq`, owner, origin, target, `marches`, `hp`) and keeps at every step.
 - **AC-M39 [Logic] (M1, M4–M7)**: `speed` 0, `strength` 0 or 61, `size` 3, `capture_troops` 0 or 15, `relay_hops_max` 0, `pawns_in_flight_max` 100 → a development build stops naming the invariant and value; a shipped build clamps (30, 1, 60, 2.0, 1, 14, 1, 200) and logs.
-- **AC-M40 [Integration: Campaign Level Data] (M2)**: longest pair 1,470 px with `speed` 50 → M2 reported (50 against 40), level not loaded; `speed` 70 loads (36).
-- **AC-M41 [Logic] (M3)**: `speed` 30 with `send_interval` 0.6 and `pawn_min_spacing` 20 → M3 reported (18 px).
+- **AC-M40 [Integration: Campaign Level Data] (M2)**: longest pair 1,258 px with `speed` 50 → M2 reported (43 against 40), level not loaded in either build; `speed` 70 loads (31).
+- **AC-M41 [Logic] (M3)**: `speed` 30 with `send_interval` 0.6 and `pawn_min_spacing` 20 → M3 reported (18 px) and the level is Rejected in either build, never clamped.
 - **AC-M42 [Logic] (rule 16)**: a unit record with only `id` gives `speed` 110, `strength` 1, `size` 1.0, and AC-M1, M8, M15 pass unchanged.
 - **AC-M43 [Device]**: 600 pawns on 30 ropes on the target phone: phases 3–5 under 0.5 ms per step at 60 fps (target to confirm).
 - **AC-M44 [Visual]**: retained screenshots in `production/qa/evidence/` show both lanes with a clash, a capture with banner and word, and a relayed pawn.
@@ -423,7 +424,7 @@ Baseline data: `pawn_speed` 110, `strength` 1, `capture_troops` 1, `relay_hops_m
 
 ## Open Questions
 
-**Resolved (user, 2026-11-22):** (a) relay rings are bounded by a hop limit of 6 with the 600 backstop (rule 13); (b) same-step arrivals resolve the keep's own side first (rule 11), overriding the launch-order default and the prototype; (c) strength a pawn cannot spend is discarded (rules 10, 12); (d) the faster capture pace stands (AC-M32, about 52 s for the reference case).
+**Resolved (user, 2026-11-22):** (a) relay rings are bounded by a hop limit of 6 with the 600 backstop (rule 13); (b) same-step arrivals resolve the keep's own side first (rule 11), overriding the launch-order default and the prototype; (c) strength a pawn cannot spend is discarded (rules 10, 12); (d) the faster capture pace stands (AC-M32, about 59 s for the reference case; restated from 52 s on 2026-11-22 after a step simulation, capture at step 3,541).
 
 | # | Question | Recommended | Owner | Resolve by |
 |---|----------|-------------|-------|------------|

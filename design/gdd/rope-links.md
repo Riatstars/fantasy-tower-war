@@ -38,14 +38,14 @@ Without this system the match has no decisions: troops would grow and nothing wo
 `game-designer`, `systems-designer`, `ai-programmer` and `art-director` not consulted — Lean mode. Review manually before production.
 
 1. **A rope is directed**: from an origin keep to a target keep, owned by the origin's owner at tie time. Only an owned keep can be an origin; neutral keeps never tie. The target may be any other keep: allied, neutral or rival.
-2. **A tie is legal when all of these hold** (checked in this order, and the first failure is the reason reported): the origin belongs to the side tying; the target is not the origin; no rope already runs origin→target; if the target is allied, no rope runs target→origin (the both-ways ban, the player's rule); the origin holds fewer ropes than `max_ropes[level]` (Keep Levels). Distance is never checked (the player's rule: no length limit).
+2. **A tie is legal when all of these hold** (checked in this order, and the first failure is the reason reported): the origin belongs to the side tying; the target is not the origin; no rope already runs origin→target; if the target is allied, no rope runs target→origin (the both-ways ban, the player's rule; "runs" means Extending or Active: a Fading rope never blocks a tie, so a cut rope can be re-tied at once in either direction, decided 2026-11-22); the origin holds fewer ropes than `max_ropes[level]` (Keep Levels). Distance is never checked (the player's rule: no length limit).
 3. **The target is the one Touch & Mouse Input resolved** (its F6: the nearer keep on the same line, when one blocks the way). If that keep fails rule 2, the tie is refused with the reason; Rope Links never substitutes a farther keep.
 4. **Tying.** A legal tie creates the rope at once, raises `rope_tied(rope)`, and the rope spends `rope_extend_time` (0.2 s) extending from origin to target before it can send. The first pawn leaves `first_send_delay` (0.3 s) after extension; after that one pawn leaves every `send_interval` (0.6 s) while the rope is active.
 5. **Sending is free and unconditional.** A pawn leaving never reduces the origin's troops (Troop Generation's Core Rule 5), and the rope sends whatever the origin's troop count, even 0, for as long as the origin stays owned by the rope's owner. The troop count is the keep's defence, not its ammunition.
 6. **The pawn is handed to Troop Marching & Clashes** at launch with its origin, target, owner and lane (a relay also passes its unit, `hp` and relay count); Rope Links does not move it, fight it or deliver it.
 7. **Cutting.** A rope is cut by the player (Input's `cut_tapped` or `cut_swiped`), by the rival (its own cut call), by Keep Levels (`level_dropped`: the origin's newest ropes are cut until its count fits the new level), or by capture of the origin (every outgoing rope of the captured keep is cut on Troop Marching & Clashes' `keep_captured`; `level_dropped` never cuts for a capture). Ropes **into** a captured keep are not cut: they keep sending, now as attacks on the new owner or as reinforcement if the captor was their owner.
-8. **A cut rope stops sending at once**, raises `rope_cut(rope, reason)`, holds no slot any more, and fades for `rope_fade_time` (0.9 s) as a sagging line. Pawns already on it finish their march to the target and act there (the player's rule); the lane they were given is frozen for them.
-9. **The player cuts only the player's ropes**, and the rival only its own. Rope Links is Touch & Mouse Input's hit-test provider (the player's decision): each step it gives every keep with its owner flag (tie targets and Input's F6 range over all keeps) and the player's Extending and Active ropes as the cuttable set, lane-adjusted, an Extending rope only over the part drawn so far. Fading ropes are not in the set.
+8. **A cut rope frees its slot at once and stops sending after this step's sends.** A cut requested by the player (phase 0 of the per-step order) or the rival (phase 1b) raises `rope_cut(rope, reason)` and frees the slot when requested, so a tie later in the same step or the same rival pass can use it; a pawn due on that step still leaves in phase 2 (the last pawn leaves, the player's decision, 2026-11-22), and then the rope turns Fading. A capture or level-drop cut (phases 5–6) comes after the step's sends anyway. A Fading rope fades for `rope_fade_time` (0.9 s) as a sagging line. Pawns already on it finish their march to the target and act there (the player's rule); the lane they were given is frozen for them.
+9. **The player cuts only the player's ropes**, and the rival only its own. Rope Links is Touch & Mouse Input's hit-test provider (the player's decision): every frame, in every match state including Armed (the provider is not a match step), it gives every keep with its owner flag (tie targets and Input's F6 range over all keeps) and the player's Extending and Active ropes as the cuttable set, lane-adjusted, an Extending rope only over the part drawn so far. Fading ropes are not in the set.
 10. **Relay at a full keep.** When an allied pawn arrives at a keep whose `troops` is at or above `troop_cap`, Troop Marching & Clashes reports it (`ally_arrived_full`) and Rope Links relays it: the pawn is launched again from that keep down one of its Extending or Active outgoing ropes, chosen round-robin (F3). A relay costs nothing and carries the pawn's unit, `hp` and relay count. If the keep has no such rope, the pawn is lost (the player's rule). Loops of full keeps are allowed; a pawn circulates until it has been relayed `relay_hops_max` (6) times and is then lost at the next full allied keep (Troop Marching & Clashes rule 13; the player's decision, 2026-11-22).
 11. **Lanes.** Two ropes between the same two keeps in opposite directions (only possible between enemies, by rule 2) are each offset `rope_lane` (8 px) to their own right, so both are visible and their pawns clash in the open (Troop Marching). A lone rope lies on the straight line.
 12. **The rival uses the same calls** (`tie`, `cut`) and gets the same refusals; Rival AI decides what to try, Rope Links decides what is allowed.
@@ -57,7 +57,7 @@ Without this system the match has no decisions: troops would grow and nothing wo
 | State | Meaning | Sends? | Holds a slot? | Cuttable? | Leaves when |
 |-------|---------|--------|---------------|-----------|-------------|
 | Extending | Just tied; the line grows from origin to target over `rope_extend_time` | No (but relays, rule 10) | Yes | Yes (by the player's swipe; it is in the cuttable set) | Time elapses → Active; cut → Fading |
-| Active | The rope's send timer runs; a pawn leaves every `send_interval` | Yes | Yes | Yes | Cut (any reason) → Fading; origin captured → Fading (reason capture) |
+| Active | The rope's send timer runs; a pawn leaves every `send_interval` | Yes | Yes (freed when a cut is requested) | Yes | Cut (any reason) → Fading after this step's sends (rule 8); origin captured → Fading (reason capture) |
 | Fading | Cut; sags and fades over `rope_fade_time` | No | No | No | Time elapses → Gone |
 | Gone | Removed | | | | |
 
@@ -67,7 +67,7 @@ A tie that is refused creates no rope and no state; it raises `tie_refused`. Paw
 
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
-| Touch & Mouse Input | in/out | In: `tie_released(from, to)` (to already resolved by F6), `cut_tapped(rope)`, `cut_swiped(rope, t)`. Out: the hit-test provider (every keep with its owner flag; the player's Extending and Active ropes as lane-adjusted segments); whether a previewed tie is legal and why not, for the preview's red cross | Input defines the events; Rope Links defines legality and supplies the provider |
+| Touch & Mouse Input | in/out | In: `tie_released(from, to)` (to already resolved by F6), `cut_tapped(rope)`, `cut_swiped(rope, t)`. Out: the hit-test provider (every keep with its owner flag; the player's Extending and Active ropes as lane-adjusted segments); whether a previewed tie is legal and why not (`tie_legal`), which Level HUD reads directly for the preview's red cross; Input does not judge legality (decided 2026-11-22) | Input defines the events; Rope Links defines legality and supplies the provider |
 | Keep Levels | in | `max_ropes[level]` for rule 2; `level_dropped(keep, old, new)` → cut newest ropes beyond the new limit | Keep Levels defines the limit and "newest falls"; Rope Links executes |
 | Troop Generation | in/out | In: `troops` and `troop_cap`, to know when a keep is full (rule 10). Out: nothing that changes `troops` (sending is free). `send_interval` is this GDD's, and Troop Generation's invariant I3 bounds it | Rope Links owns `send_interval`; Troop Generation owns the count |
 | Troop Marching & Clashes | out/in | Out: `pawn_launched(origin, target, owner, lane)` at every send and relay (a relay also passes unit, `hp`, relays). In: `ally_arrived_full(keep, pawn)` with the pawn's origin, so rule 10 can relay it; `keep_captured`, so rule 7 cuts the keep's outgoing ropes | Rope Links launches; Troop Marching moves, fights and delivers |
@@ -86,7 +86,7 @@ A tie that is refused creates no rope and no state; it raises `tie_refused`. Paw
 
 The tie_legal formula is defined as:
 
-`tie_legal(o, t) = first failing check of [o.owner = side, t ≠ o, ¬rope(o→t), ¬(t.owner = o.owner ∧ rope(t→o)), ropes_held(o) < max_ropes(o.level)]`, giving `ok` or one of `not_yours`, `self`, `duplicate`, `reverse`, `slots`.
+`tie_legal(o, t) = first failing check of [o.owner = side, t ≠ o, ¬rope(o→t), ¬(t.owner = o.owner ∧ rope(t→o)), ropes_held(o) < max_ropes(o.level)]`, giving `ok` or one of `not_yours`, `self`, `duplicate`, `reverse`, `slots`. `rope(x→y)` is true only for an Extending or Active rope; Fading ropes are ignored (rule 2).
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -125,18 +125,20 @@ The relay_choice formula is defined as:
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
-| relay_ropes(k) | list | 0–3 ropes | calculated | Keep k's Extending and Active ropes |
-| pawn.from | keep | | calculated (Troop Marching) | Where the arriving pawn was launched from |
+| relay_ropes(k) | list | 0–3 ropes | calculated | Keep k's Extending and Active ropes, in ascending `rope_id` |
+| pawn.from | keep | | calculated (Troop Marching) | The arriving pawn's current `origin`: the keep at the start of the rope it is on (for a relayed pawn, the keep that relayed it, not its first origin) |
 | relay_count(k) | int | ≥ 0 | calculated | Per-keep counter, reset at match start |
 
 **Output Range:** one rope, or lost. With two ropes the relay alternates; with one it always takes it, even back toward the sender if that is the only rope.
 **Example:** full keep K with ropes to A and B, a pawn arrives from A: candidates {B}; next pawn from A: {B} again (A is excluded, so B every time); a pawn from C: {A, B}, alternating. The exclusion matters only for a pawn still finishing a cut rope's march (A→K cut, then K→A tied): it is not sent straight back.
 
+**Order within a step** (decided 2026-11-22, shared with Troop Marching & Clashes and Rival AI). Every rope takes a `rope_id` from the monotonic tie counter when it is tied (the counter level drops already use). `relay_ropes(k)` is listed in ascending `rope_id`, so with ropes K→A tied before K→B the candidates are [A, B]. In phase 2 of the per-step order, rope timers advance and due sends launch in ascending `rope_id`, so pawns launched on one step take `seq` in that order; relays launch in phase 5 in the order arrivals resolve (Troop Marching & Clashes rule 11) and take `seq` then.
+
 ### F4. Lane offset
 
 The lane_offset formula is defined as:
 
-`offset(o→t) = rope_lane × right_normal(t − o)` when a rope t→o also exists; `0` otherwise. `right_normal(v) = (−v.y, v.x) / |v|` in y-down screen coordinates (the unit vector on v's right-hand side).
+`offset(o→t) = rope_lane × right_normal(t − o)` when an Extending or Active rope t→o also exists; `0` otherwise. A Fading opposite rope does not count: pawns launched after it was cut use the centre line, while pawns already launched keep their frozen lane (rule 8). `right_normal(v) = (−v.y, v.x) / |v|` in y-down screen coordinates (the unit vector on v's right-hand side).
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -157,21 +159,21 @@ It bounds pawns sent by the rope's own timer. Relayed pawns ride on top; the tot
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
-| rope_length | float, px | up to the table's diagonal, ~1,470 | calculated | Distance origin→target |
+| rope_length | float, px | up to 1,258 at baseline (the diagonal of Campaign Level Data's B2 box for keep centres) | calculated | Distance origin→target |
 | speed_min | float, px/s | baseline 110 (`pawn_speed`) | data file (Troop Marching & Clashes F8) | Slowest unit speed the level can launch; one value at MVP |
 
-**Output Range:** at baseline 24 pawns on the longest possible rope, 5 on a typical 260 px rope. With 15 keeps × 3 ropes the worst case is about 1,080 sent pawns; a real level is far below it.
-**Example:** 1,470 / (110 × 0.6) = 22.3 → 23, + 1 = 24 pawns.
+**Output Range:** at baseline 21 pawns on the longest possible rope, 5 on a typical 260 px rope. With 15 keeps × 3 ropes the worst case is about 945 sent pawns; a real level is far below it.
+**Example:** 1,258 / (110 × 0.6) = 19.1 → 20, + 1 = 21 pawns.
 
 ### Invariants (checked when the data is loaded; the loader reports a breach)
 
 - **R1.** `send_interval < gen_interval / gen_l3` (Troop Generation's I3 from this side): one rope always out-sends a level 3 keep. Baseline 0.6 < 0.833.
 - **R2.** `rope_lane ≤ keep_hit_radius / 4`, so an offset rope still starts inside its keep's touch area and a cut tap near a keep is still a keep press (Input's Core Rule 3). Baseline 8 ≤ 19.5.
-- **R3.** `pawns_per_rope` (F5) at the longest rope in the level ≤ `pawns_per_rope_max` (40), so a fast `send_interval` cannot flood a level: `send_interval ≥ longest_rope / (speed_min × 39)`. Baseline needs ≥ 0.343 s on the diagonal; 0.6 passes. Campaign Level Data checks it per level.
+- **R3.** `pawns_per_rope` (F5) at the longest rope in the level ≤ `pawns_per_rope_max` (40), so a fast `send_interval` cannot flood a level: `send_interval ≥ longest_rope / (speed_min × 39)`. Baseline needs ≥ 0.293 s on the longest legal rope (1,258 px, Campaign Level Data F1); 0.6 passes, and so does the 0.3 minimum. R3 depends on a level, so Campaign Level Data checks it per level and Rejects a breach.
 - **R4.** `rope_extend_time + first_send_delay ≤ send_interval × 2`, so a new rope is felt within two send beats. Baseline 0.5 ≤ 1.2.
 
 **Boundary findings (inputs that break the system without the invariants):**
-- `send_interval` 0.3 (its minimum): 3.3 pawns/s per rope, 46 pawns on the diagonal; R3 catches it on a big map (needs ≥ 0.343) and the level fails to load rather than stutter.
+- `send_interval` 0.3 (its minimum): 3.3 pawns/s per rope, 40 pawns on the longest legal rope (1,258 px), exactly `pawns_per_rope_max`, so R3 still passes at baseline (needs ≥ 0.293); R3 catches 0.3 only with a slower unit or a smaller `keep_hit_radius` (Campaign Level Data F1), and the level then fails to load rather than stutter.
 - `send_interval` 2 (its maximum): 0.5 pawns/s, below a level 3 keep's 1.2/s; R1 catches it (the match could never end).
 - `rope_lane` 20 with `keep_hit_radius` 48: the rope starts 20 px off-centre; R2 (≤ 12) catches it.
 - `rope_extend_time` 1 and `first_send_delay` 2: 3 s before a rope does anything; R4 (≤ 1.2) catches it.
@@ -205,13 +207,13 @@ Free sending makes ropes cost nothing but attention, so the loop "more ropes →
 **Cutting**
 - **If a swipe crosses the same rope twice**: Input reports it once; cutting a Fading rope is a no-op.
 - **If a level drop must cut 2 ropes and two were tied on the same step**: "newest" is by tie order within the step (later call first); Rope Links keeps a monotonic tie counter, not a timestamp.
-- **If a rope is cut while a pawn is being launched on that step**: the launch of that step still happens (sending is decided before cuts within a step; the full per-step order is in Troop Marching & Clashes § Formulas); the next step sends nothing.
+- **If a rope is cut on a step on which it is due to send**: the launch still happens in phase 2 and the rope turns Fading after it (rule 8; the full per-step order is in Troop Marching & Clashes § Formulas). The slot was already free at the cut, so a tie in the same step or the same rival pass can use it; the next step sends nothing.
 - **If the origin is captured and re-captured by its old owner within the fade time**: the old ropes are Fading and never revive; the keep starts at level 1 with no ropes.
 - **If the player cuts a rope the rival owns** (a forged or stale `cut`): ignored; the cuttable set never contains it.
 
 **Data and limits**
-- **If the loader finds a breach of R1–R4**: development builds stop with an error naming the rule and the values; shipped builds clamp (`send_interval` to the nearest value inside R1 and R3, `rope_lane` down to the R2 limit, `first_send_delay` down to fit R4) and log it.
-- **If a level's longest possible rope breaches R3 at baseline**: Campaign Level Data reports it at load (its invariant), and the level is not shipped that way.
+- **If the loader finds a breach of R1, R2 or R4** (global tuning, checked once at app start): development builds stop with an error naming the rule and the values; shipped builds clamp (`send_interval` to just under the R1 limit, `rope_lane` down to the R2 limit, `first_send_delay` down to fit R4) and log it (the one bad-data policy, Campaign Level Data rule 8, decided 2026-11-22).
+- **If a level breaches R3**: it is a level check, so Campaign Level Data's loader Rejects the level and never clamps `send_interval`: development builds stop; shipped builds do not load it and Screen Flow shows its load-failure box.
 - **If sent pawns on a rope exceed `pawns_per_rope_max`** (a defect; R3 should prevent it; relayed pawns are not counted): the rope skips sends until it is below the bound and logs it, rather than dropping pawns.
 
 **Open, owned by other GDDs** (not decided here):
@@ -313,7 +315,7 @@ Baseline data unless stated: `send_interval` 0.6 s, `rope_extend_time` 0.2 s, `f
 - **AC2 [Logic] (F1 order; injected state, cannot arise in play)**: GIVEN a player keep A (level 1, 1 rope held to B) and allied keep B that already ropes A, WHEN the player ties A→B, THEN the refusal reason is `duplicate` (checked before `reverse` and `slots`).
 - **AC3 [Logic] (rule 2, reverse)**: GIVEN allied keeps A and B with rope B→A, WHEN the player ties A→B, THEN `reverse` and no rope; GIVEN B is the rival's with rope B→A, THEN A→B succeeds and both ropes exist.
 - **AC4 [Integration: Keep Levels] (rule 2, slots)**: GIVEN a level 2 keep holding 2 ropes, WHEN a third tie is attempted, THEN `slots` with the message "Level 2 keep: only 2 ropes. Grow it or cut one."; WHEN the keep rises to level 3, THEN the tie succeeds.
-- **AC5 [Logic] (rule 2, no distance)**: GIVEN keeps at opposite corners of the table (about 1,470 px apart), WHEN tied, THEN the tie succeeds.
+- **AC5 [Logic] (rule 2, no distance)**: GIVEN keeps at opposite corners of the B2 box (1,258 px apart at baseline, the longest legal rope), WHEN tied, THEN the tie succeeds.
 - **AC6 [Integration: Touch & Mouse Input] (rule 3)**: GIVEN B is already roped from A and C lies beyond B on the same line, WHEN the drag from A is released on C and Input resolves B, THEN the tie is refused with `duplicate` and no rope to C is made.
 - **AC7 [Integration: Rival AI] (rule 12)**: GIVEN the rival asks for an illegal tie, THEN it gets the same reason code as the player would, and the board is unchanged.
 
@@ -335,7 +337,7 @@ Baseline data unless stated: `send_interval` 0.6 s, `rope_extend_time` 0.2 s, `f
 
 **Relay (Rule 10; F3)**
 
-- **AC18 [Integration: Troop Generation] (rule 10)**: GIVEN a full keep K (60 troops) with Active ropes to A and B, WHEN an allied pawn from C arrives, THEN K still has 60 troops, one `pawn_relayed` is raised, and a pawn is launched from K to A; the next such pawn goes to B.
+- **AC18 [Integration: Troop Generation] (rule 10)**: GIVEN a full keep K (60 troops) with Active ropes to A and B (K→A tied first, so the lower `rope_id`), WHEN an allied pawn from C arrives, THEN K still has 60 troops, one `pawn_relayed` is raised, and a pawn is launched from K to A; the next such pawn goes to B.
 - **AC19 [Logic] (F3)**: GIVEN the same K, WHEN pawns arrive from A, THEN each is launched to B (never back to A while B is Active).
 - **AC20 [Logic] (F3 fallback)**: GIVEN full keep K whose only Active rope leads to A, WHEN a pawn from A arrives, THEN it is relayed back to A.
 - **AC21 [Logic] (rule 10)**: GIVEN full keep K with no Active rope, WHEN an allied pawn arrives, THEN it is lost (no launch, no troop change) and a log line names the keep.
@@ -350,7 +352,7 @@ Baseline data unless stated: `send_interval` 0.6 s, `rope_extend_time` 0.2 s, `f
 
 - **AC25 [Logic] (R1)**: GIVEN `send_interval` 2.0 with `gen_interval` 2.5 and `gen_l3` 3, WHEN data loads in a development build, THEN it stops with an error naming R1 and the values; a shipped build lowers `send_interval` to just under 0.833 and logs it.
 - **AC26 [Logic] (R2)**: GIVEN `rope_lane` 20 with `keep_hit_radius` 48, THEN R2 is reported; a shipped build clamps `rope_lane` to 12.
-- **AC27 [Integration: Campaign Level Data] (R3)**: GIVEN a level whose longest keep pair is 1,470 px and `send_interval` 0.3, THEN the level loader reports R3 (needs ≥ 0.343) and the level does not load.
+- **AC27 [Integration: Campaign Level Data] (R3)**: GIVEN a level whose longest keep pair is 1,258 px, `send_interval` 0.3 and `speed_min` 100, THEN the level loader reports R3 (needs ≥ 0.323) and the level does not load in either build, with `send_interval` unchanged; at `speed_min` 110 it loads (needs 0.293).
 - **AC28 [Logic] (R4)**: GIVEN `rope_extend_time` 1.0 and `first_send_delay` 2.0, THEN R4 is reported; a shipped build lowers `first_send_delay` to 0.2.
 
 **Cross-system, visual, feel and device**
@@ -358,7 +360,10 @@ Baseline data unless stated: `send_interval` 0.6 s, `rope_extend_time` 0.2 s, `f
 - **AC29 [Integration: Level HUD] [Visual]**: Retained screenshots in `production/qa/evidence/` show a rope in each state (Extending, Active with a pulse, Fading with sag), a refused preview with the red cross and each refusal message, and two opposite enemy ropes 16 px apart.
 - **AC30 [Visual / playtest]**: GIVEN a new player in level 1, WHEN they tie their first rope, THEN pawns are visibly marching within 1 s; playtest question: did the rope feel like it "took" immediately?
 - **AC31 [Device]**: On the target phone, a level with 15 keeps, 30 Active ropes and 300 pawns in flight runs at 60 fps with Rope Links' own step cost under 0.2 ms (target to confirm).
-- **AC32 [Logic] (F5)**: GIVEN the longest rope in each prototype layout, THEN `pawns_per_rope` (sent pawns) is at most 24 and R3 passes for all five layouts.
+- **AC32 [Logic] (F5)**: GIVEN the longest rope in each Green Vale layout (810–932 px), THEN `pawns_per_rope` (sent pawns) is at most 16 (932 / 66 = 14.1 → 15, + 1) and R3 passes for all five; GIVEN a 1,258 px rope, THEN 21.
+- **AC32b [Logic] (order within a step)**: GIVEN keep K with ropes r5 (`rope_id` 5) and r2 (`rope_id` 2) both due to send on one step, THEN r2's pawn takes the lower `seq`; GIVEN a full K with `relay_ropes` r2 → A and r5 → B and a pawn relayed into K by keep C (its first origin D), THEN `pawn.from` is C and the relay takes r2 (`relay_count` 0); two identical runs give identical `seq` and relay choices.
+- **AC32c [Logic] (rules 2, 8; Fading)**: GIVEN K→A Active between allied keeps, WHEN the player cuts it and ties K→A on the next step, THEN the tie succeeds (no `duplicate`); GIVEN instead A→K tied on the next step, THEN it succeeds (no `reverse`) and its lane offset is 0.
+- **AC32d [Logic] (rule 8; cut timing)**: GIVEN K→A Active and due to send on step S, WHEN the player cuts it on step S, THEN `ropes_held(K)` drops on S before phase 2, exactly one pawn launches from it on S, it is Fading at the end of S, and no pawn launches from it on S + 1; GIVEN a rival pass on step S that cuts k→P and ties k→Q with k at its slot limit, THEN both happen in that pass.
 
 **Coverage check:** every core rule (1–14) has at least one criterion; F1–F5 and R1–R4 each have one; boundaries at `send_interval` limits (AC25, AC27), rope end states (AC11, AC17), zero troops (AC10), empty relay set (AC21), Extending relay (AC23). Cross-system: AC4, AC6, AC7, AC9, AC12, AC14, AC15, AC18, AC27, AC29.
 

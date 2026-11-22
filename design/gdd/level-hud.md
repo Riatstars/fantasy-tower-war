@@ -1,6 +1,6 @@
 # Level HUD
 
-> **Status**: Designed (pending /design-review in a fresh session)
+> **Status**: In Review (revised 2026-11-22 after its review and the cross-GDD review, pending re-review)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -28,14 +28,14 @@ Level HUD is everything the player sees during a match. It has two layers. The *
 5. **Plaque moments**, each from an owning GDD's event: a **beat pop** (the number scales up and back over `pop_time`, 0.25 s) on Troop Generation's "keep gained troops"; a **cap glint** (a short highlight sweep across the tag every `glint_period`, 2.5 s, never steady, within the art bible's 25% glow budget) while `troops = troop_cap`; a **level-rise flourish**: the new hollow dot appears on the same step as `level_rose`, with float text "Level L · N ropes" rising `float_rise_px` (30) and fading over `float_time` (1.6 s). A level drop shows no text (Keep Levels Visual/Audio); the lost dot and the storey crumble are enough.
 6. **Ropes** are drawn from Rope Links' per-rope state: **Extending** grows from the origin pin to the target over `rope_extend_time`; **Active** is a taut line of runes in the owner's colour with a send pulse every `send_interval`; **Fading** sags and fades over `rope_fade_time` from the cut point. Each rope is drawn on its lane (`rope_lane` offset to its right); the player's rope is always on its own right (Rope Links F4). Pins at both keeps take the owner colour. Rival ropes are drawn identically but are never hit-testable (Input decides; the HUD only draws).
 7. **Pawns** are drawn from Troop Marching's `pawns()` each frame: a small pixel figure in owner colours at its position on its lane, facing its target, bobbing out of phase, depth-sorted with the keeps. A fallen pawn fades over `pawn_fade_time`. The clash puff and sparks, the capture flag burst and the arrival flash are drawn as the owning GDDs' Visual/Audio sections specify; Feedback & Juice (after UAT-1) elaborates them without changing what triggers them.
-8. **Input feedback**, from Touch & Mouse Input's per-step drag data: the **preview rope** from the origin keep to the resolved target (or the finger), snapping to the target; the **target ring** on the resolved keep; the **refusal cross** (UI Red, a white-edged X in a parchment ring) over a greyed preview when the tie would be refused; the **swipe trail** behind a cut gesture. All vanish the step the gesture ends.
+8. **Input feedback**, from Touch & Mouse Input's drag data and Rope Links' legality: each element is drawn on the next rendered frame after its source publishes it, in every match state where table input is accepted (Armed included: Input and the hit-test provider run every frame, only match steps stop). The legality of the previewed tie (the refusal cross) is Rope Links' `tie_legal` for the resolved target, not Input's. The **preview rope** from the origin keep to the resolved target (or the finger), snapping to the target; the **target ring** on the resolved keep; the **refusal cross** (UI Red, a white-edged X in a parchment ring) over a greyed preview when the tie would be refused; the **swipe trail** behind a cut gesture. All vanish on the next rendered frame after the gesture ends.
 9. **The title line**, top-left of the top band: "[Region] [order] · [Level name]" (Campaign Level Data), an Ink tag. No clock during play (decided 2026-11-22; closes Level State Open Question 7): the match time appears on the result overlays only.
 10. **The strength bar**, in the top band under the title: three segments, player | neutral | rival, widths by F1 (each side's keep `troops` plus `marching_strength(owner)`; the neutral segment is the neutral garrisons). Owner colours as data, neutral grey, an Ink frame, `bar_width_px` (500) by `bar_height_px` (14). "You N" and "Rival N" labels at the bar's ends in the owner's light colour; the neutral segment is unlabelled. It updates every frame with no easing: the glance must be current (decided 2026-11-22: three segments).
 11. **The Pause button**, top-right of the top band, raises `pause_pressed` to Screen Flow, which opens the Pause overlay (its rule 6). It is hidden while Level State reports `pause_allowed = false` (Ending). A mute button is reserved beside it for the Audio GDD (after UAT-1) and is not drawn in UAT-1.
-12. **The message strip**, bottom centre, shows at most one line at a time, chosen by priority (F2): a rope refusal (Rope Links' five texts) for `strip_time` (2.4 s); then Input's once-per-session cursor hint; then Level State's Armed hint "Tie a rope to begin" for as long as the match is Armed; then, from the Tutorial GDD, tutorial prompts; else nothing. A new refusal replaces the current message and restarts `strip_time`. The strip is an Ink tag sized to its text, never wider than the table minus margins, never two lines.
+12. **The message strip**, bottom centre, shows at most one line at a time, chosen by priority (F2): a rope refusal (Rope Links' four refusal texts; `self` raises no text) for `strip_time` (2.4 s); then Input's once-per-session cursor hint "Right mouse cuts a rope" (Touch & Mouse Input event `hint_shown("cursor")`, its rule 5) for `strip_time`; then Level State's Armed hint "Tie a rope to begin" for as long as the match is Armed; then, from the Tutorial GDD, tutorial prompts; else nothing. A new refusal replaces the current message and restarts `strip_time`. The strip is an Ink tag sized to its text, never wider than the table minus margins, never two lines.
 13. **Match states** (Level State): **Armed** draws everything plus the Armed hint; **Running** draws everything; **Ending** keeps drawing the frozen board (plaques, ropes and pawns stop changing because the data stops), clears the strip and hides the Pause button; while **paused** (Screen Flow's overlay) the HUD is drawn beneath the overlay, frozen, untouched. The HUD never knows why the board stopped.
 14. **Both sides, one HUD.** The rival's keeps, ropes and pawns are drawn by the same rules with its colours and marks. Owner is never conveyed by colour alone: banners (sun vs crescent), rope beads vs chevrons and helm shapes carry it too (art bible §4 colour-blind table), so the HUD stays readable on greyscale and dim screens.
-15. **Data.** Every pixel size, offset, time and width in this section is a data-file value (`plaque_font_px`, `bar_width_px`, `strip_time`, …), so the UX spec and the accessibility GDD tune the HUD without code changes. Text comes from a strings table (the localization GDD's), never from code.
+15. **Data.** Every pixel size, offset, time and width in this section is a data-file value (`plaque_font_px`, `bar_width_px`, `strip_time`, …), so the UX spec and the accessibility GDD tune the HUD without code changes. Text comes from the UAT-1 strings data file (one language; the player's decision, 2026-11-22), never from code. Localization, an after-UAT system, will replace that file with its strings table.
 
 ### States and Transitions
 
@@ -58,9 +58,9 @@ The strip's own timer (`strip_time`) counts game steps, so a paused game does no
 |---|---|---|---|
 | Troop Generation | in | `troops`, `owner` per keep; events "keep gained troops" (beat pop) and "keep reached cap" (glint) | Troop Generation |
 | Keep Levels | in | `level` per keep (storeys, dot count via `max_ropes[level]`); `level_rose` (flourish), `level_dropped` (crumble, no text) | Keep Levels |
-| Rope Links | in | Per-rope state (Extending, Active, Fading), end points, lane, owner, age; `tie_refused(reason)` for the strip; `rope_tied`, `rope_cut` for the snap effects | Rope Links |
+| Rope Links | in | Per-rope state (Extending, Active, Fading), end points, lane, owner, age; `tie_legal` for the previewed target (the refusal cross); `tie_refused(reason)` for the strip; `rope_tied`, `rope_cut` for the snap effects | Rope Links |
 | Troop Marching & Clashes | in | `pawns()` (position, lane, owner, unit); `marching_strength(owner)`; `pawn_clashed`, `keep_hit`, `keep_reinforced`, `keep_captured` for the effects | Troop Marching |
-| Touch & Mouse Input | in | Per-step drag feedback (pointer, origin, resolved target or none, legality) and the swipe trail | Touch & Mouse Input |
+| Touch & Mouse Input | in | Drag feedback, published every frame (pointer, origin, resolved target or none), the swipe trail, and the event `hint_shown("cursor")` | Touch & Mouse Input |
 | Level State & Match Flow | in | State (Armed, Running, Ending, Closed), `pause_allowed`; the Armed hint condition. The clock is not shown | Level State |
 | Campaign Level Data | in | Region name, level `order`, level `name` for the title | Campaign Level Data |
 | Screen Flow & Scene Manager | out/in | Out: `pause_pressed`. In: the pause state (the HUD is drawn beneath overlays) | Screen Flow (its rules 5, 6) |
@@ -68,7 +68,7 @@ The strip's own timer (`strip_time`) counts game steps, so a paused game does no
 | Feedback & Juice, Audio (after UAT-1) | out | The HUD exposes the same events it draws from, so those systems add particles and sound without new triggers | Those GDDs |
 | Tutorial & Onboarding (after UAT) | in | Tutorial prompts for the strip (F2's lowest priority) and highlight requests on a keep or rope | Tutorial |
 | Accessibility (Alpha) | in | Overrides for `plaque_font_px`, bar height, high-contrast mode | Accessibility |
-| Localization (Alpha) | in | The strings table for the strip texts and labels | Localization |
+| Strings data file (UAT-1); Localization (after UAT) | in | The strip texts and labels | The data file; Localization when it exists |
 
 ## Formulas
 
@@ -81,8 +81,14 @@ S_player  = Σ troops over player keeps  + marching_strength(player)
 S_rival   = Σ troops over rival keeps   + marching_strength(rival)
 S_neutral = Σ troops over neutral keeps
 total     = S_player + S_neutral + S_rival
-width(side) = bar_width_px × S_side / total      (if total = 0: three equal thirds, all grey)
+raw(side)  = bar_width_px × S_side / total
+w_player   = 0 if S_player = 0, else max(1, round_half_up(raw(player)))
+w_rival    = 0 if S_rival = 0,  else max(1, round_half_up(raw(rival)))
+w_neutral  = bar_width_px − w_player − w_rival
+(if total = 0: 167 / 166 / 167 px, all grey)
 ```
+
+Widths are whole pixels and always sum to `bar_width_px`. If `S_neutral` = 0, `w_rival` is instead `bar_width_px − w_player`, so the remainder never goes negative. If `S_neutral` > 0 and `w_neutral` would be below 1, it is set to 1 and the pixel is taken from the wider of the two other segments.
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -92,7 +98,7 @@ width(side) = bar_width_px × S_side / total      (if total = 0: three equal thi
 | bar_width_px | int, px | 300–660 (500) | data file | Bar length in table pixels |
 
 **Output Range:** three widths summing to `bar_width_px`; a side at 0 has width 0 and its label reads "0". `total` is 0 only on a level where every keep starts empty and nothing marches, which Campaign Level Data B1 allows but warns on; the equal-thirds fallback keeps the bar drawn. The labels show `S_player` and `S_rival` as integers.
-**Example:** gv-01 at start: player 10, neutrals 36, rival 10 → widths 89 / 322 / 89 px of 500; labels "You 10", "Rival 10".
+**Example:** gv-01 at start: player 10, neutrals 36, rival 10 → raw 89.3 / 321.4 / 89.3 → widths 89 / 322 / 89 px of 500 (neutral takes the remainder); labels "You 10", "Rival 10". Player 1, neutral 2,000, rival 1 → raw 0.25 each side → 1 / 498 / 1 px.
 
 ### F2. Message strip priority
 
@@ -104,7 +110,8 @@ The strip_message formula is defined as:
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | strip_time | float, s | 1–5 (2.4) | data file | How long a refusal or hint stays, in game steps |
-| refusal | string or none | one of Rope Links' five texts | calculated (`tie_refused`) | Set on the event; a new one restarts `strip_timer` |
+| refusal | string or none | one of Rope Links' four texts (`slots`, `reverse`, `duplicate`, `not_yours`; `self` raises no text) | calculated (`tie_refused`) | Set on the event; a new one restarts `strip_timer` |
+| cursor_hint | string or none | "Right mouse cuts a rope" | calculated (Touch & Mouse Input `hint_shown("cursor")`, raised at most once per session) | Set on the event for `strip_time` in game steps; a refusal replaces it |
 
 **Output Range:** zero or one line. A refusal always wins; the Armed hint cannot be hidden by anything but a refusal or the cursor hint, and returns when they expire. `strip_time` under 1 s cannot be read on a phone; the range floor is 1.
 **Example:** Armed level, the player's first drag is refused with `self` (no text): the strip keeps "Tie a rope to begin". A `slots` refusal on a Running level shows "Level 1 keep: only 1 rope. Grow it or cut one." for 2.4 s, then nothing.
@@ -113,10 +120,14 @@ The strip_message formula is defined as:
 
 The plaque_width formula is defined as:
 
-`plaque_width_px = plaque_pad_px + digit_width_px × digits(troops)`
+```
+digit_width_px   = round_half_up(plaque_font_px × digit_aspect)
+plaque_width_px  = plaque_pad_px + digit_width_px × digits(troops)
+plaque_height_px = max(30, plaque_font_px + 7)
+```
 
-**Variables:** `plaque_pad_px` (30), `digit_width_px` (11), `digits(troops)` (1–2 at UAT-1; `troop_cap` 60 has two digits). All data file.
-**Output Range:** 41–52 px at baseline; a keep sprite plus a 30 px plaque fits the 156 px touch circle (art bible §3), so the plaque never masks a neighbour (Campaign Level Data I2 spacing ≥ 156 px).
+**Variables:** `plaque_pad_px` (30), `plaque_font_px` (23; 16–40), `digit_aspect` (0.48: the plaque font's digit advance divided by its size, set from the chosen font; 0.4–0.7), `digits(troops)` (1–2 at UAT-1; `troop_cap` 60 has two digits). All data file; the digit width follows the font size, so raising `plaque_font_px` never overflows the tag.
+**Output Range:** at baseline the digit is round(11.04) = 11 px, the plaque 41–52 px wide and 30 px tall; at `plaque_font_px` 30 the digit is 14 px, the plaque 44–58 px wide and 37 px tall; a keep sprite plus a 30 px plaque fits the 156 px touch circle (art bible §3), so the plaque never masks a neighbour (Campaign Level Data I2 spacing ≥ 156 px).
 
 ### Invariant H1. Screen layer clear of the table
 
@@ -146,7 +157,7 @@ Worked at the extremes (lens: systems-designer): F1 at `total` 0 falls back to t
 - **If a keep's plaque would overlap another keep's plaque**: Campaign Level Data's I2 (≥ 156 px spacing) makes this impossible at baseline; at a raised `plaque_font_px` the UX spec re-checks against F3 and the loader's B5 warning covers the rest.
 - **If a keep's touch circle lies under the top band or bottom strip** (H1 breach): the loader warns in development; a shipped build shrinks that band on that level (`hud_top_px` to `min(keep.y) − keep_hit_radius`), never moves a keep.
 - **If the title text is too long for the tag** (a long level name or a long locale): the tag grows to `title_max_px` (420) and then the text is scaled down; it never wraps or overlaps the bar.
-- **If the strip text is too long** (a locale that expands): the tag grows to the table width minus margins; then the text scales down to a floor of `strip_min_font_px` (16); never two lines. Localization owns the string lengths (its string-freeze check flags any text that would hit the floor).
+- **If the strip text is too long** (a long string, or later a locale that expands): the tag grows to the table width minus margins; then the text scales down to a floor of `strip_min_font_px` (16); never two lines. UAT-1 has one language in its strings data file; when Localization arrives after UAT, its string-freeze check flags any text that would hit the floor.
 - **If the display aspect is not 9:16**: the table is letterboxed or pillarboxed (Touch & Mouse Input's scaling); the screen layer anchors to the display's safe area, so on a taller phone the top band and strip sit in the extra space and H1 is trivially met.
 - **If a notch or system bar covers the top band's area**: the band anchors below the safe-area inset; the table does not move. Mobile Platform Integration (after UAT-1) owns the inset values; UAT-1 tests on a phone without a notch or accepts the overlap as a known defect.
 - **If Level State is Ending but the strip has a refusal with time left**: the strip clears at once (rule 13); the result is more important than a stale refusal.
@@ -169,7 +180,7 @@ Worked at the extremes (lens: systems-designer): F1 at `total` 0 falls back to t
 | Feedback & Juice, Audio (after UAT-1) | Soft | out | The HUD's event hooks and effect slots | Not yet designed |
 | Tutorial & Onboarding (after UAT) | Hard | out | Strip prompts and highlight requests | Not yet designed |
 | Accessibility (Alpha) | Hard | out | Size and contrast overrides | Not yet designed |
-| Localization (Alpha) | Soft | out | Strings table; length limits | Not yet designed |
+| Strings data file (UAT-1); Localization (after UAT) | Soft | in | Strip texts and labels; length limits once Localization exists | Data file in UAT-1; Localization not started |
 
 **Bidirectional check.** Troop Generation (Interactions, Dependencies, UI), Keep Levels (Interactions, Dependencies), Rope Links (Interactions, Dependencies, UI), Troop Marching (Interactions), Touch & Mouse Input (Interactions, Dependencies, UI), Level State (Interactions, Dependencies) and Campaign Level Data (Interactions) all already name the Level HUD. Screen Flow names `pause_pressed` from Touch & Mouse Input (its Interactions) but not the HUD's Pause button as its source: one line to add. `systems-index.md` lists Keep Levels, Rope Links, Level State and Touch & Mouse Input; it should add Troop Generation, Troop Marching & Clashes, Campaign Level Data (soft) and Screen Flow & Scene Manager.
 
@@ -227,7 +238,7 @@ The HUD is itself the UI of the Level screen. Elements and their owners of conte
 | Message strip | Bottom strip, centre | Rope Links, Input, Level State, Tutorial | One line, priority F2 |
 | Preview, ring, cross, trail | Table layer | Touch & Mouse Input | Transient |
 
-Touch targets: the Pause button meets Touch & Mouse Input's I1 minimum (about 9 mm); nothing else in the HUD is tappable (the table's keeps and ropes are Input's hit-test, not the HUD's). All text comes from the strings table with room for 30% expansion (Localization).
+Touch targets: the Pause button meets Touch & Mouse Input's I1 minimum (about 9 mm); nothing else in the HUD is tappable (the table's keeps and ropes are Input's hit-test, not the HUD's). All text comes from the UAT-1 strings data file, laid out with room for 30% expansion so Localization (after UAT) needs no layout change.
 
 > **📌 UX Flag — Level HUD**: this system has UI requirements. In Phase 4 (Pre-Production), run `/ux-design level-hud` to create its UX spec (layout, sizes, states, accessibility floor) before writing epics. Stories that reference the HUD should cite `design/ux/level-hud.md`, not this GDD directly. This single spec also closes the UX flags Troop Generation, Keep Levels, Rope Links, Troop Marching & Clashes and Touch & Mouse Input raised for their HUD elements. Note this in the systems index for this system.
 
@@ -258,16 +269,16 @@ Baseline data: table 720 × 1,280; `plaque_font_px` 23; `bar_width_px` 500; `str
 
 - **AC1 [Logic] (F1)**: GIVEN gv-01 at start (player 10, neutrals 36, rival 10), THEN the bar widths are 89, 322 and 89 px (±1) and the labels read "You 10" and "Rival 10"; GIVEN 4 player pawns of strength 1 in flight, THEN `S_player` is 14.
 - **AC2 [Logic] (F1 boundary)**: GIVEN every keep at 0 troops and nothing marching, THEN three equal grey segments and both labels "0"; GIVEN the rival at strength 1 against a player at 599, THEN the rival segment is at least 1 px wide.
-- **AC3 [Logic] (F2)**: GIVEN an Armed level, THEN the strip reads "Tie a rope to begin"; WHEN a `slots` refusal arrives, THEN the strip reads "Level 1 keep: only 1 rope. Grow it or cut one." for 2.4 s of game steps and then returns to the Armed hint; WHEN a second refusal arrives after 1 s, THEN the new text shows and the timer restarts.
+- **AC3 [Logic] (F2)**: GIVEN an Armed level, THEN the strip reads "Tie a rope to begin"; WHEN the first drag is refused with `self`, THEN the strip still reads the Armed hint. GIVEN a Running level where a level 1 keep holds 1 rope, WHEN a `slots` refusal arrives, THEN the strip reads "Level 1 keep: only 1 rope. Grow it or cut one." for 2.4 s of game steps and then is empty; WHEN a second refusal arrives after 1 s, THEN the new text shows and the timer restarts.
 - **AC4 [Logic] (F2, pause)**: GIVEN a refusal showing with 1.0 s left, WHEN the game is paused for 10 s and resumed, THEN the refusal still shows for 1.0 s.
-- **AC5 [Logic] (F3, rule 3)**: GIVEN a keep with 7 troops, THEN the plaque is 41 px wide; GIVEN 60, THEN 52 px; GIVEN `plaque_font_px` raised to 30 in the data file, THEN the number is drawn at 30 px with no code change.
+- **AC5 [Logic] (F3, rule 3)**: GIVEN a keep with 7 troops, THEN the plaque is 41 px wide and 30 px tall; GIVEN 60, THEN 52 px wide; GIVEN `plaque_font_px` raised to 30 in the data file, THEN with no code change the digit width is 14 px and the plaque for 60 troops is 58 px wide and 37 px tall, with the number drawn at 30 px inside it.
 - **AC6 [Logic] (rule 4 boundary)**: GIVEN a neutral keep, THEN no slot dots; GIVEN a player keep at level 3 holding 2 ropes (one Extending), THEN three dots, two filled; GIVEN a rival keep at level 2 holding 0, THEN two hollow dots.
 - **AC7 [Logic] (rule 5)**: GIVEN `level_rose(k, 1, 2)` on step S, THEN on S the plaque shows two dots and the float text "Level 2 · 2 ropes" starts; GIVEN `level_dropped`, THEN no float text.
 - **AC8 [Logic] (rule 5)**: GIVEN a keep at `troop_cap`, THEN a glint sweep starts every 150 steps and lasts under 150 steps; GIVEN 59 troops, THEN none.
 - **AC9 [Logic] (H1 boundary)**: GIVEN the five Green Vale levels, THEN H1 holds on each (min y 190 ≥ 178; max y 1,110 ≤ 1,142); GIVEN a level with a keep at y 150, THEN the loader warns and the shipped band shrinks to 72 px on that level.
 - **AC10 [Logic] (rule 13)**: GIVEN Level State enters Ending with a refusal showing, THEN the strip is empty on that step and the Pause button is hidden; GIVEN the match resumes from Pause, THEN the button is shown again.
 - **AC11 [Integration: Rope Links] (rule 6)**: GIVEN a rope tied at step 0, THEN the drawn rope reaches the target at step 12 (`rope_extend_time` 0.2 s), pulses every 36 steps, and after a cut at step 1,200 is gone from the draw list at step 1,254 (`rope_fade_time` 0.9 s).
-- **AC12 [Integration: Touch & Mouse Input] (rule 8)**: GIVEN a drag from a player keep resolved to a neutral, THEN the preview and the target ring are drawn that step; GIVEN the target would be refused, THEN the preview is greyed and the UI-Red cross is drawn; GIVEN the gesture ends, THEN both vanish on that step.
+- **AC12 [Integration: Touch & Mouse Input] (rule 8)**: GIVEN a drag from a player keep resolved to a neutral, THEN the preview and the target ring are drawn on the next rendered frame after Input publishes the drag, on a Running and on an Armed level alike; GIVEN Rope Links' `tie_legal` refuses the target, THEN the preview is greyed and the UI-Red cross is drawn; GIVEN the gesture ends, THEN both vanish on the next rendered frame.
 - **AC13 [Integration: Troop Marching & Clashes] (rule 7)**: GIVEN `pawns()` returns 300 pawns, THEN 300 figures are drawn on their lanes, and a pawn that fell at step S is drawn fading until step S + 54 and not after.
 - **AC14 [Integration: Screen Flow] (rule 11)**: GIVEN Running, WHEN the Pause button is tapped, THEN Screen Flow receives `pause_pressed` and the Pause overlay opens with the HUD frozen beneath its dim.
 - **AC15 [Integration: Campaign Level Data] (rule 9)**: GIVEN gv-03 is built, THEN the title reads "Green Vale 3 · Crossroads" and no clock is drawn anywhere on the Level screen.
@@ -275,9 +286,11 @@ Baseline data: table 720 × 1,280; `plaque_font_px` 23; `bar_width_px` 500; `str
 - **AC17 [UI] (rules 2–12)**: retained screenshots on the minimum phone in portrait of gv-01 Armed (hint showing), gv-03 mid-match (two sides' ropes on lanes, pawns, a full keep glinting, the bar moved), a refusal moment (cross and strip), and Ending (frozen board, empty strip, no Pause button). Every plaque number is legible at arm's length (tester-confirmed).
 - **AC18 [UI] (rule 14)**: the mid-match screenshot converted to greyscale still lets a tester name the owner of every keep, rope and pawn from shape alone.
 - **AC19 [Playtest] (Game Feel)**: 5 first-time UAT testers each see a frozen mid-level screenshot for two seconds and are asked who is winning and which keep is in most danger; 4 of 5 correct on both passes.
-- **AC20 [Logic] (rule 15)**: GIVEN `strip_time`, `bar_width_px` and `hud_top_px` changed in the data file, THEN the HUD uses the new values with no code change; GIVEN a strip string changed in the strings table, THEN the new text shows.
+- **AC20 [Logic] (rule 15)**: GIVEN `strip_time`, `bar_width_px` and `hud_top_px` changed in the data file, THEN the HUD uses the new values with no code change; GIVEN a strip string changed in the UAT-1 strings data file, THEN the new text shows.
+- **AC21 [Logic] (F1 rounding)**: GIVEN player 10, neutral 36, rival 10 and nothing marching, THEN the widths are 89 / 322 / 89 px; GIVEN player 1, neutral 2,000, rival 1, THEN 1 / 498 / 1 px; GIVEN player 3, neutral 0, rival 1 (raw 375 / 0 / 125), THEN 375 / 0 / 125 px with the rival taking `bar_width_px − w_player`; in every case the three widths sum to `bar_width_px`.
+- **AC22 [Integration: Touch & Mouse Input] (F2, rule 12)**: GIVEN a Running level on a computer, WHEN Input raises `hint_shown("cursor")`, THEN the strip shows "Right mouse cuts a rope" for 2.4 s of game steps and then falls to the next priority; WHEN a refusal arrives while the hint shows, THEN the refusal replaces it; GIVEN an Armed level, WHEN the hint event arrives, THEN it shows over the Armed hint and the Armed hint returns when it expires.
 
-**Coverage check.** Rules 1–15 each have a criterion (rule 1's read-only nature is AC14's "only `pause_pressed`" plus the view-model tests never mutating state); F1–F3 and H1 each have a typical and a boundary case; cross-system: AC11–AC16. Visual and feel criteria carry the required retained-screenshot and playtest forms.
+**Coverage check.** Rules 1–15 each have a criterion (rule 1's read-only nature is AC14's "only `pause_pressed`" plus the view-model tests never mutating state); F1–F3 and H1 each have a typical and a boundary case (F1 rounding: AC21; F2 cursor hint: AC22); cross-system: AC11–AC16, AC22. Visual and feel criteria carry the required retained-screenshot and playtest forms.
 
 ## Open Questions
 

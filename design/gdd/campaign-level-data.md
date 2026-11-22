@@ -35,7 +35,7 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 5. **The first-rope wait** (decided 2026-11-22; closes Level State Open Question 2): `wait_for_first_rope` is true on the first level of the game (`gv-01`) and false everywhere else. It is a field, not a rule, so a tutorial level may set it later.
 6. **The rival's seed is fixed per level** (decided 2026-11-22; closes Rival AI Open Question 2): `rival.seed` is a constant in the record, so every attempt at a level meets the same rival given the same player actions. A level with no rival keep still carries a `rival` block (unused).
 7. **Sequence.** `next(level)` is the level with `order + 1` in the same region, else the first level of the next region, else none. World Map & Regions derives which nodes are unlocked from Save & Progress results and this sequence; this GDD never stores progress. A region is complete when its last level is beaten (World Map's rule to state).
-8. **The loader validates every record before Level State builds a match**, against invariants other systems impose (Formulas: L1, I2, R3, B1–B4). A development build stops with an error naming the level id, the rule and the offending values; a shipped build refuses to load the level and Screen Flow's load-failure rule returns the player to the World Map with a message. A level that fails validation is never built, so no match can start from bad data.
+8. **The loader validates every record before Level State builds a match**, against invariants other systems impose (Formulas: L1, I2, R3, B1–B4, and Troop Marching's M2 and M3). M2 is the same inequality as R3 (`ceil(L / (v × s)) + 1 ≤ 40` holds exactly when `s ≥ L / (39 × v)`), so the loader checks it once and a breach names both R3 and M2; M3 (`speed_min × send_interval ≥ pawn_min_spacing × size_max`) is checked per level with them. A development build stops with an error naming the level id, the rule and the offending values; a shipped build refuses to load the level and Screen Flow's load-failure rule returns the player to the World Map with a message. A level that fails validation is never built, so no match can start from bad data. **Policy for bad data** (decided 2026-11-22; one rule for every GDD): a level record, and every check that compares a level with tuning (L1, I2, R3, B1–B4, Troop Marching M2 and M3), is Rejected in a shipped build, never clamped. Global tuning constants that do not depend on a level (Touch & Mouse Input I1, I3, I4; Rope Links R1, R2, R4; Troop Marching M1, M4–M7; Keep Levels K1–K4; Troop Generation I1–I3; the knobs in Rival AI's tuning file) are checked once at app start by their owners and, in a shipped build, clamped to the nearest valid value and logged, so the game still runs. The one runtime adjustment is Touch & Mouse Input's per-level radius reduction after the accessibility setting raises `keep_hit_radius` (Edge Cases).
 9. **Registration.** At app start the loader registers with Save & Progress the set of known level ids and region ids (Save rule 10, its "lookup it registers"), and offers World Map the region and level sequence. It never reads or writes the progress file.
 10. **Decor has no effect on play.** The river polyline is drawn by the Level scene behind the keeps; ropes and pawns cross it freely, as in the prototype. Anything that affects play is a keep.
 11. **Content ships as data files**, one per level plus one per region, in the format the architecture decides (an ADR); the GDD fixes the fields and ranges, not the syntax. Development builds reload a level file on change without a restart (tools item).
@@ -63,7 +63,7 @@ This system has no runtime behaviour of its own; a record passes through the loa
 |---|---|---|---|
 | On disk | The data file as authored | Shipped or saved by the author | A start, Retry, Next level or Restart request names its id → Parsing |
 | Parsing | Read and typed; unknown fields ignored, missing required fields are a failure | Requested | Parsed → Validating; a parse failure → Rejected |
-| Validating | L1, I2, R3, B1–B4 checked (rule 8) | Parsed | All pass → Valid; any fails → Rejected |
+| Validating | L1, I2, R3 (with M2), M3, B1–B4 checked (rule 8) | Parsed | All pass → Valid; any fails → Rejected |
 | Valid | Handed to Level State, which builds the match | Checks pass | Level State's Loading state takes over |
 | Rejected | Not built; the error is logged with level id, rule and values | A failure | Development: the build stops. Shipped: Screen Flow's load failure |
 
@@ -100,12 +100,12 @@ The longest_rope formula is defined as:
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
-| dist(k_i, k_j) | float, px | 156–1,470 | calculated | Centre distance of a keep pair on the 720 × 1,280 table |
+| dist(k_i, k_j) | float, px | 156–1,258 | calculated | Centre distance of a keep pair on the 720 × 1,280 table, at baseline `keep_hit_radius` r 78: the minimum is I2's 2r, the maximum the diagonal of the box B2 leaves for keep centres, √((720 − 2r)² + (1,280 − 2r)²) |
 | send_interval | float, s | 0.3–2 (0.6) | data file (Rope Links) | Seconds between pawns on one rope |
 | speed_min | float, px/s | ≥ 1 (110 at UAT-1: `pawn_speed`) | data file (Troop Marching F8) | The slowest unit the level can launch |
 | pawns_per_rope_max | int | 10–100 (40) | data file (Rope Links) | Most sent pawns one rope may carry |
 
-**Output Range:** `longest_rope` 810–932 px on the Green Vale; the table diagonal, 1,470 px, is the ceiling for any level. R3's bound at baseline: 0.189–0.217 s on the Green Vale, 0.343 s at the diagonal; `send_interval` 0.6 passes every possible level at `speed_min` 110. From UAT-2 a slow unit lowers `speed_min` and raises the bound: at `speed_min` 55 the diagonal needs 0.685 s, which 0.6 fails, so a slow race on a big map is caught at load (Rope Links AC27).
+**Output Range:** `longest_rope` 810–932 px on the Green Vale. The ceiling for any level is the diagonal of the box B2 leaves for keep centres, √((720 − 2r)² + (1,280 − 2r)²) with r = `keep_hit_radius`: 1,258 px at baseline (a 564 × 1,124 px box), 1,338 px at Touch & Mouse Input's I1 floor r 48. (The full table diagonal, 1,470 px, cannot occur: a keep on a corner breaks B2.) R3's bound at baseline: 0.189–0.217 s on the Green Vale, 0.293 s at 1,258 px; `send_interval` 0.6 passes every possible level at `speed_min` 110, and so does the `send_interval` minimum 0.3, so R3 cannot fail on UAT-1 data at the baseline radius. From UAT-2 a slow unit lowers `speed_min` and raises the bound: at `speed_min` 50 the 1,258 px rope needs 0.645 s, which 0.6 fails, so a slow race on a big map is caught at load (Rope Links AC27); `speed_min` 55 needs 0.586 s and passes.
 **Example:** gv-02: the player keep (180, 1080) and the rival keep (540, 220) are 932 px apart; 932 / (110 × 39) = 0.217 ≤ 0.6, passes.
 
 ### F2. Tightest spacing and invariant I2
@@ -117,9 +117,9 @@ The min_spacing formula is defined as:
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
-| keep_hit_radius | float, px | 30–120 (78) | data file (Touch & Mouse Input) | Touch radius of a keep |
+| keep_hit_radius | float, px | 48–120 (78) | data file (Touch & Mouse Input) | Touch radius of a keep |
 
-**Output Range:** the bound is 156 px at baseline. Green Vale: 262, 206, 226, 220 and 180 px, all pass; gv-05 has 24 px to spare. At `keep_hit_radius` 90 (the accessibility GDD may raise it) the bound is 180 and gv-05 passes exactly; at 91 it fails, so raising the radius is a content check, not a free knob (Touch & Mouse Input's edge case lowers the radius per level in a shipped build).
+**Output Range:** the bound is 156 px at baseline. Green Vale: 262, 206, 226, 220 and 180 px, all pass; gv-05 has 24 px to spare. At `keep_hit_radius` 90 (the accessibility GDD may raise it) the bound is 180 and gv-05 passes exactly; at 91 it fails, so raising the radius in the data file is a content check, not a free knob; a raise by the accessibility setting at runtime is the one case Touch & Mouse Input's per-level radius reduction covers (Edge Cases).
 **Example:** gv-05: keeps 9 (360, 560) and 10 (360, 380) are 180 px apart; 2 × 78 = 156 ≤ 180.
 
 ### F3. Starting level
@@ -146,25 +146,26 @@ The next formula is defined as:
 **Variables:** `order` (int, 1–N, data file), regions in campaign order (data file).
 **Output Range:** one level or none. Green Vale: gv-01 → gv-02 → … → gv-05 → none in UAT-1 (the next region is UAT-2 content).
 **Example:** `next(gv-03)` = gv-04.
+**Use by Menus & Screens:** `next()` crosses into the next region, but the Win overlay offers *Next level* only when `next(level)` is in the same region (Menus & Screens F2, decided 2026-11-22), so a region's last level always returns to the World Map, which plays the conquest sequence.
 
 ### Bounds B1–B4 (checked with L1, I2 and R3 at load)
 
 - **B1.** `0 ≤ keep.troops ≤ troop_cap` (60) for every keep. A player keep at 0 is legal (it is captured by the first enemy pawn) but is a development warning.
 - **B2.** `keep_hit_radius ≤ x ≤ 720 − keep_hit_radius` and `keep_hit_radius ≤ y ≤ 1,280 − keep_hit_radius`: the whole touch circle lies on the table. Green Vale extremes: x 130–590, y 190–1,110, all inside 78–642 and 78–1,202.
 - **B3.** Keep ids are 0 … N−1 with no gaps; level ids and region ids are unique across the campaign; every `region_id` names a region.
-- **B4.** `0.5 ≤ rival.think ≤ 10`, `0 ≤ rival.aggro ≤ 1`, `rival.seed` an integer (Rival AI F1, F4 ranges).
+- **B4.** `0.5 ≤ rival.think ≤ 10`, `0 ≤ rival.aggro ≤ 1`, `rival.seed` an integer and required: a record without it is a parse failure and is Rejected, since Rival AI has no fallback seed (Rival AI F1, F4 ranges; its rule 3).
 - **B5** (development warning, not a rejection; added 2026-11-22 from World Map & Regions). Every level's `node` lies within the 720 × 1,280 map image and inside its own region's area, and no two nodes are closer than the UX spec's minimum hit distance. The map still works if this fails, so it warns.
 - **B6 = Level HUD invariant H1** (development warning; added 2026-11-22). No keep's touch circle lies under the HUD's top band or bottom strip: `min(keep.y) ≥ hud_top_px + keep_hit_radius` (178 at baseline) and `max(keep.y) ≤ 1,280 − hud_bottom_px − keep_hit_radius` (1,142). Green Vale: 190 and 1,110, pass. A shipped build shrinks the band on that level, never moves a keep.
 - **L1** (Level State): at least one keep with `owner = player` and at least one with `owner ≠ player`.
 
 ### Boundary check
 
-Worked at the extremes (lens: systems-designer): a two-keep level (one player, one rival, 1,470 px apart) passes L1, B2 and I2 and is the hardest R3 case; a one-keep level fails L1; a level with every neutral at 60 troops is legal and starts every neutral at level 3; `send_interval` at its minimum 0.3 fails R3 only above 1,287 px at `speed_min` 110, so no Green Vale level is affected. No formula here divides by a data value except F1's `speed_min × (pawns_per_rope_max − 1)`, which Rope Links' own range (`pawns_per_rope_max ≥ 10`) and Troop Marching's (`speed ≥ 1`) keep above zero. No feedback loop: this system reads data and judges it.
+Worked at the extremes (lens: systems-designer): a two-keep level (one player, one rival, at opposite corners of the B2 box, 1,258 px apart) passes L1, B2 and I2 and is the hardest R3 case; a one-keep level fails L1; a level with every neutral at 60 troops is legal and starts every neutral at level 3; `send_interval` at its minimum 0.3 fails R3 only above 1,287 px at `speed_min` 110, which no level reaches at the baseline radius (1,258 px) but one can at `keep_hit_radius` 67 or less (1,338 px at r 48 needs 0.312 s); no Green Vale level is affected. No formula here divides by a data value except F1's `speed_min × (pawns_per_rope_max − 1)`, which Rope Links' own range (`pawns_per_rope_max ≥ 10`) and Troop Marching's (`speed ≥ 1`) keep above zero. No feedback loop: this system reads data and judges it.
 
 ## Edge Cases
 
 - **If a level fails any invariant in a development build**: the build stops at load with one error naming the level id, the rule (L1, I2, R3, B1–B4) and the values (for I2 and R3 the two keep ids and the distance). Several failures are all reported before stopping, so an author fixes a level in one pass.
-- **If a level fails in a shipped build**: it is Rejected, not clamped; Screen Flow returns to the World Map with its load-failure message and nothing is recorded (its rule 11). Clamping a layout would silently ship a different level from the one tested. *(Touch & Mouse Input's own I2 edge case lowers `keep_hit_radius` per level as a fallback; that fallback runs only when this loader has let a level through, which with this rule it never does, so the two agree.)*
+- **If a level fails in a shipped build**: it is Rejected, not clamped; Screen Flow returns to the World Map with its load-failure message and nothing is recorded (its rule 11). Clamping a layout would silently ship a different level from the one tested. *(Touch & Mouse Input's per-level radius reduction is not a clamp of level data: it runs only when the accessibility setting has raised `keep_hit_radius` above the baseline the data was validated against; see the runtime-raise edge case below. Global tuning constants are clamped at app start instead, rule 8.)*
 - **If a record has a field the loader does not know**: ignored and logged once (a newer authoring tool, or a UAT-2 field like `stars` read by a UAT-1 build). A missing required field is a parse failure.
 - **If two levels share an id, or a level names a region that does not exist** (B3): the campaign fails to load at app start in development; a shipped build drops the second duplicate and the orphan level, logs both, and continues, so one bad file cannot take down the campaign.
 - **If a level has no rival keep**: legal (L1 needs only one non-player keep). Rival AI is Waiting all match (its edge case); the level is a race against neutrals. The `rival` block is still required and B4 still applies.
@@ -174,7 +175,7 @@ Worked at the extremes (lens: systems-designer): a two-keep level (one player, o
 - **If `wait_for_first_rope` is true on a level with no player keep**: L1 already rejects it; the flag is never reached.
 - **If an id is removed in a content update**: Save & Progress keeps the orphaned result untouched and ignored (its rule 10); the registered id set simply no longer contains it. Never reuse the id for a different level.
 - **If the level order has a gap** (orders 1, 2, 4): `next(gv-02)` finds no order 3 → the loader reports B3 (orders must be 1 … N) rather than skipping to 4.
-- **If `keep_hit_radius` is raised by a setting at runtime** (accessibility): I2 is re-checked against the new radius when a level loads; a level that now fails is Rejected in development and, in a shipped build, falls back to Touch & Mouse Input's per-level radius reduction, which applies because the data itself was valid at authoring. This is the one case where the fallback runs.
+- **If `keep_hit_radius` is raised by a setting at runtime** (accessibility): I2 is re-checked against the new radius when a level loads; a level that now fails is not Rejected, in any build: Touch & Mouse Input lowers `keep_hit_radius` for that level to half its smallest spacing and logs it. The data passed I2 at the baseline radius, so the result is always at least 78, above I1's floor 48. This is the one case where the reduction runs; a level that breaches I2 at the baseline radius is Rejected like any other.
 - **If a river polyline crosses a keep**: nothing happens; decor has no collision (rule 10). Authors keep rivers clear of keeps for readability, which is an art-pass check, not an invariant.
 - **If the campaign has one region** (UAT-1): `next(gv-05)` is none; the Win overlay offers World Map only (Screen Flow rule 10) and World Map shows the region conquered.
 
@@ -242,8 +243,8 @@ Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `s
 - **AC2 [Content] (rule 4, F3)**: GIVEN the shipped files, THEN the player keep of every level has 10 troops; gv-02's two 16-troop neutrals, gv-03's 25, gv-04's 20 and gv-05's 16, 16 and 24 are the only keeps with `start_level` 2, and no keep has `start_level` 3.
 - **AC3 [Content] (rules 5, 6)**: GIVEN the shipped files, THEN `wait_for_first_rope` is true on gv-01 only, and every level's `rival.seed` is an integer that does not change between two loads.
 - **AC4 [Logic] (F2, I2 boundary)**: GIVEN a record with two keeps 156 px apart, THEN it validates; GIVEN 155 px, THEN it is Rejected naming I2, the two keep ids and 155.
-- **AC5 [Logic] (F1, R3)**: GIVEN a record whose longest pair is 1,470 px and `send_interval` 0.3, THEN Rejected naming R3 and 0.343; GIVEN `send_interval` 0.6, THEN it validates (Rope Links AC27).
-- **AC6 [Logic] (F1 boundary, `speed_min`)**: GIVEN the same 1,470 px record, `send_interval` 0.6 and `speed_min` 55, THEN Rejected naming R3 and 0.685.
+- **AC5 [Logic] (F1, R3)**: GIVEN a record whose longest pair is 1,258 px (opposite corners of the B2 box at baseline) and `send_interval` 0.3, THEN it validates at `speed_min` 110 (needs 0.293); GIVEN `speed_min` 100, THEN Rejected naming R3 and 0.323; GIVEN `send_interval` 0.6, THEN it validates (Rope Links AC27).
+- **AC6 [Logic] (F1 boundary, `speed_min`)**: GIVEN the same 1,258 px record, `send_interval` 0.6 and `speed_min` 50, THEN Rejected naming R3 and 0.645; GIVEN `speed_min` 55, THEN it validates (needs 0.586).
 - **AC7 [Logic] (L1)**: GIVEN a record with no player keep, THEN Rejected naming L1; GIVEN one where every keep is the player's, THEN Rejected naming L1; GIVEN one player keep and one neutral, THEN it validates.
 - **AC8 [Logic] (B1 boundary)**: GIVEN a keep with 60 troops, THEN it validates; GIVEN 61, THEN Rejected naming B1; GIVEN a player keep with 0, THEN it validates with one warning.
 - **AC9 [Logic] (B2)**: GIVEN a keep at x 77, THEN Rejected naming B2; GIVEN x 78 and y 1,202, THEN it validates.

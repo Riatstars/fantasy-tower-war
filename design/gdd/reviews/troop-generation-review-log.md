@@ -27,3 +27,79 @@ Reviewed-Content-Hash: design/gdd/rope-links.md f6816232d25eee1e737641dd0b6294ad
 Reviewed-Content-Hash: design/gdd/systems-index.md a57dea8a6c59ab9c163c83673a824f8f37f9dcca
 Reviewed-Content-Hash: design/gdd/game-concept.md 9638f7a1f3394f38352472bfc9b57753fccbb83f
 Reviewed-Content-Hash: design/game-brief.md 302532346c1d5c9a7fd1778bbd12b7fe277630c2
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent reviewer subagent per GDD, batch review of all 13 UAT-1 GDDs)
+Blocking items: 2 | Recommended: 8 (logged; full report lists more)
+Summary: Prior blocker (F4/AC15 ignored level drops) is fixed and F1–F4 re-derive correctly; registry values all agree. New: F1/Rule 3's min() clamp destroys troops above a lowered cap, contradicting Edge Cases and AC22, and Rule 5's level-1 wait has no AC.
+Prior verdict resolved: Yes (prior blocking items resolved)
+Findings:
+- [BLOCKING] Formulas F1 / Core Rule 3: min(troop_cap, troops+gen) destroys troops above a lowered cap; contradicts Edge Case and AC22
+- [BLOCKING] Acceptance Criteria: Rule 5 level-1 wait_for_first_rope exception has no AC
+- [RECOMMENDED] Dependencies: stale 'only 3 GDDs exist' text and Consistency-to-fix item
+- [RECOMMENDED] Open Questions: OQ3 past its resolve-by; OQ6 duplicates a decided note
+- [RECOMMENDED] Visual: floating '+N' and 'full' mark conflict with Level HUD beat pop and glint
+- [RECOMMENDED] Acceptance Criteria: 'keep reached cap' event has no AC
+- [RECOMMENDED] Formulas: I3/F2/AC18 use unrounded interval; quantised step values not stated
+- [RECOMMENDED] Edge Cases: interval-shrink case gives wrong reason (burst of beats)
+- [RECOMMENDED] Formulas F4: n range 1–3 is wrong; F3 ceil ignores band overshoot
+- [RECOMMENDED] Acceptance Criteria: AC5/8/9/20 in seconds, should be steps; register F1/F3/F4/capture_troops
+Reviewed-Content-Hash: design/gdd/troop-generation.md d2ba2132b296666c69bd0b6d907fd2cefcb86807
+Reviewed-Content-Hash: design/registry/entities.yaml b7664dbf04df5012d7e1f5b7b57847ac142c8b18
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md b9ec7dd07d6d43c3e9abb1208bac711ad23ae758
+Reviewed-Content-Hash: design/gdd/systems-index.md 54c5d0974e9b80218fa4082ceb37e11bdc86e243
+Reviewed-Content-Hash: design/game-brief.md 7d90b94906b28807d72b86ade5f754d9a7c62b75
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 9975a503dc7d44abe22ef17ff94d0493e64a9c3b
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md de1ed35ff80383c98c2c10d44ca5e85879e374cd
+Reviewed-Content-Hash: design/gdd/save-progress.md 3b92d24ced6af243a993988b6efce966e26168eb
+Reviewed-Content-Hash: design/gdd/keep-levels.md 433e135e0ec091348cab95776797287a08b45452
+Reviewed-Content-Hash: design/gdd/rope-links.md b1365d0079062d78e6df7717049529eed24684ce
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 87568f6fda3fd88a5ebb4037f76a1452d059af2f
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 0afcc7e7fd677decb4695e9ce54e31cc2b507482
+Reviewed-Content-Hash: design/gdd/rival-ai.md e0e287ad97d596b9b8d052cda2223f92ac34b7b2
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 7567d1fa919a440208355e083ec8ce685b34a552
+Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
+Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
+Reviewed-Content-Hash: design/gdd/menus-screens.md 2ff1faab335ff570b4796954f02788d5649c17f0
+
+## Review — 2026-11-22 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none (lean mode; target unchanged since its last review, cross-document facts re-verified by an independent subagent against the 8 edited GDDs and the registry)
+Blocking items: 2 | Recommended: 1 (logged; full report lists more)
+Summary: Unchanged; no new cross-doc conflict (I3 vs Rope Links R1 clamp agrees). Both prior blockers stand.
+Prior verdict resolved: No (document not revised)
+Findings:
+- [BLOCKING] Formulas F1 / Core Rule 3: min(troop_cap, ...) destroys troops above a lowered cap, contradicting the never-destroyed edge case and AC22 (prior)
+- [BLOCKING] Acceptance Criteria: Rule 5 wait_for_first_rope exception has no AC here (prior)
+- [RECOMMENDED] Dependencies: Campaign Level Data still Provisional; Consistency-to-fix stale; I1-I3 not named in the bad-data policy
+Reviewed-Content-Hash: design/gdd/troop-generation.md d2ba2132b296666c69bd0b6d907fd2cefcb86807
+Reviewed-Content-Hash: design/registry/entities.yaml 7c078a61a2fe209d71cee39822db4cfe17d257ff
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md b9ec7dd07d6d43c3e9abb1208bac711ad23ae758
+Reviewed-Content-Hash: design/gdd/systems-index.md 51f7eff69a32aa0925544e25a07136f03d38cbdc
+Reviewed-Content-Hash: design/game-brief.md 7d90b94906b28807d72b86ade5f754d9a7c62b75
+Reviewed-Content-Hash: design/gdd/keep-levels.md 433e135e0ec091348cab95776797287a08b45452
+Reviewed-Content-Hash: design/gdd/save-progress.md 3b92d24ced6af243a993988b6efce966e26168eb
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md c8b26b4e46cf9a8ba069ffc75f27449a55b95cfb
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md d453343269b2416d6cbd716a7007db31148516c7
+Reviewed-Content-Hash: design/gdd/rope-links.md c06a1b8927af3ccfef88c465d044bf401ea36e4a
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 04ae0014fd6dd5849c0bfe1429a938a42ff32a0b
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 8da5b7c5570dba901a2a6e35f3df86e916ff7356
+Reviewed-Content-Hash: design/gdd/rival-ai.md 8f0066ad441e1b50a073383b5333d6785646140e
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 696e3c5a30618c724a9e8ae08d1de9296edd3f96
+Reviewed-Content-Hash: design/gdd/world-map-regions.md e1b4c51ac0ba108f25b3fcb5d35e6bddbae0aada
+Reviewed-Content-Hash: design/gdd/level-hud.md c0946163f4a8610ac9cedcba8d8ad342997ba759
+Reviewed-Content-Hash: design/gdd/menus-screens.md c20ff536a7a8e07072c2e2602fecb9c1318a740e
+
+## Revision — 2026-11-22 — after the second review and the cross-GDD review (session my-game-tower-war-7a)
+Status after revision: In Review (pending re-review in a fresh session)
+Addressed:
+- [BLOCKING] F1 / Core Rule 3: beat now leaves a count at or above `troop_cap` unchanged (`troops ≥ troop_cap ? troops : min(...)`); Rule 1 range and F1 output range state it; agrees with the lowered-cap edge case and AC22
+- [BLOCKING] Rule 5 exception AC: Rule 5 names `wait_for_first_rope` (gv-01 only) and clock step 0; new AC26 (no generation while Armed, timer 1 after step 0, first beat on clock step 149)
+- [CROSS-REVIEW X1] Capture pace: player decision (2026-11-22) keeps `level_drop_margin` 5; F4 example restated (last send 56.3 s, capture step 3,541 = 59.0 s); AC15 window 55–63 s; two-rope figure flagged for re-run. Troop Marching AC-M32 / OQ (d) to match, applied by the other session
+- [CROSS-REVIEW C1] Factions labelled UAT-2, not Alpha (quick reference, rule 10, Interactions, Dependencies)
+Not addressed (recommended): Dependencies Campaign Level Data still "Provisional"; Consistency-to-fix note; I1–I3 named in the bad-data policy
