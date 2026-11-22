@@ -54,7 +54,7 @@
 #   in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: 2026-11-22
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -123,7 +123,20 @@ items: []
 #   output_range[min, max], added
 # Optional: expression (the actual formula), notes
 
-formulas: []
+formulas:
+  - name: generation_rate
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    variables:
+      - gen_amount
+      - gen_interval
+    output_range: [0.4, 1.2]
+    expression: "gen_amount[level] / gen_interval"
+    notes: "Baseline output per level 1/2/3. Invariant I3 requires the level 3 value to stay below one rope's send rate (1 / send_interval). Owned by Troop Generation; Factions may change it only inside I1-I3."
+    added: 2026-11-22
+    revised: ""
 
 # Example:
 #
@@ -155,8 +168,67 @@ formulas: []
 # inventory, or base inventory slots defined in inventory but displayed in HUD).
 #
 # Required fields: name, status, source, referenced_by, value, unit, added
+  - name: target_resolution
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    variables:
+      - origin
+      - hit
+      - align_tolerance
+    output_range: [1, 1]
+    expression: "nearest-to-origin keep within align_tolerance degrees of the direction to hit, never farther than hit"
+    notes: "Output is one keep (count 1). Applies to every owner and to the keyboard. Rope Links decides legality of the result and never moves on to a farther keep."
+    added: 2026-11-22
+    revised: ""
 
-constants: []
+constants:
+  - name: troop_cap
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    value: 60
+    unit: troops
+    added: 2026-11-22
+    revised: ""
+  - name: gen_interval
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    value: 2.5
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: gen_amount_level_1
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    value: 1
+    unit: troops per beat
+    added: 2026-11-22
+    revised: ""
+  - name: gen_amount_level_2
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    value: 2
+    unit: troops per beat
+    added: 2026-11-22
+    revised: ""
+  - name: gen_amount_level_3
+    status: active
+    source: design/gdd/troop-generation.md
+    referenced_by:
+      - design/gdd/troop-generation.md
+    value: 3
+    unit: troops per beat
+    added: 2026-11-22
+    revised: ""
 
 # Example:
 #
@@ -183,3 +255,48 @@ constants: []
 #     unit: slots
 #     added: 2026-03-26
 #     revised: ""
+  - name: keep_hit_radius
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    value: 78
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: cut_tap_radius_touch
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    value: 40
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: cut_click_radius_mouse
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    value: 14
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: drag_threshold
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    value: 14
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: align_tolerance
+    status: active
+    source: design/gdd/touch-mouse-input.md
+    referenced_by:
+      - design/gdd/touch-mouse-input.md
+    value: 5
+    unit: degrees
+    added: 2026-11-22
+    revised: ""
