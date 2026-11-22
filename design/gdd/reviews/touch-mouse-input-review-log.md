@@ -174,3 +174,14 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/touch-mouse-input.md cd6196f979f7d74712ae74b5c369ad7220db6f53
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: header-only re-check, not a full review. The one edit since the entry above is line 3, the Status header ("In Review (revised 2026-11-22, pending re-review)" -> "Approved (2026-11-22, lean /design-review; see its review log)"), made to match the systems index.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: Verified mechanically: restoring the old header line gives exactly the content hash stamped in the entry above (cd6196f9), so no other byte changed. The verdict above carries over unchanged.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md bd5db29bef56375486bdfa1125e5c4c5e5ab2e94

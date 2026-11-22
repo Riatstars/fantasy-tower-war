@@ -139,3 +139,14 @@ Reviewed-Content-Hash: design/gdd/rival-ai.md af05107644367237afaf937104b63bc600
 Reviewed-Content-Hash: design/gdd/keep-levels.md 10dd42f92d3902779121446a7d6c3be7f86446f4
 Reviewed-Content-Hash: design/gdd/campaign-level-data.md 222f45a25408ce350f951e1d96756882331277b6
 Reviewed-Content-Hash: design/gdd/touch-mouse-input.md a2c3be40cf617e0be62c6fd2470cd7f08539f06e
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: header-only re-check, not a full review. The one edit since the entry above is line 3, the Status header ("In Review (revised 2026-11-22, pending re-review)" -> "Approved (2026-11-22, lean /design-review; see its review log)"), made to match the systems index.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: Verified mechanically: restoring the old header line gives exactly the content hash stamped in the entry above (adac1973), so no other byte changed. The verdict above carries over unchanged.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md da30099e47fc033299869e60eb71640610839c15

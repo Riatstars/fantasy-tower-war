@@ -155,3 +155,14 @@ Reviewed-Content-Hash: design/gdd/level-state-match-flow.md adac1973d70d40a0cd66
 Reviewed-Content-Hash: design/gdd/world-map-regions.md 47c67389c2c54bacb6ae78afa4b082ac1b845c38
 Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
 Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: header-only re-check, not a full review. The one edit since the entry above is line 3, the Status header ("In Review (revised 2026-11-22, pending re-review)" -> "Approved (2026-11-22, lean /design-review; see its review log)"), made to match the systems index.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: Verified mechanically: restoring the old header line gives exactly the content hash stamped in the entry above (f6461833), so no other byte changed. The verdict above carries over unchanged.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md aa1517a2b3debff290b531ebbe34831800b97260

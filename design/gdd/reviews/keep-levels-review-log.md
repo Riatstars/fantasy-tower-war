@@ -150,3 +150,14 @@ Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 04e30da7c4624d59c621
 Reviewed-Content-Hash: design/gdd/campaign-level-data.md 222f45a25408ce350f951e1d96756882331277b6
 Reviewed-Content-Hash: design/gdd/level-hud.md 7cfd316d24c5f36fa273a5aa2d0e3535b4019c93
 Reviewed-Content-Hash: design/gdd/troop-generation.md d6b7a6dcaa86139d694f9ec483d0d3d2e4c04d5e
+
+## Review — 2026-11-22 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: header-only re-check, not a full review. The one edit since the entry above is line 3, the Status header ("In Review (revised 2026-11-22, pending re-review)" -> "Approved (2026-11-22, lean /design-review; see its review log)"), made to match the systems index.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: Verified mechanically: restoring the old header line gives exactly the content hash stamped in the entry above (10dd42f9), so no other byte changed. The verdict above carries over unchanged.
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/keep-levels.md 80e0caaefc76ea3a44a0f0fa158d7d7075a381b7
