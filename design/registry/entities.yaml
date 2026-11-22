@@ -209,6 +209,7 @@ formulas:
       - design/gdd/keep-levels.md
       - design/gdd/rope-links.md
       - design/gdd/rival-ai.md
+      - design/gdd/level-hud.md
     variables:
       - level
       - max_ropes_table
@@ -369,6 +370,72 @@ formulas:
     added: 2026-11-22
     revised: ""
 
+  - name: level_state
+    status: active
+    source: design/gdd/world-map-regions.md
+    referenced_by:
+      - design/gdd/world-map-regions.md
+      - design/gdd/save-progress.md
+    variables:
+      - beaten
+      - prev
+      - first_of_campaign
+    output_range: [0, 2]
+    expression: "Beaten if result.beaten; Unlocked if first_of_campaign or beaten(prev); else Locked"
+    notes: "Derived on every map open from Save and Progress results and Campaign Level Data next(); never stored (Save rule 4, AC21). Beaten implies tappable. Encoded 0 Locked, 1 Unlocked, 2 Beaten."
+    added: 2026-11-22
+    revised: ""
+  - name: region_state
+    status: active
+    source: design/gdd/world-map-regions.md
+    referenced_by:
+      - design/gdd/world-map-regions.md
+      - design/gdd/save-progress.md
+    variables:
+      - unlocked_first
+      - beaten_all
+      - celebrated_set
+    output_range: [0, 2]
+    expression: "Conquered if every level beaten (region non-empty); Open if first level unlocked or beaten; else Fogged. celebrate = Conquered and region not in celebrated_set"
+    notes: "Conquest is derived; Save's stored conquered-region set means the conquest sequence has been shown. A region with no levels is Fogged. Encoded 0 Fogged, 1 Open, 2 Conquered."
+    added: 2026-11-22
+    revised: ""
+
+  - name: strength_bar
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/troop-generation.md
+      - design/gdd/troop-marching-clashes.md
+    variables:
+      - troops
+      - marching_strength
+      - bar_width_px
+    output_range: [0, 500]
+    expression: "width(side) = bar_width_px * S_side / total, S_player = sum player troops + marching_strength(player), S_rival likewise, S_neutral = sum neutral troops; total 0 gives three equal grey thirds"
+    notes: "Three segments player | neutral | rival (decided 2026-11-22). Updates every frame, no easing. Labels show S_player and S_rival as integers."
+    added: 2026-11-22
+    revised: ""
+  - name: strip_message
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/rope-links.md
+      - design/gdd/level-state-match-flow.md
+    variables:
+      - refusal
+      - cursor_hint
+      - armed_hint
+      - tutorial_prompt
+      - strip_time
+    output_range: [0, 1]
+    expression: "first non-empty of [refusal (while strip_timer > 0), cursor_hint (once per session), armed_hint (while Armed), tutorial_prompt, none]"
+    notes: "At most one line. A new refusal replaces the current one and restarts strip_time. The timer counts game steps, so a pause does not expire a message."
+    added: 2026-11-22
+    revised: ""
+
 constants:
   - name: troop_cap
     status: active
@@ -380,6 +447,7 @@ constants:
       - design/gdd/troop-marching-clashes.md
       - design/gdd/rival-ai.md
       - design/gdd/campaign-level-data.md
+      - design/gdd/level-hud.md
     value: 60
     unit: troops
     added: 2026-11-22
@@ -455,6 +523,7 @@ constants:
       - design/gdd/rope-links.md
       - design/gdd/troop-marching-clashes.md
       - design/gdd/campaign-level-data.md
+      - design/gdd/level-hud.md
     value: 78
     unit: px
     added: 2026-11-22
@@ -537,6 +606,7 @@ constants:
       - design/gdd/troop-generation.md
       - design/gdd/troop-marching-clashes.md
       - design/gdd/campaign-level-data.md
+      - design/gdd/level-hud.md
     value: 0.6
     unit: seconds
     added: 2026-11-22
@@ -547,6 +617,7 @@ constants:
     referenced_by:
       - design/gdd/rope-links.md
       - design/gdd/touch-mouse-input.md
+      - design/gdd/level-hud.md
     value: 8
     unit: px
     added: 2026-11-22
@@ -556,6 +627,7 @@ constants:
     source: design/gdd/rope-links.md
     referenced_by:
       - design/gdd/rope-links.md
+      - design/gdd/level-hud.md
     value: 0.2
     unit: seconds
     added: 2026-11-22
@@ -574,6 +646,7 @@ constants:
     source: design/gdd/rope-links.md
     referenced_by:
       - design/gdd/rope-links.md
+      - design/gdd/level-hud.md
     value: 0.9
     unit: seconds
     added: 2026-11-22
@@ -664,5 +737,72 @@ constants:
       - design/gdd/rival-ai.md
     value: 0.2
     unit: aggro per stall period
+    added: 2026-11-22
+    revised: ""
+  - name: celebration_time
+    status: active
+    source: design/gdd/world-map-regions.md
+    referenced_by:
+      - design/gdd/world-map-regions.md
+    value: 3.0
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: fog_clear_time
+    status: active
+    source: design/gdd/world-map-regions.md
+    referenced_by:
+      - design/gdd/world-map-regions.md
+    value: 1.5
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: hint_time
+    status: active
+    source: design/gdd/world-map-regions.md
+    referenced_by:
+      - design/gdd/world-map-regions.md
+    value: 2.0
+    unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: plaque_font_px
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/troop-generation.md
+    value: 23
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: hud_top_px
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/campaign-level-data.md
+    value: 100
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: hud_bottom_px
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/campaign-level-data.md
+    value: 60
+    unit: px
+    added: 2026-11-22
+    revised: ""
+  - name: strip_time
+    status: active
+    source: design/gdd/level-hud.md
+    referenced_by:
+      - design/gdd/level-hud.md
+      - design/gdd/rope-links.md
+    value: 2.4
+    unit: seconds
     added: 2026-11-22
     revised: ""

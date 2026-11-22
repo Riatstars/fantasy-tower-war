@@ -21,12 +21,13 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 
 ### Core Rules
 
-1. **Shape.** The campaign is a list of **regions**; each region is an ordered list of **levels**; each level is one **level record**. Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
+1. **Shape.** The campaign is a list of **regions**; each region is an ordered list of **levels**; each level is one **level record**. A **region record** holds `id`, `name`, its ordered level ids, and two fields World Map & Regions defines (added 2026-11-22): `fog_shape` (the art id of its silhouette under fog) and `banner_anchor` (a map-pixel point where conquest banners gather). Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
 2. **The level record** is the contract Level State (its rule 1) and Rival AI (its rule 2) consume:
    - `id`, `region_id`, `name`, `order` (1-based within the region);
    - `wait_for_first_rope` (bool);
    - `rival`: `think` (s), `aggro` (0–1), `seed` (int);
    - `keeps[]`: `id` (0-based, ascending, unique within the level), `x`, `y` (logical table pixels), `owner` (`player` | `rival` | `neutral`), `troops` (int);
+   - `node`: `x`, `y` on the world map image (720 × 1,280 map pixels), where World Map & Regions draws this level's node (added 2026-11-22 from that GDD);
    - `decor` (optional): `river`, a polyline of table points, drawn and nothing else;
    - `stars` (reserved for Stars & Rewards in UAT-2: time thresholds; absent in UAT-1, where every win is `win_stars`).
 3. **The table** is 720 × 1,280 logical pixels, portrait (Touch & Mouse Input owns the table and its scaling to the screen). Every position in a record is in those units. Keep order (`id`) matters: Troop Marching resolves arrivals keep by keep in ascending id (its rule 11) and Rival AI breaks ties by lower id, so authors keep ids stable within a level too.
@@ -152,6 +153,8 @@ The next formula is defined as:
 - **B2.** `keep_hit_radius ≤ x ≤ 720 − keep_hit_radius` and `keep_hit_radius ≤ y ≤ 1,280 − keep_hit_radius`: the whole touch circle lies on the table. Green Vale extremes: x 130–590, y 190–1,110, all inside 78–642 and 78–1,202.
 - **B3.** Keep ids are 0 … N−1 with no gaps; level ids and region ids are unique across the campaign; every `region_id` names a region.
 - **B4.** `0.5 ≤ rival.think ≤ 10`, `0 ≤ rival.aggro ≤ 1`, `rival.seed` an integer (Rival AI F1, F4 ranges).
+- **B5** (development warning, not a rejection; added 2026-11-22 from World Map & Regions). Every level's `node` lies within the 720 × 1,280 map image and inside its own region's area, and no two nodes are closer than the UX spec's minimum hit distance. The map still works if this fails, so it warns.
+- **B6 = Level HUD invariant H1** (development warning; added 2026-11-22). No keep's touch circle lies under the HUD's top band or bottom strip: `min(keep.y) ≥ hud_top_px + keep_hit_radius` (178 at baseline) and `max(keep.y) ≤ 1,280 − hud_bottom_px − keep_hit_radius` (1,142). Green Vale: 190 and 1,110, pass. A shipped build shrinks the band on that level, never moves a keep.
 - **L1** (Level State): at least one keep with `owner = player` and at least one with `owner ≠ player`.
 
 ### Boundary check
@@ -263,7 +266,7 @@ Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `s
 | # | Question | Owner | Resolve by |
 |---|----------|-------|------------|
 | 1 | Level and region names are prototype placeholders ("First Field", "The Ford"); the Green Vale needs a writer's pass and a region palette | writer, art-director | Before UAT-1 build |
-| 2 | Node positions on the world map per level: a field in the region file, defined by World Map & Regions | World Map & Regions | Its GDD |
+| 2 | Closed (2026-11-22): `node {x, y}` per level and `fog_shape`, `banner_anchor` per region, defined by World Map & Regions rule 1 and carried here (rules 1, 2; bound B5) | — | — |
 | 3 | The data file format (JSON, Godot `.tres`, or a custom resource) and the editor tooling for authoring layouts | technical-director | Technical Setup (ADR) |
 | 4 | Whether UAT-2 regions reuse the 720 × 1,280 table or some levels get a scrolling table; this GDD assumes one fixed table | game-designer, technical-director | Before region 2 |
 | 5 | Per-level star time thresholds (the reserved `stars` block) | Stars & Rewards | UAT-2 |

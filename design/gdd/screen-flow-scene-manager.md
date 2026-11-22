@@ -121,6 +121,7 @@ Any trigger not in this table is ignored. While a transition is in progress ever
 | Menus & Screens | both | Draws every screen and overlay; its buttons send requests. Screen Flow tells it which screen or overlay to show | Menus & Screens draws; Screen Flow decides |
 | Mobile Platform Integration | in | Back event, app to background and foreground events. Screen Flow sends nothing back | Mobile Platform Integration reports events; Screen Flow decides what they mean |
 | Touch & Mouse Input | both | In: `back_pressed` (Esc, treated as Back) and `pause_pressed` (P, treated as the Pause button). Out: input lock during transitions; which screen is current, so input is routed to it | Touch & Mouse Input |
+| Level HUD | in | `pause_pressed` from the HUD's Pause button (its rule 11), the same event as Input's P key; the HUD hides the button while Level State reports `pause_allowed` false (added 2026-11-22) | Level HUD raises; Screen Flow acts |
 | Audio | out | "Screen changed" and "overlay opened" events so music can change | Screen Flow raises, Audio reacts |
 | Settings, Faction Collection, card-upgrade screens | out | Settings' entries are in the table; its GDD adds its contents. The Alpha screens are added when designed | Their own GDDs |
 | Save & Progress | in | One-time message events (restored from backup, could not be read, newer version, could not be saved), each shown as a message box; the Delete progress confirmation is Screen Flow's box. Progress is written by Level State and Stars & Rewards before the result overlay opens; Screen Flow never writes saves | Save & Progress raises; Screen Flow shows |
@@ -152,7 +153,7 @@ None. This system defines no numeric rule: its rules are about which screen foll
 
 **Open, owned by other GDDs** (not decided here):
 - Exactly which phone events Mobile Platform Integration reports as "background": Mobile Platform Integration.
-- Whether *Next level* may skip the World Map after the last level of a region: World Map & Regions.
+- ~~Whether *Next level* may skip the World Map after the last level of a region~~ Closed (2026-11-22): no. A win on a region's last level returns to the World Map, which plays the conquest sequence and then clears the next region's fog (World Map & Regions rules 6–7); rule 10 above stands.
 
 ## Dependencies
 

@@ -72,8 +72,8 @@ Brief paragraph per system (balanced density):
 | 8 | Level State & Match Flow | Core | MVP | Designed | design/gdd/level-state-match-flow.md | Troop Marching & Clashes, Troop Generation, Rope Links, Screen Flow & Scene Manager, Save & Progress, Keep Levels (soft), Campaign Level Data (soft: level record contract) |
 | 9 | Rival AI | Gameplay | MVP | Designed | design/gdd/rival-ai.md | Rope Links, Troop Marching & Clashes, Troop Generation, Keep Levels, Level State & Match Flow, Campaign Level Data (soft: think, aggro, rival_seed per level) |
 | 10 | Campaign Level Data | Progression | MVP | Designed | design/gdd/campaign-level-data.md | Keep Levels, Rival AI, Level State & Match Flow, Save & Progress (id registration), Touch & Mouse Input (invariant I2), Rope Links (invariant R3), Troop Marching & Clashes (soft: speed_min, keep id order) |
-| 11 | World Map & Regions | Progression | MVP | Not Started | — | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager |
-| 12 | Level HUD (inferred) | UI | MVP | Not Started | — | Keep Levels, Rope Links, Level State & Match Flow, Touch & Mouse Input (soft) |
+| 11 | World Map & Regions | Progression | MVP | Designed (UX spec needed: `/ux-design world-map`) | design/gdd/world-map-regions.md | Campaign Level Data, Save & Progress, Screen Flow & Scene Manager, Touch & Mouse Input (soft) |
+| 12 | Level HUD | UI | MVP | Designed (UX spec needed: `/ux-design level-hud`, which also closes the HUD-element UX flags of Troop Generation, Keep Levels, Rope Links, Troop Marching and Touch & Mouse Input) | design/gdd/level-hud.md | Keep Levels, Rope Links, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Touch & Mouse Input, Screen Flow & Scene Manager, Campaign Level Data (soft: title text) |
 | 13 | Menus & Screens (inferred) | UI | MVP | Not Started | — | Screen Flow & Scene Manager, Level State & Match Flow, Save & Progress (soft: messages) |
 | 14 | Settings (inferred) | Persistence | Vertical Slice | Not Started | — | Save & Progress (settings file, Delete progress) |
 | 15 | Currencies & Economy | Economy | MVP | Not Started | — | Save & Progress |
@@ -260,10 +260,10 @@ defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 28 |
-| Design docs started | 10 |
-| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 4 Designed, pending review |
+| Design docs started | 12 |
+| Design docs reviewed | 6 (all Needs Revision, revised, now In Review); 6 Designed, pending review |
 | Design docs approved | 0 (the game concept is approved, 2026-11-22) |
-| MVP systems designed | 10/20 (UAT-1: 10/13) |
+| MVP systems designed | 12/20 (UAT-1: 12/13) |
 | Vertical Slice systems designed | 0/5 |
 | Alpha systems designed | 0/3 |
 

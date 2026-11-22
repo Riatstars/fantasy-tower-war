@@ -262,4 +262,4 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 | 4 | Should the Win overlay show the player's best `time` beside this attempt's? | Menus & Screens | Its GDD |
 | 5 | Can a loss be revived once (a rewarded ad or gems, in the brief as provisional)? It would add a state after Ending | Store build | After UAT |
 | 6 | The build-time target for a match on the minimum phone (Retry should feel instant) | Technical Setup | First phone test |
-| 7 | Whether to show the clock `time` during play, or only on the overlay | Level HUD | Its GDD |
+| 7 | Closed (2026-11-22): no clock during play; `time` is shown on the Win and Lose overlays only (Level HUD rule 9, Pillar 2) | — | — |
