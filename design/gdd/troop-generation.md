@@ -1,6 +1,6 @@
 # Troop Generation
 
-> **Status**: In Review (revised 2026-11-22 after the second review and the cross-GDD review, pending re-review)
+> **Status**: Approved (2026-11-22, lean /design-review; see its review log)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -48,7 +48,7 @@ Troop Marching & Clashes do).
    sending pawns or is receiving allied pawns. Sending is free: launching a pawn never reduces
    `troops`. **One exception, decided 2026-11-22 (`game-concept.md` § Rival):** on a level whose
    `wait_for_first_rope` is true (only `gv-01` at baseline, Campaign Level Data) no keep generates
-   until the player's first rope is accepted. That step is step 0 of the level clock and runs the
+   until the player's first rope is accepted. The next step is step 0 of the level clock (Level State & Match Flow rule 2: the tie is accepted on a frame, and step 0 applies it in its phase 0) and runs the
    full per-step order, beat phase included, so every owned keep's timer reads 1 after it. Level
    State & Match Flow owns the clock and the start trigger (its rule 2); before it starts, every
    timer stays at 0. On every other level timers run from the match's step 0 (AC26).
@@ -63,7 +63,9 @@ Troop Marching & Clashes do).
 9. Initial owner and troop counts come from Campaign Level Data; every timer starts at 0.
 10. The numbers in Formulas are the neutral baseline. From UAT-2 (the army layer), Factions may supply
     `GenerationModifiers` (interval multiplier, per-level amount offsets, cap offset); with none
-    supplied they are the identity and the baseline applies unchanged.
+    supplied they are the identity and the baseline applies unchanged. In the UAT build no race
+    supplies any: Factions reserves this hook (its rule 4, decided 2026-11-25), so every race
+    generates at the baseline.
 
 ### States and Transitions
 
@@ -197,7 +199,7 @@ Every system named here that has a GDD (Keep Levels, Rope Links, Troop Marching 
 |--------|------|------------------------|--------|
 | Keep Levels | Hard | The keep's `level` (1–3), to pick `gen_amount`. Resolved without a cycle by per-step order: Keep Levels recomputes the level from `troops`, then Troop Generation uses it | Checked: Keep Levels Core Rule 4 states the same order |
 | Campaign Level Data | Hard (data only) | Initial `owner` and `troops` of each keep | In Review |
-| Factions (UAT-2) | Soft | `GenerationModifiers`, identity by default | Provisional |
+| Factions (UAT-2) | Soft | `GenerationModifiers`, identity by default (unused in the UAT build, Factions rule 4) | Designed, pending review |
 
 ### Depended on by (downstream)
 
@@ -321,7 +323,7 @@ Baseline data unless a criterion says otherwise: `gen_interval` 2.5 s, `gen_l1` 
 | 1 | Should keep timers start staggered (for example offset by keep index) instead of all at 0, so beats do not all land on the same frame? Rule 9 currently starts every timer at 0 | game-designer | First Godot playable (MVP playtest) |
 | 2 | Capture now resets the timer to 0 (Rule 7); the prototype kept the old timer. Is the difference noticeable or harmful to feel? | game-designer | First Godot playable |
 | 3 | Does the rival follow the same generation numbers on every region, or does difficulty also scale through generation (for example a faster `gen_interval`)? I3 limits how far that can go. For UAT-1 the rival uses the same numbers everywhere and difficulty is Rival AI data (`think`, `aggro`; Rival AI rule 2, Campaign Level Data rule 12); revisit for UAT-2 | Rival AI / Campaign Level Data | UAT-2 |
-| 4 | Per-race generation differences (Factions): which of interval, per-level amounts or cap may a race change, and how does each stay inside I1–I3? | Factions | UAT-2 |
+| 4 | Per-race generation differences (Factions): which of interval, per-level amounts or cap may a race change, and how does each stay inside I1–I3? Answered for the UAT build by Factions rule 4 (2026-11-25): none of them; open again when a later race needs one (Factions Open Question 2) | Factions | UAT-2 |
 | 5 | Closed (2026-11-22): the keep's own side first (Troop Marching & Clashes rule 11) | — | — |
 | 6 | A ring of three or more full allied keeps relaying in a loop: acceptable, or limited by Rope Links? | Rope Links | Before that GDD |
 | 7 | The performance target (under 0.1 ms per frame for all keeps) has not been measured on a phone | gameplay-programmer | Mobile Platform Integration (Vertical Slice) |

@@ -10,7 +10,7 @@ Tower War is a mobile real-time conquest game with a fantasy campaign. The playe
 barracks and castles with glowing rune ropes; troops march down the ropes to take neutral and
 rival keeps. A keep grows from barracks to stone keep to castle as it holds more troops, and each
 level it grows lets it hold more ropes. Each level is one territory on a fantasy world map.
-Between levels the player grows an army: up to five races (human, beast, elf, spirit, dragon; the UAT count is open) whose unit
+Between levels the player grows an army: up to five races (human, beast, elf, spirit, dragon; the UAT build ships the human and the beast) whose unit
 cards are upgraded with the gold that levels reward, and rare races unlocked with diamonds earned
 by conquering regions. After the UAT build, each region will end at a guardian's castle and
 unlock a god or goddess power.
@@ -154,5 +154,5 @@ Campaign Level Data when those GDDs exist; the prototype's names are in
 ## Open questions
 
 - How many diamonds per region, and what a rare race costs: Currencies & Economy.
-- Does the rival pick a race, or does each region have one? Factions.
-- Are all five races in the UAT build, or a subset? Factions / Faction Collection & Unlocks.
+- Does the rival pick a race, or does each region have one? Decided 2026-11-25 (Factions rule 8): each region has one, and a level may override it.
+- Are all five races in the UAT build, or a subset? Decided 2026-11-25 (Factions rule 2): two, the human and the beast; the structure holds five.
