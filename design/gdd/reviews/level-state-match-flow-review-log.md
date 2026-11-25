@@ -150,3 +150,45 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/level-state-match-flow.md da30099e47fc033299869e60eb71640610839c15
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 0 | Recommended: 10
+Summary: Every polish change agrees with Rival AI, Rope Links, Touch & Mouse Input, Screen Flow, Menus & Screens and the registry; all formula and AC arithmetic re-works.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [RECOMMENDED] Detailed Rules: the order of match_ending / match_won vs the synchronous record and flush on the deciding step is unstated
+- [RECOMMENDED] Acceptance Criteria: no criterion for Retry or Next level (AC19 covers Restart)
+- [RECOMMENDED] Interactions: the event table says 'no others' but the Level HUD row has state and pause_allowed raised
+- [RECOMMENDED] Acceptance Criteria (AC10): the 1,258 px fixture cannot be a legal level (true maximum 1,226)
+- [RECOMMENDED] Cross-doc: troop-generation.md AC26 still says 'accepted on clock step 0'
+- [RECOMMENDED] Cross-doc: screen-flow l.130 'resuming returns to Armed' lacks the qualifier
+- [RECOMMENDED] Detailed Rules (rule 6): Save's 50 ms is a 'target to confirm' in its AC22
+- [RECOMMENDED] Dependencies: status column stale; Feedback & Juice and Audio missing
+- [RECOMMENDED] States: Closed -> World Map has no trigger telling Level State to discard
+- [RECOMMENDED] Detailed Rules (rule 4): Ending ties 'refused' vs Rope Links 'ignored'
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 9a6c80861bda73e068a5ec3105d8683900d5bba1
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 8e0a1867f5c6f0121e28ced14984bc6bde17ff92
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+Reviewed-Content-Hash: design/gdd/keep-levels.md 4f09eb966d57b3b1b38e27b6a74c880e6965c817
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of one fixture edit and the Status header since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand, less the AC10 one fixed here)
+Summary: AC10's fixture moves from 1,258 to 1,226 px (lost no later than step 670), following the Rope Links / Troop Marching 1,258 relabel (user decision 2026-11-25); this was one of the recommendations above. The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 9c2c805ed11f371f574f3f5a31113d76455417b6

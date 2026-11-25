@@ -1,6 +1,6 @@
 # Screen Flow & Scene Manager
 
-> **Status**: Approved (2026-11-22, lean /design-review; see its review log)
+> **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -50,8 +50,8 @@ back button and background events would have no single place to be handled.
 3. Payloads are carried, never computed here. To the Level: the level id chosen on the World Map. To
    a result overlay: the result record from Level State & Match Flow, `{outcome, level_id, stars,
    time}` (its rule 5).
-4. One transition at a time. While a screen change is in progress all input is ignored and further
-   requests are rejected; input comes back when the new screen is ready.
+4. One transition at a time. While a screen change, or an overlay's open or close fade (`overlay_fade`, 0.2 s), is in progress all input is ignored and further
+   requests are rejected (Screen Flow calls `lock()`); input comes back (`unlock()`) when the new screen or overlay is ready, so a double tap or P twice cannot open and close Pause within one fade (decided 2026-11-22; Menus & Screens already assumes this). A result overlay's `unlock()` (rule 6, Interactions) is the one at the end of its fade.
 5. Overlays pause the game. While any overlay is open the match does not advance (no generation, no
    marching). Screen Flow raises the pause state; Level State & Match Flow obeys it.
 6. Back (Android Back button, iOS back swipe, Esc on a computer):
@@ -74,7 +74,7 @@ back button and background events would have no single place to be handled.
    confirmation (one confirmation box, different text). Confirming Quit tells Level State
    `match_quit`, so it tears the match down, and goes to the World Map; no result, no stars and no
    play are recorded (quits do not count, the player's decision). Confirming Restart starts the same level again from its initial
-   state. Declining returns to Pause.
+   state: Screen Flow sends Level State `start(level_id)` with the same id, as Retry does, and Next level sends the next id; there is no separate restart event, and none of the three records a play (Level State rule 8, decided 2026-11-22). Declining returns to Pause.
 9. The app always starts on the Title; Save & Progress' one-time messages, if any, show over it first,
    one at a time. The Title's Start button goes to the World Map. The current screen is not saved
    between sessions.
@@ -84,10 +84,10 @@ back button and background events would have no single place to be handled.
     a win goes to the World Map, which shows the conquered region (World Map & Regions owns that view).
 11. Loading a screen is hidden by the transition. If loading fails, the transition returns to the
     previous screen (the World Map if that was a Level) and a message box shows the error over it; the
-    failure is logged.
+    failure is logged. If nothing playable survives campaign load (Campaign Level Data validates every level at campaign load, and a shipped build drops each failing one), a request to open the World Map shows the load-failure message box instead of an empty map, over the screen the request came from (the Title), and the failure is logged (decided 2026-11-22).
 12. **Messages.** Save & Progress raises its one-time messages as events and Screen Flow shows each as a
     message box (Save never calls Screen Flow). **Delete progress** is offered in Settings only when
-    Settings was opened over the Title or the World Map; on its confirmation's Yes, Settings calls Save &
+    Settings was opened over the Title or the World Map; on its confirmation's Yes (the confirmation is Screen Flow's box, so Settings is already closed), Screen Flow calls Save &
     Progress's `delete_progress()` and the app goes to the Title with a fresh profile. UAT-1 has no Settings, so the newer-version message box carries a second button,
     **Delete progress**, beside Continue: it opens the same Delete confirmation with Save & Progress'
     newer-version text; Yes calls Save & Progress's `delete_progress()` and the Title stays, with the fresh profile (the message box was over the Title), No returns to the message box (Save & Progress
@@ -127,9 +127,9 @@ Any trigger not in this table is ignored. While a transition is in progress ever
 
 | System | Direction | Data | Interface owner |
 |--------|-----------|------|-----------------|
-| Level State & Match Flow | both | Out: the pause state (match frozen or running), "start this level" with a level id, "restart", `match_quit` (Quit confirmed: tear the match down, record nothing). In: the request to open the Win or Lose overlay with the result record `{outcome, level_id, stars, time}`; `pause_allowed` (false during Level State's Ending state, from the deciding step until the overlay is requested: Pause, Back and the app going to the background open nothing then, and Screen Flow calls Touch & Mouse Input's `lock()` on the deciding step and `unlock()` when the result overlay opens, so the overlay's buttons, Back and Esc work while the table stays inert because Level State is Closed and refuses ties and cuts; decided 2026-11-22). Pause is allowed while a level is Armed (waiting for the first rope); resuming returns to Armed (added 2026-11-22 from that GDD) | Screen Flow owns the pause state and the transitions; Level State owns the result record |
+| Level State & Match Flow | both | Out (events Level State listens to; Screen Flow calls nothing on it): the pause state (match frozen or running), `start(level_id)` (a level chosen on the World Map, Restart, Retry and Next level alike; rule 8), `match_quit` (Quit confirmed: tear the match down, record nothing). In: the request to open the Win or Lose overlay with the result record `{outcome, level_id, stars, time}`; `pause_allowed` (false during Level State's Ending state, from the deciding step until the overlay is requested: Pause, Back and the app going to the background open nothing then, and Screen Flow calls Touch & Mouse Input's `lock()` on the deciding step and `unlock()` when the result overlay opens, so the overlay's buttons, Back and Esc work while the table stays inert because Level State is Closed and refuses ties and cuts; decided 2026-11-22). Pause is allowed while a level is Armed (waiting for the first rope); resuming returns to Armed (added 2026-11-22 from that GDD) | Screen Flow owns the pause state and the transitions; Level State owns the result record |
 | World Map & Regions | in/out | In: "open this level" (level id), "return to the map". Out: where the player came from | World Map & Regions |
-| Menus & Screens | both | Draws every screen and overlay; its buttons send requests. Screen Flow tells it which screen or overlay to show | Menus & Screens draws; Screen Flow decides |
+| Menus & Screens | both | Draws every screen and overlay; its buttons send requests. Screen Flow raises which screen or overlay to show, and Menus & Screens draws it | Menus & Screens draws; Screen Flow decides |
 | Mobile Platform Integration | in | Back event, app to background and foreground events. Screen Flow sends nothing back. In UAT-1, before that GDD exists, Screen Flow reads the engine's own back-request and application pause / focus-out notifications directly; Mobile Platform Integration takes that glue over from the Vertical Slice (decided 2026-11-22) | Mobile Platform Integration reports events; Screen Flow decides what they mean |
 | Touch & Mouse Input | both | In: `back_pressed` (Esc, treated as Back) and `pause_pressed` (P, treated as the Pause button). Out: input lock during transitions; which screen is current, so input is routed to it | Touch & Mouse Input |
 | Level HUD | in | `pause_pressed` from the HUD's Pause button (its rule 11), the same event as Input's P key; the HUD hides the button while Level State reports `pause_allowed` false (added 2026-11-22) | Level HUD raises; Screen Flow acts |
@@ -171,7 +171,7 @@ None. This system defines no numeric rule: its rules are about which screen foll
 
 Every system here that has a GDD (Touch & Mouse Input, Save & Progress, Level State & Match Flow, World Map & Regions, Menus & Screens) was checked in the 2026-11-22 cross-GDD review. Mobile Platform Integration, Audio, Settings, Faction Collection & Unlocks and Collection & Upgrade Screens have no GDD yet, so their contracts are provisional.
 
-**Direction rule.** Screen Flow never calls another system, with two exceptions: it calls Touch & Mouse Input's `lock()` and `unlock()` (rule 4; Touch & Mouse Input rule 10), which Input provides for this, and, on Yes in the UAT-1 newer-version Delete progress confirmation, Save & Progress's `delete_progress()` (rule 12; from the Vertical Slice, Settings calls the same function for its own entry; decided 2026-11-22). Other systems call it (requests, with a payload) or send it events, and it answers by changing the current screen and raising the pause state. That keeps it a foundation with no upstream dependency and avoids a cycle with Level State & Match Flow: Level State asks Screen Flow to open the Win or Lose overlay and reads its pause state, rather than Screen Flow querying Level State.
+**Direction rule.** Screen Flow never calls another system, with two exceptions: it calls Touch & Mouse Input's `lock()` and `unlock()` (rule 4; Touch & Mouse Input rule 10), which Input provides for this, and, on Yes in a Delete progress confirmation, Save & Progress's `delete_progress()` (rule 12: the UAT-1 newer-version message's entry and, from the Vertical Slice, the Settings entry; Screen Flow makes the call in both, decided 2026-11-22). Everything else it tells another system is an event that system listens to: `start(level_id)`, `match_quit` and the pause state for Level State, the current screen or overlay for Menus & Screens. Other systems call it (requests, with a payload) or send it events, and it answers by changing the current screen and raising the pause state. That keeps it a foundation with no upstream dependency and avoids a cycle with Level State & Match Flow: Level State asks Screen Flow to open the Win or Lose overlay and reads its pause state, rather than Screen Flow querying Level State.
 
 ### Depends on (upstream)
 
@@ -179,12 +179,13 @@ Every system here that has a GDD (Touch & Mouse Input, Save & Progress, Level St
 |--------|------|------------------------|--------|
 | Touch & Mouse Input | Soft | A way to lock input during a transition and to route input to the current screen; `back_pressed`, `pause_pressed` | Checked: its Rules 9, 10, 12 provide them |
 | Save & Progress | Soft | One-time message events; `delete_progress()`, called on Yes in the newer-version Delete confirmation (rule 12) | Checked: its Rules 8, 9, 11 and UI Requirements |
+| Level HUD | Soft | `pause_pressed` from the HUD's Pause button (its rule 11), the same event as Input's P key | Checked: its rule 11; Interactions here |
 
 ### Depended on by (downstream)
 
 | System | Kind | What it takes from this system |
 |--------|------|-------------------------------|
-| Level State & Match Flow | Hard | The pause state; the ability to open the Win and Lose overlays with a result; start and restart of a level |
+| Level State & Match Flow | Hard | The pause state; the ability to open the Win and Lose overlays with a result; `start(level_id)` for every start of a level (rule 8) |
 | World Map & Regions | Hard | Opening a Level from a node; returning to the map |
 | Menus & Screens | Hard | Which screen or overlay to show; its buttons send requests |
 | Mobile Platform Integration | Soft (from the Vertical Slice) | Handlers for Back and background events; in UAT-1 Screen Flow uses the engine's notifications directly (Interactions) |
@@ -194,7 +195,7 @@ Every system here that has a GDD (Touch & Mouse Input, Save & Progress, Level St
 
 ### Consistency to fix
 
-- `systems-index.md` lists Level State, World Map, Menus & Screens and Mobile Platform Integration as depending on Screen Flow. It does not yet list Audio, Settings, Faction Collection & Unlocks or Collection & Upgrade Screens (soft). Add them when those GDDs are written. Screen Flow's own row gained Save & Progress (soft: message events) on 2026-11-22.
+- None open for UAT-1. When Audio, Settings, Faction Collection & Unlocks and Collection & Upgrade Screens get GDDs, list Screen Flow in their dependencies and add them to `systems-index.md`. Screen Flow's own index row lists Touch & Mouse Input and Save & Progress; Level HUD (soft: `pause_pressed`) is to be added there (2026-11-22 polish pass).
 - Each downstream GDD must list Screen Flow as a dependency and use only the requests and events defined here.
 
 ## Visual/Audio Requirements
@@ -272,18 +273,21 @@ Section D defines no formulas, so the criteria come from Sections C and E alone.
 - **AC17 [Logic]**: GIVEN a request for a screen that does not exist in the build (Settings in an MVP build), THEN it is ignored and logged, and a development build stops with an error naming it.
 - **AC18 [Integration: Mobile Platform Integration]**: GIVEN the app goes to the background during a transition into a Level, THEN when the Level is ready Pause is visible and the match step counter is 0.
 - **AC19 [Logic]**: GIVEN a desktop build in a Level, WHEN Esc is pressed (`back_pressed`) or P (`pause_pressed`), THEN Pause opens, as for Back.
-- **AC25 [Integration: Level State & Match Flow, Touch & Mouse Input] (Rules 6, 7; lock)**: GIVEN a match in Ending, THEN `lock()` was called on the deciding step and Back, Esc, P and the app going to the background open nothing; WHEN the Win overlay opens, THEN `unlock()` has been called and Esc goes to the World Map; GIVEN Pause open, WHEN P is pressed, THEN the match resumes.
-- **AC26 [Logic] (Rule 12; UAT-1 read-only delete)**: GIVEN the newer-version message box over the Title in a UAT-1 build, THEN it shows Continue and Delete progress; WHEN Delete progress is chosen, THEN the Delete confirmation opens with Save & Progress' newer-version text; WHEN No or Back, THEN the message box shows again; WHEN Yes, THEN `delete_progress()` is called once and the Title is current with no overlay (Save & Progress AC28 checks the files).
 - **AC23 [Logic] (Rules 1, 9, 12)**: GIVEN a launch with two Save & Progress messages raised, THEN the Title is current with the first message box over it; Continue shows the second; Continue again leaves the Title with no overlay. GIVEN a message raised while Pause is open, THEN it shows after Pause closes. GIVEN Save's write-failure message raised on a deciding step, THEN no message box shows during Ending or over the Win overlay, the overlay is requested on the same step as without the message, and the box shows over the World Map once the overlay is left (or over the next Level, before its first step runs, after Retry or Next level).
 - **AC24 [Logic] (Rules 1, 12; Vertical Slice)**: GIVEN Settings opened from Pause, THEN the Level stays frozen, Delete progress is not offered, and Close returns to Pause. GIVEN Settings opened over the World Map, WHEN Delete progress and Yes are tapped, THEN the Title is current; WHEN No is tapped instead, THEN Settings shows again.
+- **AC25 [Integration: Level State & Match Flow, Touch & Mouse Input] (Rules 6, 7; lock)**: GIVEN a match in Ending, THEN `lock()` was called on the deciding step and Back, Esc, P and the app going to the background open nothing; WHEN the Win overlay opens, THEN `unlock()` has been called and Esc goes to the World Map; GIVEN Pause open, WHEN P is pressed, THEN the match resumes.
+- **AC26 [Logic] (Rule 12; UAT-1 read-only delete)**: GIVEN the newer-version message box over the Title in a UAT-1 build, THEN it shows Continue and Delete progress; WHEN Delete progress is chosen, THEN the Delete confirmation opens with Save & Progress' newer-version text; WHEN No or Back, THEN the message box shows again; WHEN Yes, THEN `delete_progress()` is called once and the Title is current with no overlay (Save & Progress AC28 checks the files).
+- **AC27 [Logic] (Rule 4, overlay fade)**: GIVEN Pause opening (`overlay_fade` 0.2 s), WHEN P is pressed 0.1 s into the fade, THEN nothing happens and Pause finishes opening; WHEN P is pressed at 0.25 s, THEN the match resumes.
+- **AC28 [Logic] (Rule 8, start)**: GIVEN a confirmed Restart, a Retry or a Next level, THEN Level State receives exactly one `start(level_id)` (the same id for Restart and Retry, the next id for Next level), no other start event, and no play, result or star is recorded by the discard.
+- **AC29 [Logic] (Rule 11, empty campaign)**: GIVEN a shipped build whose campaign load drops every level (none passes validation), WHEN Start is tapped on the Title, THEN no World Map opens, the load-failure message box shows over the Title, and the failure is logged once.
 
 **Cross-system, visual and device**
 
 - **AC20 [Integration: Audio]**: GIVEN an overlay opens, THEN Audio receives exactly one "overlay opened" event naming it; GIVEN a screen change, THEN one "screen changed" event naming the new screen.
 - **AC21 [Visual]**: Retained screenshots in `production/qa/evidence/` show the Title, World Map, Level, Pause, Confirmation, Win and Lose in their correct states (drawn by Menus & Screens).
-- **AC22 [Device]**: On the mid-range Android target, Title to World Map and World Map to Level each reach an input-ready screen within 0.6 s of the tap (target to confirm).
+- **AC22 [Device]**: On the mid-range Android target, Title to World Map and World Map to Level each reach an input-ready screen within 0.6 s of the tap (target to confirm; Open Question 8).
 
-**Coverage check:** every core rule (1–12) has at least one criterion; each state-changing edge case has its own; boundary behaviour (double tap, Back during transition, background at transition) is covered by AC6, AC14, AC18. No formula exists to cover.
+**Coverage check:** every core rule (1–12) has at least one criterion; each state-changing edge case has its own; boundary behaviour (double tap, Back during transition, background at transition) is covered by AC6, AC14, AC18, AC27 (fade); the empty-campaign case by AC29. No formula exists to cover.
 
 ## Open Questions
 
@@ -297,3 +301,4 @@ Section D defines no formulas, so the criteria come from Sections C and E alone.
 | 6 | Are two taps (Pause then Restart, plus its confirmation) too heavy for retrying a level? | game-designer | First playable |
 | 7 | How screens and overlays are implemented in Godot (one manager, scene swap against instancing) is an architecture decision, not a design one | technical-director | Technical Setup: `/architecture-decision` |
 | 8 | The 0.6 s input-ready target (AC22) has not been measured on a phone | gameplay-programmer | Mobile Platform Integration (Vertical Slice) |
+| 9 | The engine's back request, Android's quit-on-Back default and project setting, any iOS back-swipe event, and the background / focus-out notification Screen Flow reads directly in UAT-1 (Interactions, rules 6 and 7) are not covered by `docs/engine-reference/godot/` (NOT SOURCEABLE); verify each against Godot 4.7 | godot-specialist, technical-director | Technical Setup (deferred from the 2026-11-22 polish pass) |

@@ -161,3 +161,41 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/keep-levels.md 80e0caaefc76ea3a44a0f0fa158d7d7075a381b7
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 0 | Recommended: 8
+Summary: Every polish change is consistent inside the doc and against Rope Links (strings, AC32i), Troop Marching, Troop Generation (I1), Level HUD and the registry; AC15's clamp now gives 26 and the level-3 string matches Rope Links exactly.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [RECOMMENDED] Edge Cases (clamp order): lv2_at <= 1 and lv2_at >= troop_cap are not repaired, so 'never starts with a breached invariant' is false there (shipped builds only)
+- [RECOMMENDED] Formulas (F2 prev): same-side arrivals after a capture can give level 2 on the capture step, against the 'capture wins' edge case and OQ 9
+- [RECOMMENDED] Cross-doc: troop-generation.md F3 still gives lv2_at 2-60 / lv3_at 5-120 (now 2-59 / 5-60; better troop_cap - 1 / troop_cap)
+- [RECOMMENDED] Dependencies: the upstream keep_captured row should have three arguments (keep, old_owner, new_owner)
+- [RECOMMENDED] Dependencies: Level HUD rows list level_rose only; the Quick reference and index row 5 omit Troop Marching
+- [RECOMMENDED] Dependencies: unit-roster-stats.md now exists, so 'no GDD yet' is stale
+- [RECOMMENDED] UI Requirements: the Castle string hard-codes 3 while K4 allows a smaller max_ropes_table[3]
+- [RECOMMENDED] Acceptance Criteria: AC17 breaches K2 first; AC8's crumble is not checkable in a Logic test
+Reviewed-Content-Hash: design/gdd/keep-levels.md 4f09eb966d57b3b1b38e27b6a74c880e6965c817
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 8e0a1867f5c6f0121e28ced14984bc6bde17ff92
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the Status header (In Review -> Approved) since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/keep-levels.md ca5627285552fe1f9e7fff5d335e1633d53ce701

@@ -185,3 +185,42 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/touch-mouse-input.md bd5db29bef56375486bdfa1125e5c4c5e5ab2e94
+
+## Review — 2026-11-25 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 1 | Recommended: 9
+Summary: The polish items are consistent inside the doc and with Rope Links, Level State and Campaign Level Data, but rule 6's 'no preview rope over the origin' cannot be honoured: Level HUD rule 8 draws to the resolved target or the finger, and the published data over the origin equals that over empty space.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [BLOCKING] Detailed Rules (rule 6): no-preview-over-origin vs Level HUD rule 8; publish an over-origin flag or drop the sentence
+- [RECOMMENDED] Detailed Rules (rule 16): where Input's per-step group runs relative to phase 0; Game Feel l.312 tie timing
+- [RECOMMENDED] States: Dragging / Swiping go to Idle on a lock, Pressed / Ignored to Locked
+- [RECOMMENDED] Detailed Rules (rule 12): the keyboard preview's end, conflict with a pointer drag, and which centre
+- [RECOMMENDED] Detailed Rules: no swipe trail on an Armed level (published per step)
+- [RECOMMENDED] Cross-doc: level-hud.md still says 'once per session' (3 places)
+- [RECOMMENDED] Cross-doc: campaign-level-data.md l.120 keep_hit_radius range 48-120
+- [RECOMMENDED] Dependencies: Accessibility listed both upstream and downstream; l.85 'one upstream need'
+- [RECOMMENDED] Open Questions (OQ 8): lacks the engine assumptions rule 16 adds (5 NOT SOURCEABLE claims)
+- [RECOMMENDED] Acceptance Criteria: none covers per-step cut_swiped emission
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the blocker fix and the Status header since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: Rule 6 now publishes over_origin (true only while a drag is over its origin), the Level HUD Interactions row lists it, and AC39 tests it. User decision 2026-11-25 (keeps B10). Level HUD rule 8's matching edit is with its owner, session my-game-tower-war-39. The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md d3ae4904d175082fab9829e7ed90014c2ff6b226

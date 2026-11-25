@@ -178,3 +178,42 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/rope-links.md 5321180615344685ece5173c975bb8ab91380212
+
+## Review — 2026-11-25 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 1 | Recommended: 7
+Summary: The polish items check out (handshake, side, Ending, clamp order, strings, AC arithmetic incl. AC25 0.817 and AC28b), but F5, R3 and the boundary finding still call 1,258 px the longest legal rope, and AC27's 1,258 px fixture cannot load under Campaign Level Data B2.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [BLOCKING] Formulas / AC27: 1,258 px labelled 'longest legal' (F5, R3, boundary) and used as a fixture that breaches B2; the true maximum is 1,226 px
+- [RECOMMENDED] Rope states: Cutting is visible to same-step readers (rival phase 1b, rope_cut listeners); Rival AI never names it
+- [RECOMMENDED] Edge Cases: Ending wording 'ignored' here vs 'refused' in Level State rule 4
+- [RECOMMENDED] Edge Cases: shipped clamps have no send_interval floor and no stated R3 re-check on the clamped value
+- [RECOMMENDED] Acceptance Criteria: AC21 is tagged Logic but asserts Troop Marching's pawn_lost
+- [RECOMMENDED] Acceptance Criteria: AC32i and AC4 assert draft wording; ownership of the slots text is stated two ways
+- [RECOMMENDED] Cross-doc: Troop Marching l.268 capture-born both-ways case; index row 6 omits Level State; the registry tie_legal note lacks the third string and side
+- [RECOMMENDED] Tuning Knobs / Player Fantasy absent (advisory, OQ 9)
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 8e0a1867f5c6f0121e28ced14984bc6bde17ff92
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+Reviewed-Content-Hash: design/gdd/keep-levels.md 4f09eb966d57b3b1b38e27b6a74c880e6965c817
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the blocker fix and the Status header since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: 1,258 px is relabelled as the pre-lift safe upper bound (F5 rope_length row and Output Range, R3, the boundary finding), with the true 1,226 px figures (20 pawns, 0.286 s, 39 at 0.3 s); AC27 now uses a 1,226 px pair (needs 0.314 at speed_min 100, loads at 110 needing 0.286). User decision 2026-11-25: relabel and fix fixtures; 1,258 stays a safe bound. The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/rope-links.md fa596f387a0250b8699df3fa0f01d9fe84ca225f

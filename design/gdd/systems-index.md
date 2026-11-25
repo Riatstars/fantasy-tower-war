@@ -63,7 +63,7 @@ Brief paragraph per system (balanced density):
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | Troop Generation | Gameplay | MVP | Approved | design/gdd/troop-generation.md | Keep Levels (level input; cycle resolved by per-step order) |
-| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | Approved | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft), Save & Progress (soft: message events) |
+| 2 | Screen Flow & Scene Manager (inferred) | Core | MVP | Approved | design/gdd/screen-flow-scene-manager.md | Touch & Mouse Input (soft), Save & Progress (soft: message events), Level HUD (soft: pause_pressed) |
 | 3 | Touch & Mouse Input | Core | MVP | Approved | design/gdd/touch-mouse-input.md | — |
 | 4 | Save & Progress | Persistence | MVP | Approved | design/gdd/save-progress.md | Campaign Level Data (soft: id validation) |
 | 5 | Keep Levels | Gameplay | MVP | Approved | design/gdd/keep-levels.md | Troop Generation, Campaign Level Data (soft), Factions (soft) |
@@ -82,7 +82,7 @@ Brief paragraph per system (balanced density):
 | 18 | Feedback & Juice | UI | Vertical Slice | Not Started | — | Troop Marching & Clashes, Keep Levels, Rope Links, Audio |
 | 19 | Tutorial & Onboarding | Meta | Vertical Slice | Not Started | — | Touch & Mouse Input, Rope Links, Level HUD, Campaign Level Data, Save & Progress (soft: first-run flag) |
 | 20 | Mobile Platform Integration | Meta | Vertical Slice | Not Started | — | Screen Flow & Scene Manager, Save & Progress, Settings |
-| 21 | Unit Roster & Stats | Gameplay | MVP | Not Started | — | Troop Marching & Clashes, Keep Levels |
+| 21 | Unit Roster & Stats | Gameplay | MVP | Approved | design/gdd/unit-roster-stats.md | Troop Marching & Clashes, Keep Levels |
 | 22 | Factions | Gameplay | MVP | Not Started | — | Unit Roster & Stats, Troop Generation, Keep Levels |
 | 23 | Unit Cards & Upgrades | Progression | MVP | Not Started | — | Unit Roster & Stats, Currencies & Economy, Save & Progress |
 | 24 | Faction Collection & Unlocks | Progression | MVP | Not Started | — | Factions, Currencies & Economy, Save & Progress |
@@ -263,8 +263,8 @@ defines the `UnitStats` contract that Unit Roster (order 9) fills in.
 | Total systems identified | 29 |
 | Design docs started | 13 |
 | Design docs reviewed | 13 (lean /design-review, 2026-11-22): first pass 1 Approved, 12 Needs Revision (44 blocking items; 8 cross-document clusters, resolved); re-review 1 Approved, 12 Needs Revision (38 blocking; 11 cross-document problems, resolved). Troop Generation, Save & Progress, World Map and Level HUD then revised in full; /review-all-gdds round 2 (2026-11-22) fixes applied to all 13, which are In Review pending re-review. Third pass (lean /design-review, 2026-11-22) of Keep Levels, Rope Links, Troop Marching, Level State, Campaign Level Data, Touch & Mouse Input and Screen Flow: 1 Approved (Troop Marching & Clashes), 6 Needs Revision (13 blocking) |
-| Design docs approved | 13 of 13 UAT-1 GDDs (Troop Generation, Troop Marching & Clashes, Rival AI, Save & Progress, Level HUD, World Map & Regions, Menus & Screens, Screen Flow & Scene Manager, Keep Levels, Level State & Match Flow, Rope Links, Touch & Mouse Input, Campaign Level Data, all 2026-11-22; Touch & Mouse Input and Campaign Level Data on a re-check of their last fix); the game concept is approved, 2026-11-22 |
-| MVP systems designed | 13/20 (UAT-1: 13/13, all designed 2026-11-22; UAT-2 army layer 0/7) |
+| Design docs approved | 13 of 13 UAT-1 GDDs (Troop Generation, Rival AI, Save & Progress, Level HUD, World Map & Regions, Menus & Screens, 2026-11-22; Keep Levels, Rope Links, Troop Marching & Clashes, Level State & Match Flow, Campaign Level Data, Touch & Mouse Input, Screen Flow & Scene Manager re-approved 2026-11-25 after the polish pass); UAT-2 Unit Roster & Stats: see row 21 (session 39); the game concept is approved, 2026-11-22 |
+| MVP systems designed | 14/20 (UAT-1: 13/13, all designed 2026-11-22; UAT-2 army layer 1/7: Unit Roster & Stats, 2026-11-22) |
 | Vertical Slice systems designed | 0/5 |
 | Alpha systems designed | 0/4 |
 

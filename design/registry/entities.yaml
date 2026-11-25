@@ -298,6 +298,8 @@ formulas:
       - design/gdd/level-state-match-flow.md
       - design/gdd/level-hud.md
       - design/gdd/rope-links.md
+      - design/gdd/menus-screens.md
+      - design/gdd/save-progress.md
     variables:
       - deciding_step
       - start_step
@@ -307,6 +309,18 @@ formulas:
     notes: "Seconds, stored with a win (Save and Progress time, 0 or more) and shown on a loss. The range is normal play (2 to 3 minutes, Pillar 2); there is no upper bound because the match has no timer. Whole tenths, halves up (integer arithmetic: 6 steps a tenth, +3 rounds up). 1 or 2 steps give 0.0; 3 steps give 0.1."
     added: 2026-11-22
     revised: 2026-11-22
+  - name: end_delay_steps
+    status: active
+    source: design/gdd/level-state-match-flow.md
+    referenced_by:
+      - design/gdd/level-state-match-flow.md
+    variables:
+      - end_delay
+    output_range: [0, 300]
+    expression: "ceil(end_delay * 60)"
+    notes: "Fixed 1/60 s ticks between the deciding step and the overlay request; no match step runs during them (Ending). The request lands on deciding_step + max(1, end_delay_steps), so at end_delay 0 it is the next tick. 90 at baseline."
+    added: 2026-11-22
+    revised: ""
 
   - name: think_interval
     status: active
@@ -1019,5 +1033,35 @@ constants:
       - design/gdd/rope-links.md
     value: 2.4
     unit: seconds
+    added: 2026-11-22
+    revised: ""
+  - name: capture_troops
+    status: active
+    source: design/gdd/troop-marching-clashes.md
+    referenced_by:
+      - design/gdd/troop-marching-clashes.md
+    value: 1
+    unit: troops
+    notes: "Troops a captured keep is set to (Troop Marching rule 12, F5); surplus strength is discarded. Range 1 to lv2_at - 1 in the data file, so a capture never starts at level 2."
+    added: 2026-11-22
+    revised: ""
+  - name: pawns_in_flight_max
+    status: active
+    source: design/gdd/troop-marching-clashes.md
+    referenced_by:
+      - design/gdd/troop-marching-clashes.md
+    value: 600
+    unit: pawns
+    notes: "Backstop on marching pawns across both owners (F9); range 200 to 2,000 in the data file. A relay beyond it loses the pawn (reason backstop) and logs."
+    added: 2026-11-22
+    revised: ""
+  - name: keeps_max
+    status: active
+    source: design/gdd/campaign-level-data.md
+    referenced_by:
+      - design/gdd/campaign-level-data.md
+    value: 15
+    unit: keeps
+    notes: "Most keeps a level may hold (Campaign Level Data B8); Rope Links F5 and Troop Marching F9 size their worst cases on it (15 keeps x 3 ropes)."
     added: 2026-11-22
     revised: ""

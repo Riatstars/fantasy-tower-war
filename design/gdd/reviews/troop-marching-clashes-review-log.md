@@ -113,3 +113,42 @@ Findings:
 - none
 Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 65c480aa9794cc82d3b527a66b2678b440c761da
 Reviewed-Content-Hash: design/gdd/rope-links.md 5321180615344685ece5173c975bb8ab91380212
+
+## Review — 2026-11-25 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 1 | Recommended: 7
+Summary: The polish pass introduced no contradiction (relay payload, synchronous ally_arrived_full, rule 11, F9 945, registry entries, OQ 9-12), but AC-M40 uses a 1,258 px pair that Campaign Level Data B2 now rejects.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [BLOCKING] Acceptance Criteria (AC-M40): the 1,258 px fixture cannot load under B2; use 1,226 px (42 vs 40 at speed 50, 31 at 70)
+- [RECOMMENDED] Acceptance Criteria: no AC here covers pawn_lost(no_rope)
+- [RECOMMENDED] Formulas (F1 and l.140/212/232/359): 1,258 called the longest legal rope; relabel as the pre-lift safe bound or switch to 1,226
+- [RECOMMENDED] Detailed Rules (rule 15): ally_arrived_full is still listed under Events though it is now a synchronous call
+- [RECOMMENDED] Formulas (F9 / rule 13): whether the arriving pawn counts toward the backstop
+- [RECOMMENDED] Dependencies: Unit Roster wording stale (it exists); Touch & Mouse Input not bidirectional; index row 7
+- [RECOMMENDED] Cross-doc: Level State F2 says pawns act at the target's edge; this doc says centre
+- [RECOMMENDED] Cross-doc: Keep Levels quotes keep_captured with two arguments
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 8e0a1867f5c6f0121e28ced14984bc6bde17ff92
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+Reviewed-Content-Hash: design/gdd/keep-levels.md 4f09eb966d57b3b1b38e27b6a74c880e6965c817
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the blocker fix and the Status header since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: AC-M40 uses a 1,226 px pair (42 vs 40 at speed 50, 31 at 70); the L row, F1 range, F8 example and M2 relabel 1,258 as the pre-lift safe bound with 1,226 figures (669 marches, 11.15 s, 20 pawns, speed_min 52.4); AC-M1 gives 669 marches at 1,226 px. User decision 2026-11-25. The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 5125df2b81d39e9050271641516dc9c08a870de5

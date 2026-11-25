@@ -166,3 +166,38 @@ Prior verdict resolved: Yes
 Findings:
 - none
 Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md aa1517a2b3debff290b531ebbe34831800b97260
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 0 | Recommended: 6
+Summary: Every polish change (fade lock AC27, start(level_id) AC28, nothing-playable rule 11 / AC29, events wording, Level HUD upstream, AC order) agrees with Level State, Campaign Level Data, Menus & Screens, Touch & Mouse Input and Level HUD.
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [RECOMMENDED] Cross-doc: save-progress.md rule 11 still has Settings call delete_progress() in the Vertical Slice; this doc says Screen Flow in both tiers
+- [RECOMMENDED] Detailed Rules (rule 11): how Screen Flow learns that nothing survived campaign load (event, flag or query) is unwritten
+- [RECOMMENDED] Detailed Rules (rule 4): ignoring every trigger during an overlay fade also ignores the app going to the background during Pause's close fade
+- [RECOMMENDED] Interactions: the event list omits Audio events and World Map's return payload; nothing tells Level State a result overlay was left
+- [RECOMMENDED] Dependencies: 'no upstream dependency' wording vs three soft upstream rows
+- [RECOMMENDED] Acceptance Criteria: AC8 lacks Back rows for Settings over Title / World Map and the Delete / Restart confirmations
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 9a6c80861bda73e068a5ec3105d8683900d5bba1
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md 398454ab6391644c93c526fc3b3ef7242f23b0ab
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the Status header (In Review -> Approved) since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md c0ad48dc9c713b2ebcbd10d9007be5c38a67ed6d

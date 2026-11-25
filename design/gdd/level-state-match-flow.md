@@ -1,6 +1,6 @@
 # Level State & Match Flow
 
-> **Status**: Approved (2026-11-22, lean /design-review; see its review log)
+> **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -24,11 +24,11 @@ Level State & Match Flow runs one match from its first frame to its last. It bui
 1. **One match, one level.** A match is built from one level record (Campaign Level Data): the level id, every keep (position, owner, starting troops), the rival's parameters (for Rival AI) and the flag `wait_for_first_rope`. While building, Level State has each owner initialise itself: Troop Generation (every timer 0), Keep Levels (each keep's level from its starting troops, no history), Rope Links (no ropes, `relay_count` 0, tie counter 0), Troop Marching & Clashes (no pawns, `seq` 0) and Rival AI (its stream reseeded from `rival.seed`, its timer stopped until `clock_started`). A match starts with no ropes and no pawns.
 2. **The level clock** counts fixed game steps (1/60 s) and counts nothing while the game is paused. On a level whose `wait_for_first_rope` is false it starts at once: the first step after the build is step 0 of the clock, and `clock_started` is raised on it (decided 2026-11-22; Rival AI and Troop Generation wait for it). On a level where it is true (level 1 at baseline, set in Campaign Level Data) the match is **Armed**: ties are accepted, and no match step runs, so no keep generates, no rope sends, no pawn marches, the rival does nothing and the win and loss test is off. Touch & Mouse Input and Rope Links' hit-test provider are not match steps and keep running every frame, so the first drag of the game shows its preview while Armed (decided 2026-11-22). **Ties while Armed** (decided 2026-11-22; window widened 2026-11-22): until one tie is accepted, each tie received while Armed is checked with Rope Links' `tie_legal` when it arrives; a refused tie raises `tie_refused` and uses up no step. The first accepted tie starts the clock. It is accepted on a frame, not on a step, since no step runs while Armed. The next step is step 0: it raises `clock_started`, runs the full per-step order, and its phase 0 applies the first tie together with every tie and cut received after it and before step 0 runs, however many frames that is (a Pause between them included), in the order received (Troop Marching & Clashes § Per-step order). The first tie is not judged again (no rope exists before it, so nothing can have made it illegal); each later one is judged once, in phase 0, against the ropes created before it in that phase (Rope Links Edge Cases, ties while Armed), so a level 1 keep's second tie is refused with `slots`. This is the exception to Troop Generation Rule 5 (decided 2026-11-22, `game-concept.md` § Rival).
 3. **The win and loss test** runs once per step, as the last phase (phase 7 of Troop Marching & Clashes' per-step order), on the final state of the step, after arrivals and the level recompute. `won` = every keep's owner is the player. `lost` = the player owns no keep and `pawns_in_flight(player)` is 0. They cannot both hold. A player with no keep but pawns still marching has not lost: a later capture keeps them in (Troop Marching AC-M36). The test does not run while Armed, Ending or Closed.
-4. **Ending.** The step on which the test is true is the **deciding step**; the outcome never changes afterwards. From the next step the match is frozen: nothing generates, sends, marches or acts, and ties and cuts are refused. Pawns in flight **freeze in place** and stay drawn behind the overlay (decided 2026-11-22; answers Troop Marching Open Question 8). The frozen board is discarded when the next match is built or the player leaves.
+4. **Ending.** The step on which the test is true is the **deciding step**; the outcome never changes afterwards. On the deciding step Level State raises `match_ending`, then `match_won` or `match_lost` (decided 2026-11-22); Rival AI stops at the first (its rule 9). From the next step the match is frozen: nothing generates, sends, marches or acts, and ties and cuts are refused. Pawns in flight **freeze in place** and stay drawn behind the overlay (decided 2026-11-22; answers Troop Marching Open Question 8). The frozen board is discarded when the next match is built or the player leaves.
 5. **The result record** has four fields: `outcome` (win or loss), `level_id`, `stars` and `time`. On a win, `stars` is `win_stars` (a fixed 1 in UAT-1, decided 2026-11-22; Stars & Rewards supplies it from UAT-2) and `time` is the clock steps up to and including the deciding step ÷ 60, rounded to 0.1 s, halves up, in whole tenths (F3). On a loss `stars` is 0 and `time` is the same measure; it is shown, never stored.
-6. **Recording order.** At the end of the deciding step: on a win call `record_level_result(level_id, stars, time)`; on a loss call `record_level_played(level_id)`; then `flush()`. Then the end delay `end_delay` (1.5 s, decided 2026-11-22) counts down in game steps. When it has elapsed, Level State asks Screen Flow once for the Win or Lose overlay with the record. A failed flush does not delay or cancel the overlay: Save & Progress raises its own message, and Screen Flow holds it until no overlay is open (its rule 1), so it neither pauses the end delay nor covers the result. The result is therefore already on disk before the player sees it, and closing the app during the delay loses nothing (Save & Progress Core Rule 6).
+6. **Recording order.** At the end of the deciding step: on a win call `record_level_result(level_id, stars, time)`; on a loss call `record_level_played(level_id)`; then `flush()`. The flush is synchronous on the deciding step, by design (decided 2026-11-22): Save & Progress keeps a write under its 50 ms budget (its Game Feel and AC22), so the deciding frame does not visibly hitch; a slower device is a Save & Progress performance defect, not a reason to defer the write. Then the end delay `end_delay` (1.5 s, decided 2026-11-22) counts down in fixed 1/60 s ticks of the game clock that keep their step numbering after the deciding step; no match step runs in them (rule 4), and none counts while paused. When it has elapsed, Level State asks Screen Flow once for the Win or Lose overlay with the record. A failed flush does not delay or cancel the overlay: Save & Progress raises its own message, and Screen Flow holds it until no overlay is open (its rule 1), so it neither pauses the end delay nor covers the result. The result is therefore already on disk before the player sees it, and closing the app during the delay loses nothing (Save & Progress Core Rule 6).
 7. **Unlocks and conquest are not decided here.** Level State only records the result. World Map & Regions derives which nodes unlock and when a region is conquered.
-8. **Starting again.** Restart (confirmed in Pause), Retry (Lose overlay) and Next level (Win overlay) each start a match for a level id: the current match is discarded entirely and a new one is built by rule 1 (clock 0, `seq` 0, `relay_count` 0, no ropes, no pawns, Armed again where the level says so). Discarding records nothing. A Restart is not a play and does not count (the same as Quit).
+8. **Starting again.** Restart (confirmed in Pause), Retry (Lose overlay) and Next level (Win overlay) each reach Level State as the same `start(level_id)` from Screen Flow (decided 2026-11-22), with the current level id for Restart and Retry and the next one for Next level: the current match is discarded entirely and a new one is built by rule 1 (clock 0, `seq` 0, `relay_count` 0, no ropes, no pawns, Armed again where the level says so). Discarding records nothing. A Restart is not a play and does not count (the same as Quit). None of the three records a play: only a deciding step records (rule 6).
 9. **Quit** (`match_quit`, confirmed in Pause) discards the match, records nothing and asks Screen Flow for nothing: Screen Flow has already moved to the World Map.
 10. **Pause.** Screen Flow & Scene Manager owns the pause state and Level State obeys it: while any overlay is open no step runs and no clock advances. During Ending Level State tells Screen Flow `pause_allowed = false`, so Pause, Back and the app going to the background open nothing until the result overlay is up, and a message raised in Ending waits (Screen Flow rule 1).
 11. **Determinism.** This system uses no randomness. The same level record and the same ties and cuts, on the same steps, give the same outcome and the same `time`.
@@ -38,16 +38,17 @@ Level State & Match Flow runs one match from its first frame to its last. It bui
 
 | State | Meaning | Steps run | Table input | Enter when | Leave when |
 |---|---|---|---|---|---|
-| Loading | Building the match from the level record (rule 1) | No | Locked | A start, Restart, Retry or Next level request | Built → Armed if `wait_for_first_rope`, else Running. A load failure is Screen Flow's (it returns to the previous screen) |
+| Loading | Building the match from the level record (rule 1) | No | Locked | A `start(level_id)` (first start, Restart, Retry or Next level) | Built → Armed if `wait_for_first_rope`, else Running. A load failure is Screen Flow's (it returns to the previous screen) |
 | Armed | Waiting for the player's first rope (rule 2) | No | Ties accepted | Built, flag true | The first tie accepted on arrival (rule 2) → Running |
 | Running | The match is played | Yes (not while paused) | Ties and cuts | Built with flag false; or the first rope | Win and loss test true → Ending |
-| Ending | Outcome decided; board frozen; end delay counting (rules 4–6) | No (the delay counts) | Locked | The deciding step | `end_delay` elapsed and overlay requested → Closed |
+| Ending | Outcome decided; board frozen; end delay counting (rules 4–6) | No (the end delay counts 1/60 s ticks, F4) | Locked | The deciding step | `end_delay` elapsed and overlay requested → Closed |
 | Closed | Overlay requested; waiting for the player's choice | No | Locked | Overlay requested | Retry or Next level → Loading; World Map → discarded |
 
 | From | Trigger | To |
 |---|---|---|
 | Armed, Running | `match_quit` | Discarded (nothing recorded) |
-| Armed, Running, Closed | Restart (from Pause), Retry or Next level | Loading (the old match discarded, nothing recorded by the discard) |
+| Armed, Running | Restart (confirmed in Pause) | Loading (the old match discarded, nothing recorded by the discard) |
+| Closed | Retry or Next level | Loading (the old match discarded, nothing recorded by the discard) |
 | Closed | Player goes to the World Map | Discarded |
 
 Any other trigger in a state is ignored. Pause is not a state: it is Screen Flow's flag, which stops all steps in Armed, Running and Closed.
@@ -62,9 +63,10 @@ Any other trigger in a state is ignored. Pause is not a state: it is Screen Flow
 | Rope Links | out/in | Out: initialise (no ropes). In: `tie_legal` for each tie received while Armed; the first tie accepted on arrival starts the clock, and its rope is created in step 0's phase 0, raising `rope_tied` (rule 2) | Rope Links judges and raises; Level State reacts |
 | Troop Marching & Clashes | out/in | Out: initialise (no pawns). In: `pawns_in_flight(owner)` for the loss test; phase 7 of the per-step order | Troop Marching owns the pawns; Level State owns the test |
 | Rival AI | out | `clock_started` and `match_ending`; the rival does nothing before the first and stops at the second | Level State raises; Rival AI obeys |
-| Screen Flow & Scene Manager | both | In: start, restart and `match_quit` requests, the pause state. Out: the Win or Lose overlay request with the result record, and `pause_allowed` | Screen Flow owns the pause state and the transitions; Level State owns the record |
+| Screen Flow & Scene Manager | both | In: `start(level_id)` (first start, Restart, Retry and Next level) and `match_quit` events, plus the pause state. Out: the Win or Lose overlay request with the result record, and `pause_allowed` | Screen Flow owns the pause state and the transitions; Level State owns the record |
 | Save & Progress | out | `record_level_result` or `record_level_played`, then `flush()` (rule 6) | Save & Progress merges; Level State decides what a result is |
 | Level HUD | out | State (Armed, Running, Ending, Closed), `pause_allowed`, the Armed hint. The HUD shows no clock during play and never reads the result record (Menus & Screens draws the result) | Level State raises; HUD draws |
+| Menus & Screens | out (via Screen Flow) | The result record for the Win and Lose overlays (rule 5); Menus reads it, never writes | Level State owns the record; Menus & Screens draws it |
 | Touch & Mouse Input | via Screen Flow | Nothing direct. In Ending Level State asks Screen Flow to lock input with `pause_allowed = false`; Screen Flow calls `lock()` (Touch & Mouse Input rule 10) on the deciding step and `unlock()` when the result overlay opens (Closed refuses ties and cuts, so the table stays inert) | Screen Flow owns the lock; Touch & Mouse Input obeys |
 | Stars & Rewards (UAT-2) | in/out | In: the star count for a win, replacing `win_stars`. Out: the result record | Stars & Rewards |
 | World Map & Regions | out | Nothing directly: it reads the results Save & Progress stores | World Map & Regions |
@@ -98,7 +100,7 @@ The loss_test formula is defined as:
 | owned(player) | int | 0–N | calculated | Keeps the player owns after phase 6 of the step |
 | pawns_in_flight(player) | int | 0–`pawns_in_flight_max` (600) | calculated (Troop Marching & Clashes, rule 15) | The player's pawns still marching (Troop Marching's Marching state): a pawn that falls, arrives or is lost leaves the count on that step, and a Fallen pawn still fading on screen is not counted (Troop Marching rule 15, AC-M35; decided 2026-11-22) |
 
-**Output Range:** true or false, once per step, only while Running. With no keeps left the player has no ropes (a captured keep's ropes are cut) and no relays, so `pawns_in_flight(player)` can only fall: a player with no keep is lost within `L_max / pawn_speed` seconds plus one step, unless a landing pawn captures a keep first. The longest legal rope is the diagonal of the box Campaign Level Data's B2 leaves for keep centres, √((720 − 2r)² + (1,280 − 2r)²) with r = `keep_hit_radius`: 1,258 px at baseline r 78, so at `pawn_speed` 110 px/s that is at most about 11.4 s (1,338 px and 12.2 s at the I1 floor r 48).
+**Output Range:** true or false, once per step, only while Running. With no keeps left the player has no ropes (a captured keep's ropes are cut) and no relays, so `pawns_in_flight(player)` can only fall: a player with no keep is lost within `L_max / pawn_speed` seconds plus one step, unless a landing pawn captures a keep first. The longest legal rope is at most the pre-lift diagonal of the box Campaign Level Data's B2 leaves for keep centres, √((720 − 2r)² + (1,280 − 2r)²) with r = `keep_hit_radius`: 1,258 px at baseline r 78, so at `pawn_speed` 110 px/s that is at most about 11.4 s (1,338 px and 12.2 s at the I1 floor r 48). The bound is conservative: pawns act on arrival at the target's edge, not its centre (Troop Marching), and since B2's lift (2026-11-22) the true diagonal is 1,226 px (Campaign Level Data F1).
 **Example:** the player's last keep falls while 3 pawns are 2 s from a neutral keep holding 0 troops. Not lost on that step. Two seconds later the first pawn captures it: `owned` is 1, the loss is cancelled. Had the neutral keep held 5 troops, the pawns would die on arrival and `lost` would become true on the step the last one fell.
 
 ### F3. Match time
@@ -119,13 +121,15 @@ Integer arithmetic: one tenth is 6 steps, and adding 3 rounds halves up (a count
 | time | float, seconds | 0.0–any (no timeout), in steps of 0.1 | calculated | Stored with a win (Save & Progress `time` ≥ 0), shown on a loss |
 
 **Output Range:** 0.0 s at the least (1 or 2 steps give 0 tenths; 3 steps, exactly 0.05 s, round up to 0.1; in play a pawn needs several seconds to march, so real values start well above that); a normal level is 2–3 minutes (Pillar 2), so about 7,200–10,800 steps and a `time` of 120.0–180.0. There is no upper bound and none is needed: the match has no timer (see Edge Cases).
-**Example:** the first rope is accepted on step 0 and the deciding step is 5,430. `clock_steps` = 5,431, `time_tenths` = floor(5,434 / 6) = 905, `time` = 90.5 s.
+**Example:** step 0 applies the first rope (on a level that waits, the first step after it is accepted) and the deciding step is 5,430. `clock_steps` = 5,431, `time_tenths` = floor(5,434 / 6) = 905, `time` = 90.5 s.
 
 ### F4. End delay in steps
 
 The end_delay_steps formula is defined as:
 
 `end_delay_steps = ceil(end_delay × 60)`, `request_step = deciding_step + max(1, end_delay_steps)`
+
+"Steps" here are the game clock's fixed 1/60 s ticks, which keep their step numbering after the deciding step although no match step runs in Ending (rule 6).
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -152,7 +156,7 @@ Each formula was worked at its minimum, its maximum and at 0. F1 is vacuously tr
 - **If the first rope is attempted but refused** (`tie_refused`, for any reason): the clock does not start. Only the first tie accepted on arrival starts it (rule 2).
 - **If the player cuts the first rope at once**: the clock keeps running. It never returns to Armed; the level is Running for good.
 - **If the player never ties a rope on an Armed level**: the match stays Armed with no limit. Nothing generates, nothing moves, the rival does nothing, and no win or loss can occur. There is no timer and no loss for waiting; the Level HUD shows its Armed hint.
-- **If the app goes to the background or Pause is opened while Armed**: the Pause overlay opens as for any level; the clock has not started and resuming returns to Armed. A tie that passes `tie_legal` before the Pause press, on the same frame or an earlier one, starts the clock, but step 0 runs on the first step after Resume, with that tie and any received after it in its phase 0 (rule 2), so `clock_steps` reads 0 through the pause; nothing is received while Pause is open (Pause locks Input).
+- **If the app goes to the background or Pause is opened while Armed**: the Pause overlay opens as for any level. If no tie has been accepted, the clock has not started and resuming returns to Armed. A tie that passes `tie_legal` before the Pause press, on the same frame or an earlier one, starts the clock, but step 0 runs on the first step after Resume, with that tie and any received after it in its phase 0 (rule 2), so `clock_steps` reads 0 through the pause; nothing is received while Pause is open (Pause locks Input).
 - **If Restart is confirmed on an Armed level, or a flagged level is started again** (Retry): the new match is Armed again with the clock at 0 (rule 8). The first-rope wait applies to every attempt, not only the first.
 - **If the match has no end** (a stalemate: both sides cannot make progress): this system adds no timer and no draw. Breaking a stalemate is the rival's job (Rival AI's stall breakers); a player can always Quit or Restart from Pause.
 - **If the player wins while their pawns are still in flight**: they freeze in place, are drawn behind the overlay and have no effect on the record (rule 4). They are discarded with the match.
@@ -170,7 +174,7 @@ Each formula was worked at its minimum, its maximum and at 0. F1 is vacuously tr
 | Troop Marching & Clashes | Hard | in | `pawns_in_flight(owner)` for F2; phase 7 of its per-step order is this system's test | In Review |
 | Troop Generation | Hard | in/out | In: each keep's `owner` for F1 and F2. Out: initialise (timers 0) and the Rule 5 exception, which it already records | In Review |
 | Rope Links | Hard | in/out | In: `tie_legal` while Armed; the first tie accepted on arrival starts the clock (Core Rule 2). Out: initialise (no ropes, counters 0) | In Review |
-| Screen Flow & Scene Manager | Hard | both | In: start, Restart, Retry, Next level, `match_quit`, the pause state. Out: the overlay request with the result record, `pause_allowed`, the input lock in Ending | In Review |
+| Screen Flow & Scene Manager | Hard | both | In: `start(level_id)` (for a first start, Restart, Retry and Next level), `match_quit`, the pause state. Out: the overlay request with the result record, `pause_allowed`, the input lock in Ending | In Review |
 | Save & Progress | Hard | out | `record_level_result` or `record_level_played`, then `flush()`, before the overlay request | In Review |
 | Keep Levels | Soft | out | Initialise each keep's level from its starting troops (its Rule 8) | In Review |
 | Campaign Level Data | Soft (data contract) | in | The level record: `level_id`, `keeps[]` (id, position, owner, starting troops), `wait_for_first_rope`, the rival's parameters. **This GDD defines what it needs; Campaign Level Data fills it.** Not a design cycle: the contract is defined here | In Review |
@@ -185,7 +189,16 @@ Each formula was worked at its minimum, its maximum and at 0. F1 is vacuously tr
 
 ## Visual/Audio Requirements
 
-This system draws nothing and plays nothing; it raises the moments others present. It raises `clock_started`, `match_won` and `match_lost` (at the deciding step) and `result_requested` (when the overlay is asked for). Feedback & Juice and Audio (after UAT-1) hang the capture flash, the win or lose sting and the overlay entrance on those events. The one visual requirement that belongs here: at the deciding step the board freezes exactly as it is, pawns included (rule 4), and stays visible for `end_delay`, so the last capture can be read (Pillar 2). The Win and Lose overlays' look is Menus & Screens'.
+This system draws nothing and plays nothing; it raises the moments others present. It raises the events in the table below, and no others.
+
+| Event | Raised on | Order within that step | Listened to by |
+|---|---|---|---|
+| `clock_started` | Step 0 of the clock: the first step after the build, or after the first accepted tie on a level that waits (rule 2) | At the start of step 0, before phase 0 | Rival AI, Troop Generation |
+| `match_ending` | The deciding step (rule 4) | After phase 7's win and loss test, first | Rival AI |
+| `match_won` / `match_lost` | The deciding step | Right after `match_ending` | Feedback & Juice, Audio (after UAT-1) |
+| `result_requested` | `request_step` (F4) | When the overlay is asked for | Feedback & Juice, Audio |
+
+Feedback & Juice and Audio (after UAT-1) hang the capture flash, the win or lose sting and the overlay entrance on those events. The one visual requirement that belongs here: at the deciding step the board freezes exactly as it is, pawns included (rule 4), and stays visible for `end_delay`, so the last capture can be read (Pillar 2). The Win and Lose overlays' look is Menus & Screens'.
 
 ## Game Feel
 
@@ -219,7 +232,7 @@ This system has no screen of its own. It gives the Level HUD: the state (Armed, 
 5. `screen-flow-scene-manager.md`: add `pause_allowed` and the Ending state to its Level rules (Pause, Back and the background open nothing during Ending), and state that Pause opened while Armed is allowed.
 6. `save-progress.md`: record that the result record is `{outcome, level_id, stars, time}` and that `win_stars` is 1 in UAT-1.
 7. `systems-index.md`: add Troop Generation, Rope Links, Keep Levels and Campaign Level Data (soft) to this system's Depends On.
-8. `design/registry/entities.yaml`: register `end_delay` (1.5 s), `win_stars` (1), `wait_for_first_rope` and the formulas F1–F4.
+8. `design/registry/entities.yaml`: register `end_delay` (1.5 s), `win_stars` (1) and the formulas F1–F4, including F4's `end_delay_steps` (registered 2026-11-22 in the polish pass). `wait_for_first_rope` is not registered: it is a per-level bool, a field of the Campaign Level Data level record (its rule 2 and rule 5), not a global constant (corrected 2026-11-22).
 
 ## Acceptance Criteria
 
@@ -235,9 +248,9 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 - **AC7 [Logic] (rule 3, F1 boundary)**: GIVEN 6 keeps with the player owning 5 and the rival 1, WHEN steps run with no ownership change, THEN `won` stays false; GIVEN a keep captured and recaptured on one step so that the final owner is unchanged, THEN no win or loss is reported on that step.
 - **AC8 [Logic] (rule 3, F2)**: GIVEN the player owns 1 keep and has 3 pawns marching to a neutral keep at 0 troops, WHEN the rival captures the player's keep, THEN `lost` is false on that step; WHEN a pawn then captures the neutral keep, THEN `owned` is 1 and `lost` stays false.
 - **AC9 [Logic] (F2 boundary)**: GIVEN the player owns 0 keeps and 1 pawn (strength 1) marching to a neutral keep holding 5 troops, WHEN the pawn arrives, THEN on that step the keep holds 4, `pawns_in_flight(player)` is 0 and `lost` is true.
-- **AC10 [Logic] (F2 bound)**: GIVEN the player owns 0 keeps and one pawn 1,258 px from a neutral keep holding 5 troops, WHEN steps run, THEN `lost` is true no later than step 688 (1,258 px ÷ 110 px/s × 60 = 686.2 → 687 marches).
+- **AC10 [Logic] (F2 bound)**: GIVEN the player owns 0 keeps and one pawn 1,226 px from a neutral keep holding 5 troops (the longest legal rope at baseline), WHEN steps run, THEN `lost` is true no later than step 670 (1,226 px ÷ 110 px/s × 60 = 668.7 → 669 marches).
 - **AC11 [Logic] (rule 4)**: GIVEN a deciding step D, WHEN steps D+1 to D+200 are requested, THEN no keep's `troops` changes, no pawn's position changes from its position at D, no `pawn_launched` is raised, and the frozen pawns are still reported by `pawns()`.
-- **AC12 [Logic] (rule 5, F3)**: GIVEN a won match whose first rope was accepted on step 0 and whose deciding step is 5,430, THEN the result record is {outcome win, the level id, stars 1, time 90.5}.
+- **AC12 [Logic] (rule 5, F3)**: GIVEN a won match whose clock started on step 0 (on a level that waits, the step after the first tie is accepted) and whose deciding step is 5,430, THEN the result record is {outcome win, the level id, stars 1, time 90.5}.
 - **AC13 [Logic] (rule 5, F3)**: GIVEN a lost match with `clock_steps` 3,610, THEN the record is {outcome loss, the level id, stars 0, time 60.2}.
 - **AC14 [Logic] (F3 boundary)**: GIVEN `clock_steps` 1, THEN `time` is 0.0 and `record_level_result` accepts it (Save & Progress requires ≥ 0); GIVEN `clock_steps` 30, THEN `time` is 0.5.
 - **AC15 [Logic] (rule 6, F4)**: GIVEN a win with deciding step 5,430, THEN `record_level_result` and `flush()` have both completed by the end of step 5,430, and the overlay is requested exactly once, on step 5,520 and not before.
@@ -253,9 +266,10 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 - **AC24 [Integration: Troop Generation] (rule 2)**: GIVEN an Armed level, WHEN the first tie is accepted, THEN every keep's generation timer starts from 0 on step 0, the first step after acceptance, and no keep gains troops before `clock_steps` 150.
 - **AC25 [Integration: Rival AI] (rule 2)**: GIVEN an Armed level, WHEN 600 frames pass, THEN the rival has tied no rope, sent no pawn and `clock_started` is false; WHEN the first tie is accepted, THEN `clock_started` is raised on step 0, the first step after acceptance (the first step after Resume if Pause opened in between), and is true from then on.
 - **AC26 [Integration: Troop Marching & Clashes] (rule 3)**: GIVEN the player's pawn captures the rival's last keep in phase 5 of step S, WHEN phase 7 runs, THEN the test sees the post-arrival owners and the win is reported on S, not S+1.
-- **AC27 [Visual] (rule 4)**: A retained screenshot in `production/qa/evidence/` taken 1.4 s after a win shows the board frozen with the pawns that were marching still in place, and one taken at 1.6 s shows the Win overlay over it. Playtest question: did the last capture register before the overlay covered it?
+- **AC27 [Visual] (rule 4)**: A retained screenshot in `production/qa/evidence/` taken 1.4 s after a win shows the board frozen with the pawns that were marching still in place, and one taken at 1.8 s (the 1.5 s end delay plus Screen Flow's 0.2 s overlay_fade, and a margin) shows the Win overlay fully over it. Playtest question: did the last capture register before the overlay covered it?
+- **AC28 [Logic] (rule 4, events)**: GIVEN a win decided on step 5,430, THEN on that step `match_ending` is raised exactly once and before `match_won`, no `match_lost` is raised, and no event is raised again until `result_requested` on step 5,520; GIVEN an Armed level, THEN `clock_started` is raised before any phase of step 0 runs.
 
-**Coverage check.** Rules 1–6 and 8–12 each have at least one criterion; F1–F4 each have one plus a boundary (AC7, AC9, AC14, AC16); L1 is AC23; cross-system criteria are AC17–AC21, AC24–AC26. **Rule 7** (unlocks and conquest are World Map's) has no criterion here by design: it is tested in World Map & Regions. AC25 matches Rival AI rule 3; the Armed hint's drawing is tested in Level HUD.
+**Coverage check.** Rules 1–6 and 8–12 each have at least one criterion; F1–F4 each have one plus a boundary (AC7, AC9, AC14, AC16); L1 is AC23; cross-system criteria are AC17–AC21, AC24–AC26. **Rule 7** (unlocks and conquest are World Map's) has no criterion here by design: it is tested in World Map & Regions. AC25 matches Rival AI rule 3; the Armed hint's drawing is tested in Level HUD. The event list (Visual/Audio Requirements) is AC28.
 
 ## Open Questions
 
@@ -268,3 +282,4 @@ Baseline data unless a criterion says otherwise: step 1/60 s, `end_delay` 1.5 s 
 | 5 | Can a loss be revived once (a rewarded ad or gems, in the brief as provisional)? It would add a state after Ending | Store build | After UAT |
 | 6 | The build-time target for a match on the minimum phone (Retry should feel instant) | Technical Setup | First phone test |
 | 7 | Closed (2026-11-22): no clock during play; `time` is shown on the Win and Lose overlays only (Level HUD rule 9, Pillar 2) | — | — |
+| 8 | Add a Tuning Knobs section (advisory at standard): `end_delay` 0–5 s (feel), `win_stars` (UAT-1 placeholder, Stars & Rewards), `wait_for_first_rope` (per-level gate), each with its safe range and rationale. Deferred in the 2026-11-22 polish pass | game-designer | Before epics |

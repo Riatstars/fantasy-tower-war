@@ -168,3 +168,41 @@ Findings:
 Reviewed-Content-Hash: design/gdd/campaign-level-data.md fcfd5fe6c825941bed921e5841d726da93dcfd01
 Reviewed-Content-Hash: design/registry/entities.yaml f349f8571decf84eced82f5cbf4e70e179e0a719
 Reviewed-Content-Hash: design/gdd/level-hud.md 446e95c4c1b7f7cfc29ac8195f13a1841593d0d6
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode; independent subagent re-review of the 2026-11-22 polish pass, run on Fable)
+Blocking items: 0 | Recommended: 7
+Summary: The polish pass is consistent inside the doc and with Screen Flow (rule 11, AC29), Save, Touch, Rope Links, Troop Marching, Level HUD, the registry and config.js (every Content value recomputed).
+Prior verdict resolved: Yes
+Ran: gdd-structure-check.sh (6/6 required present); review-receipts.sh check with the skill's Phase 1 arguments (target, registry and SKILL.md CHANGED, so a full review). Not run: Phase 3b specialists (lean).
+Not stamped: systems-index.md and session my-game-tower-war-39's GDDs (troop-generation, rival-ai, save-progress, level-hud, world-map-regions, menus-screens), which changed during or after the review window and whose reviewed bytes cannot be rebuilt.
+Findings:
+- [RECOMMENDED] Detailed Rules (rule 7 / F4): no defined first level once levels can be dropped; World Map's first_of_campaign / first(R) must mean the lowest-order loaded level (the pending World Map edit must cover it)
+- [RECOMMENDED] Cross-doc: touch-mouse-input.md l.257 and level-state-match-flow.md l.145/167 still send I2/L1 breaches to Screen Flow's load-failure box
+- [RECOMMENDED] Formulas (B3): mixes per-level (keep ids) and campaign-wide (orders) checks; 'a gap is a development error only' should say 'an order gap'
+- [RECOMMENDED] Acceptance Criteria: AC10 lacks shipped outcomes for level id = region id and duplicate level order; AC5/AC6 name R3 only; the coverage line misstates M3
+- [RECOMMENDED] Detailed Rules (rule 9): whether dropped ids are registered with Save
+- [RECOMMENDED] Dependencies: no Troop Marching Interactions row; keeps_max referenced_by this GDD only
+- [RECOMMENDED] Formulas (F2): keep_hit_radius range 48-120 vs its owner's 48-90
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 90268b88ad2ebcc2877deb4aa76f784c8f895ee3
+Reviewed-Content-Hash: design/registry/entities.yaml 6995a374ebc48017e906c831e9fbfbf773eb9534
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
+Reviewed-Content-Hash: prototypes/tower-war/config.js 3568e00bd4b74dba537024bce9fab97661938481
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 9a6c80861bda73e068a5ec3105d8683900d5bba1
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md 64272df98ceadbfac50f5a3f4b3ecd7e0ca91c10
+Reviewed-Content-Hash: design/gdd/rope-links.md ac2e00c8c6b268c42d53274342a1a4d5ada7eb4e
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 8e0a1867f5c6f0121e28ced14984bc6bde17ff92
+
+## Review — 2026-11-25 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: S
+Specialists: none. Scope: re-check of the Status header (In Review -> Approved) since the entry above, not a full review; every other byte is as reviewed there.
+Blocking items: 0 | Recommended: 0 (the recommendations above stand)
+Summary: The Status header now reads Approved (polish pass re-reviewed 2026-11-25).
+Prior verdict resolved: Yes
+Findings:
+- none
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md ec5408f1966c365ddc0248bbe7d7eb494068469f
