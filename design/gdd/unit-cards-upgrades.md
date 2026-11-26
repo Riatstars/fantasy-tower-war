@@ -2,7 +2,7 @@
 
 > **Status**: Designed (pending /design-review in a fresh session)
 > **Author**: the player + Claude Code (/design-system)
-> **Last Updated**: 2026-11-25
+> **Last Updated**: 2026-11-26 (revision after two lean reviews, sessions 4d and c7: statuses, `is_owned`, F2 for strength 3, baseline fallback, AC31 rewritten, AC33 to AC35 added)
 > **Last Verified**: 2026-11-25
 > **Implements Pillar**: 3. Paint the map, grow the army (`design/gdd/game-concept.md` § Pillars)
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
@@ -25,7 +25,7 @@ Unit Cards & Upgrades is where gold turns into a stronger army. Every unit kind 
 
 1. **One card per unit kind.** Every kind in Unit Roster & Stats' data (`<race>_t1` to `<race>_t3`) has exactly one card, and the card's id is the kind's id. The UAT build has six: `human_t1`–`human_t3` and `beast_t1`–`beast_t3`. A race added later brings its three cards with it; nothing here lists cards by hand.
 2. **A card has a level, 1 to `card_level_max` (5)** (the player's decision, 2026-11-25). Every card starts at level 1. A level never goes down (Currencies & Economy rule 10: no refunds, no selling).
-3. **Only the cards of owned races can be upgraded.** Whether a race is owned is Faction Collection & Unlocks' answer (the human is always owned, Factions rule 3). A card of a race the player does not own is Locked: it shows, it cannot be bought and it has no effect.
+3. **Only the cards of owned races can be upgraded.** Whether a race is owned is Faction Collection & Unlocks' answer, `is_owned(race)` (its rule 3; the human is always owned, Factions rule 3). A card of a race the player does not own is Locked: it shows, it cannot be bought and it has no effect.
 4. **Upgrading is one call, `upgrade_card(card_id)`**, and it raises the card exactly one level. It checks, in this order, and stops at the first failure: the card exists (`unknown`); its race is owned (`locked`); its level is below `card_level_max` (`max`); then it reads `cost = card_upgrade_cost(card_id, level + 1)` and calls `spend_currency(gold, cost)` (Currencies & Economy rules 7 and 11), whose refusal is passed on (`short`, or `invalid`); a cost lookup that returns none is refused `invalid` without a spend. Only on ok does the level rise by one, in the same frame; the new level is reported to Save & Progress; and `card_upgraded(card_id, level)` is raised. A refused call changes nothing and spends nothing.
 5. **The spend and the level are saved together** (Currencies & Economy rule 9). Both changes are reported in the same frame and Save & Progress writes once at the end of it, so a level is never saved without its payment or a payment without its level.
 6. **What a level does: veterans** (the player's decision, 2026-11-25). A veteran is a pawn launched with `veteran_bonus` (1) more strength than its kind. It is worth that much more in a clash and on arrival (Troop Marching rules 7 and 10), and it keeps its kind's speed and size. Nothing else about a unit changes with its card's level: not its speed, not its size, not how often a rope sends.
@@ -63,7 +63,7 @@ In a match the veteran counter of each kind is a whole number from 0 to `veteran
 | Troop Marching & Clashes | out | `veteran_for_launch(owner, kind_id)` at each launch; on yes the pawn's strength is the kind's + `veteran_bonus` and it carries a veteran mark | Troop Marching owns the launch and the pawn; this GDD owns the count and the answer |
 | Currencies & Economy | out | Reads `card_upgrade_cost(card_id, to_level)`; calls `can_afford` and `spend_currency(gold, cost)` | Currencies & Economy owns the cost and the spend; this GDD owns card levels and what they give |
 | Save & Progress | both | Out: the `cards` block, reported on every upgrade and written by Save's flush; one migration step. In: the block on load | Save & Progress owns the file, the merge and the flush; this GDD owns the block's shape and its validation |
-| Faction Collection & Unlocks (no GDD yet, provisional) | in | Whether a race is owned (rule 3) | That GDD owns the owned set |
+| Faction Collection & Unlocks | in | `is_owned(race)`: whether a race is owned (rule 3) | That GDD owns the owned set and answers; this GDD owns the limit |
 | Factions | in | The player's active race at match build (rule 14); the races that exist | Factions |
 | Level HUD | out | The veteran mark on a pawn, to draw the trim | Level HUD draws; this GDD says which pawn |
 | Collection & Upgrade Screens (no GDD yet, provisional) | out | Each card's level, state, next cost and `veteran_every` at its level and the next; `upgrade_card`; `card_upgraded` | That GDD owns the layout; this GDD owns the numbers |
@@ -103,7 +103,7 @@ The veteran_launch formula is defined as, for one launch of a kind by an owner t
 
 The card_power_gain formula is defined as:
 
-`card_power_gain = veteran_bonus / (veteran_every × strength)`, and 0 when `veteran_every` is 0
+`card_power_gain = veteran_bonus / (veteran_every × strength)`, and 0 when `veteran_every` is 0 or when `strength + veteran_bonus` would pass Unit Roster's U3 maximum (3), since such a kind launches no veterans (rule 11)
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -134,16 +134,16 @@ The upgraded_power formula is defined as:
 | Race | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
 |---|---|---|---|---|---|
 | human (t1 / t2 / t3) | 1.00 / 1.25 / 2.00 | 1.08 / 1.38 / 2.13 | 1.11 / 1.41 / 2.17 | 1.14 / 1.46 / 2.25 | 1.20 / 1.56 / 2.33 |
-| beast (t1 / t2 / t3) | 1.10 / 1.25 / 1.83 | 1.19 / 1.38 / 1.94 | 1.22 / 1.41 / 1.98 | 1.25 / 1.46 / 2.06 | 1.32 / 1.56 / 2.13 |
+| beast (t1 / t2 / t3) | 1.10 / 1.25 / 1.83 | 1.19 / 1.38 / 1.94 | 1.22 / 1.41 / 1.98 | 1.25 / 1.46 / 2.06 | 1.31 / 1.56 / 2.13 |
 
 ### Invariants (checked at app start; the loader reports a breach)
 
 - **C1.** `card_level_max` is whole and `2 ≤ card_level_max ≤ 10`; the `veteran_every` table has one row per tier (3) and one column per level.
 - **C2.** `veteran_bonus` is 1. With Unit Roster's U3 (strength at most 3) a larger bonus has no legal room on a strength 2 kind, and Troop Marching's M4 needs a whole number.
 - **C3.** In every row, level 1 holds 0; every later level holds a whole number from 2 to 60; a row never rises from one level to the next (a higher level is never rarer); and for every kind of every race, `card_power_gain` at every level is at most `card_power_cap` (0.25). This cap is the answer to Unit Roster & Stats' Open Question 6: cards may add up to a quarter of a kind's power on top of U1.
-- **C4.** For every race and every level L, with all three of its cards at L: `upgraded_power` of tier 1 < tier 2 < tier 3. The tier order holds at equal card levels only (the player's decision, 2026-11-25); cards at different levels may cross it, by at most the cap (the largest case at baseline: a level 5 beast soldier at 1.32 against a level 1 beast rider at 1.25).
+- **C4.** For every race and every level L, with all three of its cards at L: `upgraded_power` of tier 1 < tier 2 < tier 3. The tier order holds at equal card levels only (the player's decision, 2026-11-25); cards at different levels may cross it, by at most the cap (the largest case at baseline: a level 5 beast soldier at 1.31 against a level 1 beast rider at 1.25).
 
-**On a breach:** a development build stops with one error naming the rule, the tier, the level and the values. A shipped build replaces the whole `veteran_every` table, `veteran_bonus` and `card_level_max` with the baseline in this GDD and logs it; saved card levels are kept.
+**On a breach:** a development build stops with one error naming the rule, the tier, the level and the values. A shipped build replaces the whole `veteran_every` table, `veteran_bonus` and `card_level_max` with the baseline in this GDD and logs it; saved card levels are kept. C3 and C4 also depend on the rosters, so the baseline can fail too (for example a future strength 1 summon, whose level 5 entry of 3 would pass the 0.25 cap). If it does, the shipped build logs each remaining breach (race, kind, rule, values), launches no veterans for every kind that still fails (`veteran_every` 0 at every level for that kind), and continues; it never stops, as Currencies & Economy rule 11 does for its own table. The baseline values ship as a read-only copy in the data files, never typed into code.
 
 ### What this GDD asks of the cost table
 
@@ -182,7 +182,7 @@ The costs are Currencies & Economy's (`card_upgrade_cost(card_id, to_level)`, `t
 - **If the player holds less than the cost**: refused `short` (from `spend_currency`); the level and the wallet are unchanged.
 - **If the card's race is not owned**: refused `locked`, before any cost is read.
 - **If the card id is not a kind in the data**: refused `unknown` and logged.
-- **If `upgrade_card` is called twice in one frame for one card** (a double tap): the calls run one after the other. The second sees the new level and the next, higher cost; it succeeds only if the gold is still there. One tap can never be charged twice for one level.
+- **If `upgrade_card` is called twice in one frame for one card** (a double tap): the calls run one after the other. The second sees the new level and the next, higher cost; it succeeds only if the gold is still there. One tap can never be charged twice for one level. Whether one tap may issue more than one call (and so buy two levels) is the Collection & Upgrade Screens' rule, with the confirmation question (Open Question 5).
 - **If the cost lookup returns none** (the data's `card_level_max` was raised without adding costs in Currencies & Economy): refused `invalid`, logged, nothing spent. A none is never read as a cost of 0.
 - **If the session is read-only** (Save & Progress rule 9): the purchase works in memory and is gone when the app closes, like the wallet's totals.
 
@@ -211,22 +211,22 @@ The costs are Currencies & Economy's (`card_upgrade_cost(card_id, to_level)`, `t
 
 ## Dependencies
 
-Unit Roster & Stats, Troop Marching & Clashes, Save & Progress, Factions, Level HUD and Rival AI have GDDs; Currencies & Economy is In Design (its rules and F5 are written); Faction Collection & Unlocks and Collection & Upgrade Screens have none yet, so those contracts are provisional. Statuses are the systems index's on 2026-11-25.
+Every system here has a GDD except Collection & Upgrade Screens, so that contract is provisional. Statuses are the systems index's on 2026-11-26.
 
 | System | Hard / Soft | Direction | What crosses | Status |
 |---|---|---|---|---|
-| Unit Roster & Stats | Hard | in | The kinds (one card each), their tier and base `strength`; bound U3; F1 `unit_power` for C4 | Approved |
-| Currencies & Economy | Hard | out | `card_upgrade_cost`, `can_afford`, `spend_currency(gold, cost)` | In Design |
+| Unit Roster & Stats | Hard | in | The kinds (one card each), their tier and base `strength`; bound U3; F1 `unit_power` for C4 | In Review |
+| Currencies & Economy | Hard | out | `card_upgrade_cost`, `can_afford`, `spend_currency(gold, cost)` | In Review |
 | Save & Progress | Hard | both | The `cards` block and its migration step | Approved |
-| Troop Marching & Clashes | Hard | out | `veteran_for_launch` at launch; the veteran's strength and mark | Approved (needs one added rule, below) |
-| Faction Collection & Unlocks | Hard | in | Whether a race is owned | Not yet designed |
-| Factions | Soft | in | The player's active race; the races that exist | In Design |
-| Level HUD | Soft | out | The veteran mark, for the trim | Approved (needs one added line, below) |
+| Troop Marching & Clashes | Hard | out | `veteran_for_launch` at launch; the veteran's strength and mark | Approved (its rule 3 has the launch call) |
+| Faction Collection & Unlocks | Hard | in | `is_owned(race)` | Approved |
+| Factions | Soft | in | The player's active race; the races that exist | In Review |
+| Level HUD | Soft | out | The veteran mark, for the trim | In Review (its rule 7 draws the mark) |
 | Collection & Upgrade Screens | Hard (dependent) | out | Card levels, states, costs, `veteran_every`, `upgrade_card`, `card_upgraded` | Not yet designed |
-| Stars & Rewards | Soft | none | It grants the gold spent here, through Currencies & Economy; its time goals should be re-run with veterans | In Design |
-| Rival AI | Soft | none | No veterans for the rival in the UAT build; a later hook | Approved |
+| Stars & Rewards | Soft | none | It grants the gold spent here, through Currencies & Economy; its time goals should be re-run with veterans | Approved |
+| Rival AI | Soft | none | No veterans for the rival in the UAT build; its `threat` and `incoming` read a veteran's real strength; a later hook | Approved |
 
-**Bidirectional check.** Unit Roster & Stats names this GDD (rule 10, Interactions, Dependencies, Open Question 6). Currencies & Economy names it (rules 9 and 11, Interactions). Save & Progress names it (Interactions, Dependencies). Troop Marching names it (rule 16's note, Interactions, Dependencies). Factions names it (Dependencies). Level HUD, Stars & Rewards and Rival AI do not name it yet. The edits other GDDs need are listed under Cross-References; each is sent to the session that owns the file, not applied here.
+**Bidirectional check.** Unit Roster & Stats names this GDD (rule 10, Interactions, Dependencies, Open Question 6). Currencies & Economy names it (rules 9 and 11, Interactions). Save & Progress names it (Interactions, Dependencies). Troop Marching names it (rule 16's note, Interactions, Dependencies). Factions names it (Dependencies). Faction Collection & Unlocks names it (Interactions: `is_owned`). Level HUD names it (rule 7, Interactions, Dependencies). Stars & Rewards names it in Dependencies, but still as "Not designed" (edit 5). Rival AI does not name it (edit 8). The edits other GDDs need are listed under Cross-References; each is sent to the session that owns the file, not applied here.
 
 ## Visual/Audio Requirements
 
@@ -266,7 +266,7 @@ This system has no screen of its own. It supplies:
 | Rules 6–10; edge cases | Troop Marching & Clashes rules 7, 10, 12, 16, 17; M4 | Clash and arrival by strength; the `UnitStats` record; no randomness; launch order |
 | Rules 4, 5, 17; cost section | Currencies & Economy rules 7, 9, 10, 11, 14; F5 | `spend_currency`, one write per purchase, no refunds, `card_upgrade_cost` |
 | Rules 15, 16 | Save & Progress rules 3, 5, 6, 9, 10 | Named block, merge keeps the higher value, one flush, read-only sessions, validation |
-| Rules 3, 14 | Factions rules 1–3; Faction Collection & Unlocks (not yet designed) | Races, the starter race, the active race, the owned set |
+| Rules 3, 14 | Factions rules 1–3; Faction Collection & Unlocks rule 3 | Races, the starter race, the active race, the owned set (`is_owned`) |
 | F1 example | Rope Links F2 | Launch times on one rope |
 | Boundary findings | Troop Generation I3, F4; Stars & Rewards time goals; Keep Levels `level_drop_margin` | Capture pace with veterans; margin warning |
 
@@ -274,11 +274,12 @@ This system has no screen of its own. It supplies:
 
 1. `troop-marching-clashes.md`: add the launch call (`veteran_for_launch`, strength + `veteran_bonus`, the veteran mark, a relay is not a launch) and name this GDD in Interactions and Dependencies. **Applied 2026-11-25** by session 7a, user-approved (rule 3, Interactions, Dependencies); that GDD has a re-check pending.
 2. `unit-roster-stats.md`: rule 10 says cards "add to a kind's stats inside U2–U4". Reword: a card makes veterans (strength + 1, inside U3); speed and size are not changed; the cap is 0.25 of `unit_power` (C3). Close Open Question 6 with C3 and C4. Its edge case "a card upgrade would push a stat past U2, U3 or U4" becomes rule 11 here (a strength 3 kind launches no veterans). **Applied 2026-11-25** by session 39, user-approved (rules 6 and 10, Interactions, edge case, Open Question 6 closed); that GDD is back to In Review.
-3. `level-hud.md`: draw the veteran mark on a marked pawn; name this GDD in Interactions. **Applied 2026-11-25** by session 39, user-approved (rule 7, `pawns()` fields, Interactions and Dependencies); it relies on edit 1 (Troop Marching passing the mark), not yet applied.
+3. `level-hud.md`: draw the veteran mark on a marked pawn; name this GDD in Interactions. **Applied 2026-11-25** by session 39, user-approved (rule 7, `pawns()` fields, Interactions and Dependencies); it relies on edit 1 (Troop Marching passing the mark), applied the same day.
 4. `currencies-economy.md`: its Interactions row for this GDD is no longer provisional; the three checks under "What this GDD asks of the cost table". **Applied 2026-11-25** by session 7a: the row is no longer provisional and the checks are its invariant E3 (F5's costs hold them).
 5. `stars-rewards.md`: re-run the time goals with maxed cards, or note that goals assume no veterans; its Dependencies row for this GDD still says Not designed. **Open:** not sent (session 01, which wrote that GDD, had closed on 2026-11-26).
 6. `systems-index.md` row 23: Status and Design Doc; add Troop Marching & Clashes and Faction Collection & Unlocks to its dependencies. **Applied 2026-11-25** by session 7a (Designed, pending review).
 7. `design/registry/entities.yaml`: register `card_level_max` (5), `veteran_bonus` (1), `card_power_cap` (0.25), the `veteran_every` table and the formulas `veteran_launch`, `card_power_gain` and `upgraded_power`. **Applied 2026-11-25** by session 7a; the values match this GDD and `registry.sh validate` is clean.
+8. `rival-ai.md`: add an Interactions row for this GDD: its `threat` and `incoming` read a pawn's strength, so they count a player's veteran at its real worth; the rival launches no veterans in the UAT build (this GDD's rule 13). **Open**, not yet sent (added 2026-11-26 after review).
 
 ## Acceptance Criteria
 
@@ -313,14 +314,14 @@ This system has no screen of its own. It supplies:
 **Saving**
 
 - **AC21 [Integration: Save & Progress] (rule 15)**: GIVEN `human_t1` at level 3 and `human_t2` at level 2, WHEN the app is closed and reopened, THEN both levels are as left and every other card is level 1; the `cards` block holds exactly those two entries.
-- **AC22 [Logic] (rule 15, validation)**: GIVEN a saved block with `human_t1` 9, `human_t2` 0, `human_t3` 2.5 and `orc_t1` 3, WHEN it loads, THEN `human_t1` is 5, `human_t2` and `human_t3` are level 1, the `orc_t1` entry is kept and ignored, three log lines are written and the file is not treated as damaged.
+- **AC22 [Logic] (rule 15, validation)**: GIVEN a saved block with `human_t1` 9, `human_t2` 0, `human_t3` 2.5 and `orc_t1` 3, WHEN it loads, THEN `human_t1` is 5, `human_t2` and `human_t3` are level 1, the `orc_t1` entry is kept and ignored (it writes no log line), three log lines are written and the file is not treated as damaged.
 - **AC23 [Integration: Save & Progress] (rule 15, migration and merge)**: GIVEN a UAT-1 save with no `cards` block, WHEN it loads, THEN the block is created empty and every card is level 1. GIVEN two results for one card, levels 2 and 4, WHEN they merge, THEN the level is 4.
 - **AC24 [Integration: Save & Progress, Currencies & Economy] (rule 16)**: GIVEN cards above level 1, WHEN `delete_progress()` is confirmed, THEN every card is level 1 and the balance is 0. GIVEN a read-only session, WHEN a card is upgraded, THEN the level rises in that session and is level 1 again after a restart.
 
 **Formulas and data**
 
 - **AC25 [Logic] (F2)**: GIVEN baseline data, WHEN `card_power_gain` is computed for the rider at levels 1 to 5, THEN it returns 0, 0.100, 0.125, 0.167 and 0.250 (to three places); for the summon at level 5 it returns 0.167.
-- **AC26 [Logic] (F3, C4)**: GIVEN baseline data, WHEN `upgraded_power` is computed with all three beast cards at level 5, THEN it returns 1.32, 1.56 and 2.13 (to two places), rising with the tier.
+- **AC26 [Logic] (F3, C4)**: GIVEN baseline data, WHEN `upgraded_power` is computed with all three beast cards at level 5, THEN it returns 1.31, 1.56 and 2.13 (to two places), rising with the tier.
 - **AC27 [Logic] (C3)**: GIVEN a table whose rider row holds 3 at level 5 (gain 0.333), WHEN it loads in a development build, THEN loading stops with an error naming C3, tier 2, level 5 and both values; in a shipped build the baseline table is used, a log line is written and saved card levels are unchanged. The same for a row that rises (level 3 holds 10 after level 2 holds 8) and for a level 1 entry that is not 0.
 - **AC28 [Logic] (C1, C2, C4)**: GIVEN `card_level_max` 1, or `veteran_bonus` 2, or a table in which a race's tier 1 `upgraded_power` is not below its tier 2 at the same level, WHEN it loads in a development build, THEN loading stops naming C1, C2 or C4.
 - **AC29 [Logic] (rule 17)**: GIVEN the soldier's level 2 entry changed from 12 to 6 in the data file, WHEN a match runs, THEN the 6th soldier launch is a veteran, with no code change.
@@ -328,12 +329,16 @@ This system has no screen of its own. It supplies:
 **Screens and feel**
 
 - **AC30 [UI] (States, UI Requirements)**: retained screenshots of the Collection & Upgrade Screens show a Locked card, an Upgradable card with an affordable cost, the same card with a short balance (greyed, cost shown, no error), and a Maxed card with five pips. GIVEN the soldier's level 2 entry is 6 in data, THEN the card reads "a veteran every 6th" with no other change.
-- **AC31 [UI] (Visual/Audio)**: a retained screenshot of a match with the soldier card at level 5 shows a veteran on a rope beside plain soldiers; in a greyscale copy of the same screenshot the veteran is still distinguishable.
+- **AC31 [UI] (Visual/Audio)**: a retained screenshot of a match with the soldier card at level 5 shows a veteran on a rope beside plain soldiers, with its silhouette mark visible at pawn size (about 24 px). GIVEN a greyscale copy of that screenshot and testers not told which pawn is the veteran, THEN at least 4 of 5 pick the veteran; the art lead signs off on the mark.
 - **AC32 [Playtest] (Game Feel)**: GIVEN testers who bought one upgrade and were not told what it does on the table, THEN at least 4 of 5 point at a veteran within their next match.
 
-**Performance budget (target to confirm on a phone):** `veteran_for_launch` is one counter per kind and costs under 0.01 ms per launch on the mid-range Android target.
+**Edge cases and performance**
 
-**Coverage check.** Rules 1–17 each have a criterion (1, 2: AC1; 3: AC5; 4, 5: AC2–AC8; 6–10: AC9–AC15; 11: AC16; 12: AC17; 13: AC18; 14: AC19; 15: AC21–AC23; 16: AC24; 17: AC29). F1 is AC9–AC11, F2 is AC25, F3 is AC26, C1–C4 are AC27 and AC28. Boundaries: level 1 and the maximum (AC4, AC10), the exact cost (AC3), strength 3 (AC16). Gaps: the four asks of the cost table are tested in Currencies & Economy, not here; the edge cases for a lowered `card_level_max` and a kept level on a locked race are covered by AC22's clamp and AC5 only in part.
+- **AC33 [Logic] (rule 3, edge: kept level on a locked race)**: GIVEN a saved `beast_t1` at level 3 and the beast not owned, THEN the card shows Locked and `upgrade_card(beast_t1)` is refused `locked`; WHEN the beast is unlocked, THEN the card is Upgradable at level 3 and its next cost is `card_upgrade_cost(beast_t1, 4)`; WHEN the beast is then made active and a match is built, THEN the soldier card is read at level 3 (`veteran_every` 9).
+- **AC34 [Logic] (rule 15, edge: maximum lowered)**: GIVEN `card_level_max` 4 in data and a saved `human_t1` at level 5 with 300 gold, WHEN it loads, THEN `human_t1` is level 4 and Maxed, one log line names the card and both levels, and the balance is still 300.
+- **AC35 [Performance] (rule 10)**: on the mid-range Android target, 1,000 calls of `veteran_for_launch` take under 10 ms in total (under 0.01 ms each).
+
+**Coverage check.** Rules 1–17 each have a criterion (1, 2: AC1; 3: AC5; 4, 5: AC2–AC8; 6–10: AC9–AC15; 11: AC16; 12: AC17; 13: AC18; 14: AC19; 15: AC21–AC23; 16: AC24; 17: AC29). F1 is AC9–AC11, F2 is AC25, F3 is AC26, C1–C4 are AC27 and AC28. Boundaries: level 1 and the maximum (AC4, AC10), the exact cost (AC3), strength 3 (AC16). Edge cases: a kept level on a locked race (AC33), a lowered `card_level_max` (AC34); performance AC35. Gaps: the four asks of the cost table are tested in Currencies & Economy (its E3), not here; the shipped fallback when the baseline table itself fails C3 or C4 has no criterion, because no shipped roster triggers it.
 
 ## Open Questions
 
@@ -343,7 +348,7 @@ This system has no screen of its own. It supplies:
 | 2 | Which card is the better buy in play? Per launch the three cost the same per troop gained; the soldier is launched most. Measure launches per tier in real matches, then adjust `veteran_every` or Currencies' `tier_cost_percent` | economy-designer | First UAT-2 playtest |
 | 3 | Capture pace with maxed cards: re-run Troop Generation's F4 example (59 s) and Stars & Rewards' time goals with veterans every 5th, 4th and 3rd | systems-designer | Before the UAT-2 balance pass |
 | 4 | Gold has no use after the 24th purchase until God & Goddess Powers. Is a longer sink needed in the UAT build? | Currencies & Economy | First UAT-2 playtest |
-| 5 | Should a purchase ask for confirmation? This GDD says no (final, but never a loss of something the player did not choose to spend) | ux-designer | `/ux-design` for the Collection & Upgrade Screens |
+| 5 | Should a purchase ask for confirmation, and may one tap issue more than one `upgrade_card` call? This GDD says no confirmation (final, but never a loss of something the player did not choose to spend) and leaves the one-call-per-tap rule to the screen | ux-designer | `/ux-design` for the Collection & Upgrade Screens |
 | 6 | The veteran's silhouette mark (pennant, crest or other) and whether it differs per race | art-director | `/asset-spec` |
 | 7 | A race with a strength 3 summon gets nothing from that card (rule 11). Forbid strength 3 for carded kinds, or give such a kind a different upgrade? | Unit Roster & Stats, Factions | When a third race is designed |
 | 8 | Add a Tuning Knobs section (advisory at standard): `veteran_every` per tier and level, `card_power_cap`, `card_level_max`, with safe ranges | game-designer | Before epics |
