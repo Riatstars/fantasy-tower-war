@@ -34,7 +34,7 @@ back button and background events would have no single place to be handled.
 ### Core Rules
 
 1. There are two kinds of display. A **screen** replaces the previous one: Title, World Map, Level
-   (the Faction Collection and card-upgrade screens join in Alpha). An **overlay** sits on top of the
+   and, from UAT-2, the Collection (Collection & Upgrade Screens: one screen, decided 2026-11-26; its unlock confirmation sits over the Collection). An **overlay** sits on top of the
    current screen: Pause, Win result, Lose result and the confirmation box sit on the Level and freeze
    it; **Settings** (Vertical Slice) opens over the Title or the World Map, or in place of Pause with the
    Level still frozen (the player's decision, 2026-11-22); a **message box** (one text, a Continue
@@ -61,6 +61,7 @@ back button and background events would have no single place to be handled.
    - in the confirmation box: answers No;
    - in Settings: closes it (back to where it was opened);
    - in a message box: Continue;
+   - in the Collection (UAT-2): goes to the World Map; during its unlock reveal, Back ends the reveal instead (Collection & Upgrade Screens rule 8);
    - on the World Map and on the Title: ignored.
 
    While Level State reports `pause_allowed` false (its Ending, from the deciding step until the result
@@ -100,6 +101,11 @@ back button and background events would have no single place to be handled.
 | (app start) | Launch | Title (pending one-time messages show over it, one at a time) |
 | Title | Tap Start | World Map |
 | World Map | Tap an unlocked level node | Level (payload: level id) |
+| World Map | Collection button (UAT-2) | Collection |
+| Collection | Its Back control, Back | World Map (during its unlock reveal, Back ends the reveal instead) |
+| Collection | Unlock on a race the player can afford | Confirmation overlay (Unlock), over the Collection |
+| Confirmation (Unlock) | Yes | Collection (the Collection calls Faction Collection & Unlocks' `unlock`; the reveal is the Collection's own) |
+| Confirmation (Unlock) | No, Back | Collection |
 | Title, World Map | Settings button (Vertical Slice) | Settings overlay |
 | Pause | Settings (Vertical Slice) | Settings overlay in place of Pause (Level stays frozen) |
 | Settings | Close, Back | What it was opened over: Title, World Map or Pause |
@@ -121,7 +127,7 @@ back button and background events would have no single place to be handled.
 | Win overlay, Lose overlay | World Map, Back | World Map |
 | Lose overlay | Retry | Level (same level id, initial state) |
 
-Any trigger not in this table is ignored. While a transition is in progress every trigger is ignored (Core Rule 4). Alpha adds transitions from the World Map to the Faction Collection and card-upgrade screens, with Back returning to the World Map.
+Any trigger not in this table is ignored. While a transition is in progress every trigger is ignored (Core Rule 4). The Collection rows were added 2026-11-26 from Collection & Upgrade Screens (UAT-2, not Alpha as first written here).
 
 ### Interactions with Other Systems
 
@@ -134,7 +140,7 @@ Any trigger not in this table is ignored. While a transition is in progress ever
 | Touch & Mouse Input | both | In: `back_pressed` (Esc, treated as Back) and `pause_pressed` (P, treated as the Pause button). Out: input lock during transitions; which screen is current, so input is routed to it | Touch & Mouse Input |
 | Level HUD | in | `pause_pressed` from the HUD's Pause button (its rule 11), the same event as Input's P key; the HUD hides the button while Level State reports `pause_allowed` false (added 2026-11-22) | Level HUD raises; Screen Flow acts |
 | Audio | out | "Screen changed" and "overlay opened" events so music can change | Screen Flow raises, Audio reacts |
-| Settings, Faction Collection, card-upgrade screens | out | Settings' entries are in the table; its GDD adds its contents. The Alpha screens are added when designed | Their own GDDs |
+| Settings, Collection & Upgrade Screens | out | Settings' entries are in the table; its GDD adds its contents. The Collection's entries (UAT-2) are in the table; it asks for the confirmation box for an unlock | Their own GDDs |
 | Save & Progress | both | In: one-time message events (restored from backup, could not be read, newer version, could not be saved), each shown as a message box; the Delete progress confirmation is Screen Flow's box. Out: on Yes in the UAT-1 newer-version confirmation, Screen Flow calls Save's `delete_progress()` (its one write, the direction-rule exception, rule 12). Progress is written by Level State and Stars & Rewards before the result overlay opens; Screen Flow records nothing else | Save & Progress raises and deletes; Screen Flow shows and calls `delete_progress()` |
 
 ## Formulas
@@ -169,7 +175,7 @@ None. This system defines no numeric rule: its rules are about which screen foll
 
 ## Dependencies
 
-Every system here that has a GDD (Touch & Mouse Input, Save & Progress, Level State & Match Flow, World Map & Regions, Menus & Screens) was checked in the 2026-11-22 cross-GDD review. Mobile Platform Integration, Audio, Settings, Faction Collection & Unlocks and Collection & Upgrade Screens have no GDD yet, so their contracts are provisional.
+Every system here that has a GDD (Touch & Mouse Input, Save & Progress, Level State & Match Flow, World Map & Regions, Menus & Screens) was checked in the 2026-11-22 cross-GDD review. Mobile Platform Integration, Audio and Settings have no GDD yet, so their contracts are provisional. Faction Collection & Unlocks (2026-11-25) and Collection & Upgrade Screens (2026-11-26, pending review) have GDDs.
 
 **Direction rule.** Screen Flow never calls another system, with two exceptions: it calls Touch & Mouse Input's `lock()` and `unlock()` (rule 4; Touch & Mouse Input rule 10), which Input provides for this, and, on Yes in a Delete progress confirmation, Save & Progress's `delete_progress()` (rule 12: the UAT-1 newer-version message's entry and, from the Vertical Slice, the Settings entry; Screen Flow makes the call in both, decided 2026-11-22). Everything else it tells another system is an event that system listens to: `start(level_id)`, `match_quit` and the pause state for Level State, the current screen or overlay for Menus & Screens. Other systems call it (requests, with a payload) or send it events, and it answers by changing the current screen and raising the pause state. That keeps it a foundation with no upstream dependency and avoids a cycle with Level State & Match Flow: Level State asks Screen Flow to open the Win or Lose overlay and reads its pause state, rather than Screen Flow querying Level State.
 

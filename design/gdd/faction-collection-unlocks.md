@@ -67,7 +67,7 @@ There is no direct Locked → Active transition (rule 8) and no other way back t
 | Factions | in/out | In: `races()`, each race's id, `order` and `unlock`. Out: `is_owned(race)`, `active_race()` | Factions owns the records and the meaning of the states; this GDD owns the owned set, the active race and both answers |
 | Currencies & Economy | in | `race_unlock_cost(race_id)`, `can_afford(diamonds, cost)`, `spend_currency(diamonds, cost)` | Currencies & Economy owns the price and the spend; this GDD owns the purchase and what it gives |
 | Save & Progress | both | Out: the `collection` block on every unlock and every change of active race; one migration step. In: the block on load | Save & Progress owns the file and the flush; this GDD owns the block's shape and its check |
-| Collection & Upgrade Screens (no GDD yet, provisional) | out/in | Out: `collection()`, `can_unlock`, `race_unlocked`, `active_race_changed`. In: `unlock(race)` after a confirmed choice, `set_active(race)` | That GDD owns the layout and the confirmation; this GDD owns the calls and their results |
+| Collection & Upgrade Screens (designed 2026-11-26) | out/in | Out: `collection()`, `can_unlock`, `race_unlocked`, `active_race_changed`. In: `unlock(race)` after a confirmed choice, `set_active(race)` | That GDD owns the layout and the confirmation; this GDD owns the calls and their results |
 | Screen Flow & Scene Manager | (through the screen) | Its confirmation box, with an unlock text | Screen Flow owns the box; the screen asks for it |
 | Unit Cards & Upgrades | out | `is_owned(race)`: only the cards of owned races can be upgraded (its rule 3) | Unit Cards & Upgrades owns the limit; this GDD only answers |
 | Stars & Rewards | none direct | It pays the diamonds this system spends, through the wallet | Currencies & Economy sits between them |
@@ -157,7 +157,7 @@ None. Owning or leading a race earns no diamonds, so an unlock never speeds the 
 
 ## Dependencies
 
-Factions, Save & Progress, Campaign Level Data, Screen Flow & Scene Manager, Currencies & Economy (amounts final, 2026-11-25) and Unit Cards & Upgrades have GDDs. Collection & Upgrade Screens has none yet, so that contract is provisional. Statuses are the systems index's on 2026-11-25.
+Factions, Save & Progress, Campaign Level Data, Screen Flow & Scene Manager, Currencies & Economy (amounts final, 2026-11-25) and Unit Cards & Upgrades have GDDs. Collection & Upgrade Screens has one too (designed 2026-11-26, pending review). Statuses are the systems index's on 2026-11-25.
 
 | System | Nature | Direction | What this GDD needs or gives | GDD status |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ Factions, Save & Progress, Campaign Level Data, Screen Flow & Scene Manager, Cur
 | Save & Progress | Hard | both | The `collection` block, one migration step, the flush at the end of the frame | Approved |
 | Campaign Level Data | Soft | in | The loaded regions, their `order` and which have levels, for C1 | Approved |
 | **Depended on by** | | | | |
-| Collection & Upgrade Screens | Hard | out/in | `collection()`, `can_unlock`, `unlock`, `set_active`, both events, `unlock_shortfall` | Not designed |
+| Collection & Upgrade Screens | Hard | out/in | `collection()`, `can_unlock`, `unlock`, `set_active`, both events, `unlock_shortfall` | Designed, pending review |
 | Screen Flow & Scene Manager | Soft | (through the screen) | Its confirmation box with an unlock text | Approved |
 | Unit Cards & Upgrades | Hard | out | `is_owned(race)`: only the cards of owned races can be upgraded (its rule 3) | Designed, pending review |
 | Factions | Hard | out | Listed above: it reads `is_owned` and `active_race` at match build | In Review |
@@ -267,7 +267,7 @@ Test data unless a criterion says otherwise: the two shipped races (`human` `sta
 | 1 | **Closed 2026-11-25.** The beast costs 50 and the Green Vale pays 50 (Currencies & Economy F4, F6); C1 holds | Currencies & Economy (session 7a) | Done |
 | 2 | What do diamonds buy once every race is owned? In the UAT build any diamond above the beast's price buys nothing | economy-designer | With the first post-UAT sink or the third race |
 | 3 | **Closed 2026-11-25.** No: only the cards of owned races can be upgraded (Unit Cards & Upgrades rule 3). This GDD supplies `is_owned` | Unit Cards & Upgrades (session bb) | Done |
-| 4 | How does the player learn that a race has become affordable (a mark on the Collection entry after the conquest sequence)? | ux-designer; Collection & Upgrade Screens, World Map & Regions | `/ux-design` for the Collection screen |
-| 5 | Should the unlock moment offer "Lead now?" as a shortcut? The rule stays that an unlock alone changes nothing (rule 8) | ux-designer | `/ux-design` for the Collection screen |
+| 4 | How does the player learn that a race has become affordable (a mark on the Collection entry after the conquest sequence)? Closed 2026-11-26 by Collection & Upgrade Screens rule 15: the map's Collection button carries a mark while a race is affordable and has not been seen in that state; card upgrades never light it | Collection & Upgrade Screens | Closed |
+| 5 | Should the unlock moment offer "Lead now?" as a shortcut? The rule stays that an unlock alone changes nothing (rule 8). Closed 2026-11-26 by Collection & Upgrade Screens rule 8: no; the reveal plays and Lead is then the primary action on the card | Collection & Upgrade Screens | Closed |
 | 6 | With three or more `diamonds` races, should prices rise with `order`, and should C1 and E5 become stricter (one race per region)? | economy-designer | When the third race is added |
 | 7 | The schema version number of this GDD's migration step, and whether C1 moves into Currencies & Economy's loader as an invariant of its own (Cross-References, edit 2) | technical-director; Currencies & Economy (session 7a) | Architecture (`/create-architecture`) |

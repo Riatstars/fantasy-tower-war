@@ -56,7 +56,7 @@ None. The wallet is four numbers with no modes; every call is answered from the 
 | Factions | in (data) | The race records: which races are `diamonds` races and their `order`, used to check that every such race has a price (E5) | Factions owns the records; this GDD owns the price |
 | Unit Roster & Stats | in (data) | Each unit kind's id and tier, for a card's cost (F5) | Unit Roster & Stats owns the kinds; this GDD owns the cost |
 | Campaign Level Data | in (data) | Level ids and region ids for the lookups; the count of levels and regions for the income totals (F3, F4) | Campaign Level Data owns the ids; this GDD owns the amounts |
-| Collection & Upgrade Screens (no GDD yet, provisional) | out | `balance(currency)`, `currency_changed`, the cost lookups, `can_afford` for button states | That GDD owns the layout; this GDD owns the numbers |
+| Collection & Upgrade Screens (designed 2026-11-26) | out | `balance(currency)`, `currency_changed`, the cost lookups, `can_afford` for button states | That GDD owns the layout; this GDD owns the numbers |
 | World Map & Regions, Menus & Screens | out | `balance(currency)` and `currency_changed` for any counter they show; the gains shown on the Win overlay and in the conquest sequence come from Stars & Rewards | The screens own what they draw |
 | God & Goddess Powers (after UAT) | in | A second gold sink through `spend_currency` | Decided when that GDD is written |
 
@@ -269,7 +269,7 @@ Three to seven upgrades in five levels: about one per level won, the target, and
 | Stars & Rewards | Hard | in | `add_currency`; `star_gold`, `win_gold`, `region_diamonds`; E1 | In Design (session 01); amounts sent 2026-11-25 |
 | Unit Cards & Upgrades | Hard | in | `card_upgrade_cost`, `can_afford`, `spend_currency(gold, …)` | In design (session bb). Decided there 2026-11-25: 5 card levels, cost by level and tier, card id = unit kind id; the rest is **provisional** |
 | Faction Collection & Unlocks | Hard | in | `race_unlock_cost`, `can_afford`, `spend_currency(diamonds, …)` | Not started: **provisional** |
-| Collection & Upgrade Screens | Hard | out | `balance`, `currency_changed`, the cost lookups | Not started (session 39): **provisional** |
+| Collection & Upgrade Screens | Hard | out | `balance`, `currency_changed`, the cost lookups | Designed 2026-11-26, pending review |
 | World Map & Regions, Menus & Screens | Soft | out | `balance` and `currency_changed` for a counter, if they show one | Approved; no counter in UAT-1 |
 | God & Goddess Powers | Soft | in | A gold sink | After UAT |
 

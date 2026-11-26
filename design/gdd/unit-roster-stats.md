@@ -154,7 +154,7 @@ A higher keep level sends a better unit, which takes keeps faster, which raises 
 
 ## Dependencies
 
-Troop Marching & Clashes, Keep Levels, Rival AI, Campaign Level Data, Level HUD and Factions (designed 2026-11-25, pending review) have GDDs, as does Unit Cards & Upgrades (designed 2026-11-25, pending review); Collection & Upgrade Screens has none yet, so that contract is provisional.
+Troop Marching & Clashes, Keep Levels, Rival AI, Campaign Level Data, Level HUD and Factions (designed 2026-11-25, pending review) have GDDs, as does Unit Cards & Upgrades (designed 2026-11-25, pending review); Collection & Upgrade Screens has one since 2026-11-26 (pending review).
 
 | System | Nature | Direction | What this GDD needs or gives | GDD status |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ Troop Marching & Clashes, Keep Levels, Rival AI, Campaign Level Data, Level HUD 
 | Rival AI | Soft | out | `unit_for(rival, level)`; `strength` behind `threat` and `incoming` | Approved |
 | Campaign Level Data | Soft | out | `speed_min` of the races a level can launch, for R3 and M2 | Approved |
 | Level HUD | Soft | out | The kind's `id` and `size`, to pick and scale the pawn sprite | Approved |
-| Collection & Upgrade Screens (UAT-2) | Soft | out | Each kind's name, tier, speed and strength for its card | Not yet designed |
+| Collection & Upgrade Screens (UAT-2) | Soft | out | Each kind's name, tier, speed and strength for its card | Designed, pending review |
 
 **Bidirectional check.** Troop Marching & Clashes (rules 3 and 16, Interactions, Dependencies, AC-M34), Keep Levels (Interactions, Dependencies, Open Question 4) and Rival AI (rule 11, Interactions, Dependencies) name Unit Roster & Stats. Campaign Level Data uses `speed_min` and cites Troop Marching F8 as its source; it should also name this GDD as the supplier from UAT-2. Level HUD draws `pawns()` with a unit field and does not name this GDD.
 

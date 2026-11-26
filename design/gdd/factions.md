@@ -64,7 +64,7 @@ The match itself has one relevant moment: at match build the two races are resol
 | Rival AI | out | `race_of(rival)`; the rival plays that race with no other change | Rival AI |
 | Faction Collection & Unlocks (UAT-2) | out/in | Out: `races()` with `unlock`. In: `is_owned(race)`, `active_race()` | Faction Collection & Unlocks |
 | Currencies & Economy (UAT-2) | out | Which loaded races are `diamonds` races, for its price check (its E5) | Currencies & Economy owns the price |
-| Collection & Upgrade Screens (UAT-2) | out | Each race's name, trait name and description, lock state, and which is active | Collection & Upgrade Screens (provisional) |
+| Collection & Upgrade Screens (UAT-2) | out | Each race's name, trait name and description, lock state, and which is active | Collection & Upgrade Screens |
 | Level HUD | out | The two races of the match, for the pawn and keep sprites it picks | Level HUD draws |
 
 ## Formulas
@@ -164,7 +164,7 @@ An earlier level 2 means a second rope sooner, which takes keeps sooner, which a
 
 ## Dependencies
 
-Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching & Clashes, Campaign Level Data, Rival AI and Level HUD have GDDs. Level State & Match Flow, Faction Collection & Unlocks, Unit Cards & Upgrades and Currencies & Economy have GDDs too (the last three drafted 2026-11-25). Collection & Upgrade Screens has none yet, so that contract is provisional. Statuses are the systems index's on 2026-11-25.
+Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching & Clashes, Campaign Level Data, Rival AI and Level HUD have GDDs. Level State & Match Flow, Faction Collection & Unlocks, Unit Cards & Upgrades and Currencies & Economy have GDDs too (the last three drafted 2026-11-25). Collection & Upgrade Screens has one since 2026-11-26 (pending review). Statuses are the systems index's on 2026-11-25.
 
 | System | Nature | Direction | What this GDD needs or gives | GDD status |
 |---|---|---|---|---|
@@ -180,7 +180,7 @@ Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching &
 | Faction Collection & Unlocks (UAT-2) | Hard | out/in | Out: `races()` and each `unlock`. In: `is_owned(race)`, `active_race()` | Designed, pending review |
 | Currencies & Economy (UAT-2) | Soft | out | Which loaded races are `diamonds` races (its E5); it owns `race_unlock_cost` | Designed, pending review |
 | Unit Cards & Upgrades (UAT-2) | Soft | out | The races whose kinds have cards | Designed, pending review |
-| Collection & Upgrade Screens (UAT-2) | Soft | out | Name, trait name and description, lock state and the active marker per race | Not yet designed |
+| Collection & Upgrade Screens (UAT-2) | Soft | out | Name, trait name and description, lock state and the active marker per race | Designed, pending review |
 | Level HUD | Soft | out | The two races of the match, for sprites | Approved |
 
 **Bidirectional check.** Keep Levels (rule 10, Interactions, Dependencies, Open Question 6), Troop Generation (rule 10, Interactions, Dependencies, Open Question 4), Rope Links (rule 14, Interactions), Rival AI (rule 11, Interactions, Dependencies, Open Question 3), Troop Marching & Clashes (rule 16, Interactions) and Unit Roster & Stats (rules 7 and 9, Interactions, Dependencies, Open Questions 5 and 7) name Factions. Faction Collection & Unlocks (rules 1, 3, 10, 15, Interactions) and Currencies & Economy (Interactions, E5) name it too. Campaign Level Data, Level HUD and Level State & Match Flow do not name it yet; the edits they need are listed under Cross-References (items 1, 10 and 11). The systems index lists Factions as depending on Unit Roster & Stats, Troop Generation and Keep Levels; Campaign Level Data should be added.

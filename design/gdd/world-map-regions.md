@@ -72,7 +72,7 @@ Deriving is instantaneous within a frame (a few dozen records). Back on the map 
 | Stars & Rewards (UAT-2) | in | Stars per node from the stored results; the diamond reward on conquest is granted by Stars & Rewards when `record_region_conquered` fires | Stars & Rewards |
 | Guardian Castles (Alpha) | in | A region's last node may be drawn as the guardian's castle (data) | Guardian Castles |
 | God & Goddess Powers (Alpha) | in | A power unlocked on conquest is shown in the sequence (data) | God & Goddess Powers |
-| Faction Collection (UAT-2) | out | Screen Flow adds a Collection button on the map (its note on Alpha transitions) | Screen Flow, Collection screens |
+| Collection & Upgrade Screens, Faction Collection & Unlocks (UAT-2) | out/in | Out: the Collection button on the map (Screen Flow's World Map → Collection row). In: `collection_badge()`, read each time the map is shown and when the conquest sequence ends; yes draws a mark on the button (Collection & Upgrade Screens rule 15) | Screen Flow owns the move; Collection & Upgrade Screens answers `collection_badge()`; this GDD draws the button and the mark |
 | Audio, Feedback & Juice (after UAT) | out | Events: `region_conquered_shown`, `fog_cleared`, `node_tapped`, `node_locked_tapped` | Those systems |
 
 ## Formulas
@@ -170,7 +170,7 @@ Worked at the extremes (lens: systems-designer): no results → one Unlocked nod
 | Menus & Screens | Soft | out | `is_unlocked(level_id)` for the Win overlay's *Next level* button | In Review |
 | Stars & Rewards (UAT-2) | Hard | both | Stars per node; the conquest record is its trigger for the diamond reward | Not yet designed |
 | Guardian Castles, God & Goddess Powers (Alpha) | Soft | in | Node art and sequence content | Not yet designed |
-| Faction Collection & Unlocks, Collection screens (UAT-2) | Soft | out | A Collection button on the map (Screen Flow transition) | Not yet designed |
+| Faction Collection & Unlocks, Collection & Upgrade Screens (UAT-2) | Soft | out/in | A Collection button on the map (Screen Flow transition); a mark on it when `collection_badge()` is yes | Approved; Designed 2026-11-26, pending review |
 
 **Bidirectional check.** Save & Progress names World Map & Regions (Interactions, Dependencies, AC21). Screen Flow names it (Interactions, rule 10). Campaign Level Data names it (Interactions, Open Question 2) and must gain the three fields this GDD defines. Level State names it (rule 7, Interactions). `systems-index.md` lists its dependencies correctly; add Menus & Screens and Stars & Rewards as dependents when their rows are written.
 
@@ -194,7 +194,7 @@ Optional for a Progression system, but this one is a screen and the campaign's p
 
 ## UI Requirements
 
-The World Map screen: one fixed portrait image; region areas; nodes in three states plus pulse and outline; a locked-node hint line; the conquest sequence and fog clear as full-screen moments; a Settings button (Vertical Slice) in a corner Screen Flow reserves; from UAT-2 a Collection button and stars on nodes. Node hit areas must meet the accessibility minimum the UX spec sets and never overlap. The map exposes `is_unlocked(level_id)` to Menus & Screens for the Win overlay's *Next level* button.
+The World Map screen: one fixed portrait image; region areas; nodes in three states plus pulse and outline; a locked-node hint line; the conquest sequence and fog clear as full-screen moments; a Settings button (Vertical Slice) in a corner Screen Flow reserves; from UAT-2 a Collection button (with a mark when `collection_badge()` is yes, Collection & Upgrade Screens rule 15) and stars on nodes. Node hit areas must meet the accessibility minimum the UX spec sets and never overlap. The map exposes `is_unlocked(level_id)` to Menus & Screens for the Win overlay's *Next level* button.
 
 > **📌 UX Flag — World Map & Regions**: this system has UI requirements. In Phase 4 (Pre-Production), run `/ux-design world-map` to create its UX spec before writing epics. Stories that reference the map screen should cite `design/ux/world-map.md`, not this GDD directly. Note this in the systems index for this system.
 

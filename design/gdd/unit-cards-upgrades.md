@@ -66,7 +66,7 @@ In a match the veteran counter of each kind is a whole number from 0 to `veteran
 | Faction Collection & Unlocks | in | `is_owned(race)`: whether a race is owned (rule 3) | That GDD owns the owned set and answers; this GDD owns the limit |
 | Factions | in | The player's active race at match build (rule 14); the races that exist | Factions |
 | Level HUD | out | The veteran mark on a pawn, to draw the trim | Level HUD draws; this GDD says which pawn |
-| Collection & Upgrade Screens (no GDD yet, provisional) | out | Each card's level, state, next cost and `veteran_every` at its level and the next; `upgrade_card`; `card_upgraded` | That GDD owns the layout; this GDD owns the numbers |
+| Collection & Upgrade Screens (designed 2026-11-26) | out | Each card's level, state, next cost and `veteran_every` at its level and the next; `upgrade_card`; `card_upgraded` | That GDD owns the layout; this GDD owns the numbers |
 | Rival AI | none in UAT | The rival launches no veterans (rule 13). Its `threat` and `incoming` read a pawn's strength, so they already count a player's veteran at its real worth | Rival AI |
 
 ## Formulas
@@ -211,7 +211,7 @@ The costs are Currencies & Economy's (`card_upgrade_cost(card_id, to_level)`, `t
 
 ## Dependencies
 
-Every system here has a GDD except Collection & Upgrade Screens, so that contract is provisional. Statuses are the systems index's on 2026-11-26.
+Every system here has a GDD (Collection & Upgrade Screens since 2026-11-26, pending review). Statuses are the systems index's on 2026-11-26.
 
 | System | Hard / Soft | Direction | What crosses | Status |
 |---|---|---|---|---|
@@ -222,7 +222,7 @@ Every system here has a GDD except Collection & Upgrade Screens, so that contrac
 | Faction Collection & Unlocks | Hard | in | `is_owned(race)` | Approved |
 | Factions | Soft | in | The player's active race; the races that exist | In Review |
 | Level HUD | Soft | out | The veteran mark, for the trim | In Review (its rule 7 draws the mark) |
-| Collection & Upgrade Screens | Hard (dependent) | out | Card levels, states, costs, `veteran_every`, `upgrade_card`, `card_upgraded` | Not yet designed |
+| Collection & Upgrade Screens | Hard (dependent) | out | Card levels, states, costs, `veteran_every`, `upgrade_card`, `card_upgraded` | Designed, pending review |
 | Stars & Rewards | Soft | none | It grants the gold spent here, through Currencies & Economy; its time goals should be re-run with veterans | Approved |
 | Rival AI | Soft | none | No veterans for the rival in the UAT build; its `threat` and `incoming` read a veteran's real strength; a later hook | Approved |
 
@@ -348,7 +348,7 @@ This system has no screen of its own. It supplies:
 | 2 | Which card is the better buy in play? Per launch the three cost the same per troop gained; the soldier is launched most. Measure launches per tier in real matches, then adjust `veteran_every` or Currencies' `tier_cost_percent` | economy-designer | First UAT-2 playtest |
 | 3 | Capture pace with maxed cards: re-run Troop Generation's F4 example (59 s) and Stars & Rewards' time goals with veterans every 5th, 4th and 3rd | systems-designer | Before the UAT-2 balance pass |
 | 4 | Gold has no use after the 24th purchase until God & Goddess Powers. Is a longer sink needed in the UAT build? | Currencies & Economy | First UAT-2 playtest |
-| 5 | Should a purchase ask for confirmation, and may one tap issue more than one `upgrade_card` call? This GDD says no confirmation (final, but never a loss of something the player did not choose to spend) and leaves the one-call-per-tap rule to the screen | ux-designer | `/ux-design` for the Collection & Upgrade Screens |
+| 5 | Should a purchase ask for confirmation, and may one tap issue more than one `upgrade_card` call? This GDD says no confirmation (final, but never a loss of something the player did not choose to spend) and leaves the one-call-per-tap rule to the screen. Closed 2026-11-26 by Collection & Upgrade Screens rule 12: no confirmation, one call per tap, and the button ignores taps for 0.3 s after one | Collection & Upgrade Screens | Closed |
 | 6 | The veteran's silhouette mark (pennant, crest or other) and whether it differs per race | art-director | `/asset-spec` |
 | 7 | A race with a strength 3 summon gets nothing from that card (rule 11). Forbid strength 3 for carded kinds, or give such a kind a different upgrade? | Unit Roster & Stats, Factions | When a third race is designed |
 | 8 | Add a Tuning Knobs section (advisory at standard): `veteran_every` per tier and level, `card_power_cap`, `card_level_max`, with safe ranges | game-designer | Before epics |

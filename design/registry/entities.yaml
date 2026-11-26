@@ -564,6 +564,7 @@ formulas:
     source: design/gdd/currencies-economy.md
     referenced_by:
       - design/gdd/currencies-economy.md
+      - design/gdd/collection-upgrade-screens.md
     variables:
       - earned
       - spent
@@ -633,6 +634,7 @@ formulas:
     referenced_by:
       - design/gdd/currencies-economy.md
       - design/gdd/unit-cards-upgrades.md
+      - design/gdd/collection-upgrade-screens.md
     variables:
       - card_cost
       - tier_cost_percent
@@ -647,6 +649,7 @@ formulas:
     source: design/gdd/currencies-economy.md
     referenced_by:
       - design/gdd/currencies-economy.md
+      - design/gdd/collection-upgrade-screens.md
     variables:
       - race_cost
     output_range: [1, 1000]
@@ -786,6 +789,88 @@ formulas:
     expression: "upgraded_power = unit_power * (1 + card_power_gain)"
     notes: "Unit Cards and Upgrades F3. Used only by the loader's tier-order check (C4); nothing in a match reads it. unit_power is Unit Roster and Stats' F1 (not yet registered)."
     added: 2026-11-25
+    revised: ""
+  - name: speed_bar
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - speed
+      - speed_bar_max
+    output_range: [0, 1]
+    expression: "speed_bar = clamp(speed / speed_bar_max, 0, 1)"
+    notes: "Collection and Upgrade Screens F1. How full a unit card's speed bar is; 0.25 to 1.0 for a legal kind at baseline (Unit Roster and Stats U2, 55 to 220 px/s)."
+    added: 2026-11-26
+    revised: ""
+  - name: strength_icons
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - strength
+      - strength_icons_max
+    output_range: [1, 3]
+    expression: "strength_icons = clamp(strength, 1, strength_icons_max)"
+    notes: "Collection and Upgrade Screens F2. Filled strength icons on a unit card; the kind's base strength, never a veteran's."
+    added: 2026-11-26
+    revised: ""
+  - name: collection_badge
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - affordable_unseen
+    output_range: [0, 1]
+    expression: "collection_badge = (affordable_unseen >= 1)"
+    notes: "Collection and Upgrade Screens F3, rule 15. Yes when a race answers can_unlock = ok and has not been seen in that state since the app started (the seen list is in memory, never saved). World Map and Regions draws the mark on its Collection button. Card upgrades never light it."
+    added: 2026-11-26
+    revised: ""
+  - name: content_height
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - top_bar_h
+      - race_row_h
+      - race_panel_h
+      - unit_card_h
+      - gap
+    output_range: [996, 1540]
+    expression: "content_height = top_bar_h + race_row_h + race_panel_h + 3 * unit_card_h + 5 * gap"
+    notes: "Collection and Upgrade Screens F4. 1208 px at baseline (96, 216, 200, 212, 12); everything below the race row scrolls when it is more than the safe area's height."
+    added: 2026-11-26
+    revised: ""
+  - name: races_visible
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - frame_w
+      - margin
+      - gap
+      - race_card_w
+    output_range: [1, 4]
+    expression: "races_visible = floor((frame_w - 2 * margin + gap) / (race_card_w + gap))"
+    notes: "Collection and Upgrade Screens F4. Race cards shown without scrolling the row sideways; 3 at baseline (720, 24, 12, 200)."
+    added: 2026-11-26
+    revised: ""
+  - name: card_shortfall
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    variables:
+      - card_upgrade_cost
+      - balance
+    output_range: [0, 1200]
+    expression: "card_shortfall = max(0, card_upgrade_cost - balance)"
+    notes: "Collection and Upgrade Screens F5. The N of the N more line under a greyed Upgrade button; drawn only above 0. The race equivalent is Faction Collection and Unlocks' unlock_shortfall."
+    added: 2026-11-26
     revised: ""
 
 constants:
@@ -1160,6 +1245,7 @@ constants:
     referenced_by:
       - design/gdd/screen-flow-scene-manager.md
       - design/gdd/menus-screens.md
+      - design/gdd/collection-upgrade-screens.md
     value: 0.2
     unit: seconds
     notes: "Range 0.1-0.4. Overlay fade in/out (cross-GDD review B16: one owner)."
@@ -1171,6 +1257,7 @@ constants:
     referenced_by:
       - design/gdd/screen-flow-scene-manager.md
       - design/gdd/menus-screens.md
+      - design/gdd/collection-upgrade-screens.md
     value: 0.15
     unit: seconds (each way)
     notes: "Range 0.1-0.3. Transition cover fade, each way (cross-GDD review B16)."
@@ -1181,6 +1268,7 @@ constants:
     source: design/gdd/menus-screens.md
     referenced_by:
       - design/gdd/menus-screens.md
+      - design/gdd/collection-upgrade-screens.md
     value: 0.08
     unit: seconds
     notes: "Range 0.05-0.15. Button press feedback (cross-GDD review B16)."
@@ -1310,6 +1398,7 @@ constants:
     referenced_by:
       - design/gdd/currencies-economy.md
       - design/gdd/stars-rewards.md
+      - design/gdd/collection-upgrade-screens.md
     value: 999999
     unit: gold or diamonds
     notes: "The highest balance a currency may reach (Currencies and Economy rule 8); an add that would pass it is cut. Range 9,999 to 999,999 in the data file. Invariant E4: the campaign's once-only gold is at most half of it."
@@ -1422,6 +1511,7 @@ constants:
     referenced_by:
       - design/gdd/unit-cards-upgrades.md
       - design/gdd/currencies-economy.md
+      - design/gdd/collection-upgrade-screens.md
     value: 5
     unit: card levels
     notes: "The highest card level; level 1 is the base, so a card has four purchases (Unit Cards and Upgrades). Range 2 to 10. Currencies and Economy's card_cost table has one entry per level from 2."
@@ -1453,8 +1543,49 @@ constants:
     source: design/gdd/unit-cards-upgrades.md
     referenced_by:
       - design/gdd/unit-cards-upgrades.md
+      - design/gdd/collection-upgrade-screens.md
     value: [[0, 12, 9, 7, 5], [0, 10, 8, 6, 4], [0, 8, 6, 4, 3]]
     unit: launches per veteran, by unit tier 1 to 3, then card level 1 to 5
     notes: "A table: every Nth launch of a kind is a veteran; 0 means never (card level 1). Other entries are whole, 2 to 60, and never rise from one level to the next (Unit Cards and Upgrades invariant C3)."
     added: 2026-11-25
+    revised: ""
+  - name: reveal_time
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    value: 2.0
+    unit: seconds
+    notes: "Range 1.0 to 4.0. How long the unlock reveal stays unless a tap or Back ends it (Collection and Upgrade Screens rule 8)."
+    added: 2026-11-26
+    revised: ""
+  - name: upgrade_flare_time
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    value: 0.3
+    unit: seconds
+    notes: "Range 0.15 to 0.6. The Accent Gold flare on an upgraded unit card; inside the art bible's 0.6 s limit for a big flare."
+    added: 2026-11-26
+    revised: ""
+  - name: upgrade_lock_time
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    value: 0.3
+    unit: seconds
+    notes: "Range 0.15 to 0.6. How long an Upgrade button ignores taps after one, so a double tap buys one level (Collection and Upgrade Screens rule 12)."
+    added: 2026-11-26
+    revised: ""
+  - name: speed_bar_max
+    status: active
+    source: design/gdd/collection-upgrade-screens.md
+    referenced_by:
+      - design/gdd/collection-upgrade-screens.md
+    value: 220
+    unit: px/s
+    notes: "Range 110 to 400. The speed that fills a unit card's speed bar; the top of Unit Roster and Stats U2 at baseline. A value below 1 is replaced by 220 and logged."
+    added: 2026-11-26
     revised: ""
