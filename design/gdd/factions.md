@@ -1,6 +1,6 @@
 # Factions
 
-> **Status**: In Design
+> **Status**: In Review
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-25
 > **Last Verified**: 2026-11-25
@@ -27,15 +27,15 @@ Factions defines the races of Tower War and decides which race each side plays i
 2. **The UAT build ships two races** (decided 2026-11-25): `human` (`order` 1, `starter`) and `beast` (`order` 2, `diamonds`). The structure holds up to `races_max` (5); the elf, the spirit and the dragon are added later as data, each with a roster and a trait that pass the checks below.
 3. **The human is the baseline** (decided 2026-11-25). It is always present, always `starter`, and its trait is empty: a human side plays with every other GDD's baseline numbers, exactly as in UAT-1.
 4. **A trait is one named rule change** (decided 2026-11-25): a `name` and a `description` (string keys) and a set of modifiers. In the UAT build a trait may set only two values, both Keep Levels `LevelModifiers` (its rule 10): `lv2_offset` and `lv3_offset`, whole numbers added to `lv2_at` and `lv3_at` (F1). Every other hook stays at its baseline for every race: the margin override and the `max_ropes` override (Keep Levels), `GenerationModifiers` (Troop Generation rule 10) and the `send_interval` override (Rope Links rule 14). They are reserved until a rule prices them (Open Questions).
-5. **A trait is a trade, never a free upgrade.** It must pass the trait budget (F2, invariants T1–T3): a race that reaches one keep level sooner than the human reaches the other later, and its time to level 3 stays within `trait_budget` of the human's.
+5. **A trait is a trade, never a free upgrade.** It must pass the trait budget (F2, invariants T1–T3): its offsets stay inside the hard limits `lv2_offset_range` and `lv3_offset_range` (T1; decided 2026-11-25, first review), a race that reaches one keep level sooner than the human reaches the other later, and its time to level 3 stays within `trait_budget` of the human's.
 6. **The beast's trait, "Early riders"** (decided 2026-11-25): `lv2_offset` −3 and `lv3_offset` +5. A beast keep rises to level 2 at 12 troops and to level 3 at 40. With the unchanged margin of 5 it drops from level 2 below 7 troops and from level 3 below 35.
 7. **A trait follows the keep's owner.** A keep uses the modifiers of its current owner's race for every level check (rise, drop, starting level). A neutral keep has no race and uses the baseline. On capture the keep is reset to level 1 with 1 troop (Keep Levels rule 7) and from that step uses the new owner's thresholds.
 8. **`race_of(owner)`** gives the race of a side in the running match: the player's is their active race; the rival's is the level's `rival_race` if the level record has one, else its region's `rival_race`, else `human` (decided 2026-11-25: one rival race per region, a level may override). A neutral has none. The `unit_for(owner, level)` of Unit Roster & Stats and the modifiers of Keep Levels both read it.
 9. **Both races are fixed for the match.** `race_of` is resolved when the match is built and frozen until it ends; nothing changes a side's race during a match (Keep Levels assumes this). A change of active race applies from the next match build.
 10. **The player leads one race at a time** (decided 2026-11-25): the active race, set on the Collection screen and used for every level until changed. Only an owned race can be active. `human` is owned from the first launch and is the active race until the player picks another. There is no race choice on a level's start panel.
-11. **Owning a race.** A `starter` race is owned from the first launch. A `diamonds` race is owned once Faction Collection & Unlocks records the unlock; the price, the purchase and the saved set of owned races and the active race are that GDD's. This GDD gives it `races()` (the records in `order`) and reads back `active_race()` and `is_owned(race)`.
+11. **Owning a race.** A `starter` race is owned from the first launch. A `diamonds` race is owned once Faction Collection & Unlocks records the unlock; the purchase and the saved set of owned races and the active race are that GDD's, and the price is Currencies & Economy's (`race_unlock_cost(race_id)`, its rule 11). This GDD gives it `races()` (the records in `order`) and reads back `active_race()` and `is_owned(race)`.
 12. **Both sides play by the same rule.** The rival's keeps use its race's roster and trait exactly as the player's do; the rival gets no race the player cannot own and no modifier outside rule 4. Two sides of the same race are legal (an edge case of Unit Roster & Stats).
-13. **Checked once at app start**, after the loader of Unit Roster & Stats (its rule 13) and in this fixed order, so a breach names one rule: (a) the race list: the count is 1 to `races_max`, ids and `order` values are unique, and `human` exists with `unlock` `starter` and an empty trait (T0); (b) each race in `order`: its `unlock` is a known value; its trait sets no reserved modifier (rule 4); then T1, T2 and T3. A development build runs every step, then stops with one error listing every breach (race, rule, values). A shipped build repairs and logs: a race that fails (b) keeps its units and loses its trait (empty, the baseline); a list that fails (a) is replaced by the human alone. The policy is Campaign Level Data's rule 8 for global tuning.
+13. **Checked once at app start**, after the loader of Unit Roster & Stats (its rule 13) and in this fixed order, so a breach names one rule: (a) the race list: the count is 1 to `races_max`, ids and `order` values are unique, and `human` exists with `unlock` `starter` and an empty trait (T0); (b) each race in `order`: its `unlock` is a known value; its trait sets no reserved modifier (rule 4); then T1, T2 and T3. A development build runs every step, then stops with one error listing every breach (race, rule, values). A shipped build repairs and logs: a race whose `unlock` is not a known value is treated as `diamonds` and keeps its units and its trait (decided 2026-11-25, first review: a typo never gives a race away), and the remaining checks of (b) still run on it; a race that fails any other check of (b) keeps its units and loses its trait (empty, the baseline); a list that fails (a) is replaced by the human alone. That fallback human is a built-in default record (`id` `human`, `order` 1, `starter`, empty trait), the one exception to rule 1, so it exists even when the data file does not. The policy is Campaign Level Data's rule 8 for global tuning.
 14. **Unknown race ids resolve to `human`.** A `rival_race` in a region or level record, or a saved active race, that names no loaded race or (for the player) no owned race is replaced by `human` and logged; a development build reports a bad `rival_race` as a level-data error first.
 
 ### States and Transitions
@@ -45,7 +45,7 @@ A race record has no state during a match. For the player a race is in one of th
 | State | Meaning | Enter when | Leave when |
 |---|---|---|---|
 | Locked | Listed, shown, not usable by the player (the rival may still play it) | First launch, for a `diamonds` race | Unlocked → Owned |
-| Owned | The player may make it active | First launch for `starter`; an unlock for `diamonds` | Chosen → Active. Never returns to Locked |
+| Owned | The player may make it active | First launch for `starter`; an unlock for `diamonds` | Chosen → Active. Never returns to Locked, except when `delete_progress()` gives a fresh profile (Faction Collection & Unlocks rule 17) |
 | Active | The race the player's keeps use in the next match built; exactly one race at a time | First launch (`human`); the player's choice on the Collection screen | Another owned race is chosen → Owned |
 
 The match itself has one relevant moment: at match build the two races are resolved (rule 8) and frozen (rule 9).
@@ -60,8 +60,10 @@ The match itself has one relevant moment: at match build the two races are resol
 | Rope Links | out | `send_interval` override: none in UAT | Rope Links |
 | Troop Marching & Clashes | in | `capture_troops`, the troops a captured keep starts from (F2) | Troop Marching & Clashes |
 | Campaign Level Data | in | `rival_race` on the region record, optional `rival_race` on the level record; starting levels computed with the owner's thresholds | Campaign Level Data owns the records and their loader; this GDD defines the field's meaning |
+| Level State & Match Flow | out | `race_of(owner)` for both sides, resolved once when it builds the match and frozen until the match ends (rules 8, 9) | Level State & Match Flow builds the match; this GDD owns the resolution |
 | Rival AI | out | `race_of(rival)`; the rival plays that race with no other change | Rival AI |
-| Faction Collection & Unlocks (UAT-2) | out/in | Out: `races()` with `unlock`. In: `is_owned(race)`, `active_race()` | Faction Collection & Unlocks (provisional) |
+| Faction Collection & Unlocks (UAT-2) | out/in | Out: `races()` with `unlock`. In: `is_owned(race)`, `active_race()` | Faction Collection & Unlocks |
+| Currencies & Economy (UAT-2) | out | Which loaded races are `diamonds` races, for its price check (its E5) | Currencies & Economy owns the price |
 | Collection & Upgrade Screens (UAT-2) | out | Each race's name, trait name and description, lock state, and which is active | Collection & Upgrade Screens (provisional) |
 | Level HUD | out | The two races of the match, for the pawn and keep sprites it picks | Level HUD draws |
 
@@ -80,10 +82,10 @@ The effective_thresholds formula is defined as:
 |----------|------|-------|--------|-------------|
 | lv2_at | int, troops | 15 (baseline) | data file (Keep Levels) | Troops at which a keep rises to level 2 |
 | lv3_at | int, troops | 35 (baseline) | data file (Keep Levels) | Troops at which a keep rises to level 3 |
-| lv2_offset | int, troops | −5 to +5 (human 0, beast −3) | data file (the race's trait) | The race's change to the level 2 threshold |
-| lv3_offset | int, troops | −5 to +10 (human 0, beast +5) | data file (the race's trait) | The race's change to the level 3 threshold |
+| lv2_offset | int, troops | −5 to +5, a hard limit (`lv2_offset_range`; human 0, beast −3) | data file (the race's trait) | The race's change to the level 2 threshold |
+| lv3_offset | int, troops | −5 to +10, a hard limit (`lv3_offset_range`; human 0, beast +5) | data file (the race's trait) | The race's change to the level 3 threshold |
 
-**Output Range:** `lv2_at_eff` 10 to 20 and `lv3_at_eff` 30 to 45 over the offset ranges, which are safe ranges for tuning, not hard limits. The hard limits are T1's: a level 2 threshold of 6 or more (above the margin of 5), a level 3 threshold of 60 or less (`troop_cap`), and a gap between them of more than 5.
+**Output Range:** `lv2_at_eff` 10 to 20 and `lv3_at_eff` 30 to 45 over the offset ranges, which are hard limits (T1; decided 2026-11-25, first review): `lv2_offset_range` and `lv3_offset_range` are data values, and an offset outside them fails T1. T1 also applies the other systems' limits to the result: a level 2 threshold of 6 or more (above the margin of 5), a level 3 threshold of 60 or less (`troop_cap`), and a gap between them of more than 5. At baseline the offset ranges are the tighter of the two.
 **Example:** the beast: 15 − 3 = 12 and 35 + 5 = 40. A neutral keep and a human keep: 15 and 35.
 
 Keep Levels applies the result (its rule 10): the rise rule uses the effective thresholds, and the drop points are each effective threshold minus `level_drop_margin` (beast: 7 and 35; human: 10 and 30).
@@ -118,7 +120,7 @@ The time_to_level formula is defined as:
 ### Invariants (checked at app start, rule 13)
 
 - **T0.** `human` exists, is `starter` and has an empty trait (both offsets 0).
-- **T1.** The race's effective thresholds satisfy Keep Levels' K1, K2 and K3 and Troop Generation's I1, and `capture_troops < lv2_at_eff`. Those GDDs own the inequalities; this check applies them to each race's modified set.
+- **T1.** Each offset lies inside its range (`lv2_offset_range` −5 to +5, `lv3_offset_range` −5 to +10; data values), and the race's effective thresholds satisfy Keep Levels' K1, K2 and K3 and Troop Generation's I1, and `capture_troops < lv2_at_eff`. Those GDDs own the inequalities; this check applies them to each race's modified set.
 - **T2.** `|time_to_l3(race) − time_to_l3(human)| ≤ trait_budget × time_to_l3(human)`, with `trait_budget` 0.10 (a data value, safe range 0.05–0.15): 54 to 66 s at baseline.
 - **T3.** A trait is a trade. Writing `d2 = time_to_l2(race) − time_to_l2(human)` and `d3 = time_to_l3(race) − time_to_l3(human)`: the race fails if `d2 < 0` and `d3 ≤ 0`, or if `d3 < 0` and `d2 ≤ 0`. Equal on both (an empty trait) passes; sooner to one level and later to the other passes.
 
@@ -126,6 +128,7 @@ The time_to_level formula is defined as:
 
 - **Level 2 is also the second rope.** `max_ropes` follows the level (Keep Levels rule 5), so the beast's trait gives its keeps a second rope and riders 7.5 s sooner, and a third rope and summons 2.5 s later. The rope slot, not the unit, is the larger part of the trait.
 - **The beast's castle is easier to knock down, its keep harder.** It leaves level 3 below 35 troops (human: below 30) and holds level 2 down to 7 (human: 10).
+- **T2 and T3 alone do not bound the early side.** T2 limits only `time_to_l3` and T3 checks only signs, so without the offset limits level 2 at 6 troops with level 3 at 45 would pass: a second rope 22.5 s sooner for a castle 2.5 s later. With `lv2_offset_range` the earliest level 2 is at 10 troops, 22.5 s after capture and 12.5 s sooner than the human (found in the first review, 2026-11-25).
 - **T2 alone is not enough.** Offsets −3 and 0 give 57.5 s, inside the 10% window, yet the race is sooner to both levels; T3 rejects it.
 - **The edges of the beast's tuning room.** With level 2 at 12, level 3 at 41 or 42 gives 65.0 s and passes; 43 gives 67.5 s and fails T2. Level 3 at 39 gives 62.5 s; 35 gives 57.5 s and fails T3.
 - **Nothing divides by zero.** The divisors are `gen_amount_level_1` and `gen_amount_level_2`, both at least 1 (Troop Generation I2). An offset of 0 on both is the identity. `trait_budget` 0 would allow only races whose `time_to_l3` equals the human's exactly, so the beast would lose its trait in a shipped build; hence the safe floor of 0.05.
@@ -144,6 +147,7 @@ An earlier level 2 means a second rope sooner, which takes keeps sooner, which a
 - **If `human` is missing, is not `starter`, or has a trait**: T0 fails. Development builds stop; shipped builds replace the whole list with the human alone (every other race id then resolves to `human`, rule 14) and log it. The human is the reference T2 and T3 measure against, so no other race can be checked without it.
 - **If the list holds more than `races_max` races, or two share an id or an `order`**: rule 13(a) fails, with the same outcome as above.
 - **If a race's trait fails T1, T2 or T3, or sets a reserved modifier**: the first failing check in rule 13's order is the one named. Development builds stop; shipped builds give that race an empty trait (baseline thresholds), keep its units, and log it.
+- **If a race's `unlock` is not a known value**: development builds stop naming the race and the value; shipped builds treat it as `diamonds` (locked until bought, or locked for good if Currencies & Economy has no price for it), keep its units and its trait, and log it (rule 13).
 - **If a race has offsets 0 and 0**: legal. It is a race of units only; T3 passes on equality.
 - **If a race has a record here but no roster in Unit Roster & Stats**: Unit Roster & Stats' U6 handles it (the human roster is used). The race keeps its trait.
 - **If a region or level names a `rival_race` that is not loaded**: the rival plays `human` and it is logged (rule 14); development builds report it as a level-data error.
@@ -160,24 +164,26 @@ An earlier level 2 means a second rope sooner, which takes keeps sooner, which a
 
 ## Dependencies
 
-Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching & Clashes, Campaign Level Data, Rival AI and Level HUD have GDDs. Faction Collection & Unlocks, Unit Cards & Upgrades and Collection & Upgrade Screens have none yet, so those contracts are provisional. Statuses are the systems index's on 2026-11-25.
+Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching & Clashes, Campaign Level Data, Rival AI and Level HUD have GDDs. Level State & Match Flow, Faction Collection & Unlocks, Unit Cards & Upgrades and Currencies & Economy have GDDs too (the last three drafted 2026-11-25). Collection & Upgrade Screens has none yet, so that contract is provisional. Statuses are the systems index's on 2026-11-25.
 
 | System | Nature | Direction | What this GDD needs or gives | GDD status |
 |---|---|---|---|---|
 | Unit Roster & Stats | Hard | in/out | In: a roster per race id; its fallback for an id with no roster. Out: `race_of(owner)` behind `unit_for` | Approved |
-| Keep Levels | Hard | out | `LevelModifiers` per race (`lv2_offset`, `lv3_offset`); K1–K3 applied to each race's set (T1) | In Review |
+| Keep Levels | Hard | out | `LevelModifiers` per race (`lv2_offset`, `lv3_offset`); K1–K3 applied to each race's set (T1) | Approved |
 | Troop Generation | Hard | in | `gen_interval`, `gen_amount_level_1`, `gen_amount_level_2` for F2; I1 for T1. Its `GenerationModifiers` hook is unused in UAT | Approved |
 | Troop Marching & Clashes | Soft | in | `capture_troops` for F2 | In Review |
 | Campaign Level Data | Hard | in | `rival_race` on the region record and, optionally, the level record; starting levels from the owner's thresholds | In Review |
-| Rope Links | Soft | out | Its `send_interval` override per race is unused in UAT | In Review |
+| Rope Links | Soft | out | Its `send_interval` override per race is unused in UAT | Approved |
 | **Depended on by** | | | | |
+| Level State & Match Flow | Hard | out | `race_of(owner)` for both sides at match build, frozen for the match | Approved |
 | Rival AI | Soft | out | `race_of(rival)`; no other change to the rival | Approved |
-| Faction Collection & Unlocks (UAT-2) | Hard | out/in | Out: `races()` and each `unlock`. In: `is_owned(race)`, `active_race()` | Not yet designed |
-| Unit Cards & Upgrades (UAT-2) | Soft | out | The races whose kinds have cards | Not yet designed |
+| Faction Collection & Unlocks (UAT-2) | Hard | out/in | Out: `races()` and each `unlock`. In: `is_owned(race)`, `active_race()` | Designed, pending review |
+| Currencies & Economy (UAT-2) | Soft | out | Which loaded races are `diamonds` races (its E5); it owns `race_unlock_cost` | Designed, pending review |
+| Unit Cards & Upgrades (UAT-2) | Soft | out | The races whose kinds have cards | Designed, pending review |
 | Collection & Upgrade Screens (UAT-2) | Soft | out | Name, trait name and description, lock state and the active marker per race | Not yet designed |
 | Level HUD | Soft | out | The two races of the match, for sprites | Approved |
 
-**Bidirectional check.** Keep Levels (rule 10, Interactions, Dependencies, Open Question 6), Troop Generation (rule 10, Interactions, Dependencies, Open Question 4), Rope Links (rule 14, Interactions), Rival AI (rule 11, Interactions, Dependencies, Open Question 3), Troop Marching & Clashes (rule 16, Interactions) and Unit Roster & Stats (rules 7 and 9, Interactions, Dependencies, Open Questions 5 and 7) name Factions. Campaign Level Data and Level HUD do not name it yet; the edits they need are listed under Cross-References. The systems index lists Factions as depending on Unit Roster & Stats, Troop Generation and Keep Levels; Campaign Level Data should be added.
+**Bidirectional check.** Keep Levels (rule 10, Interactions, Dependencies, Open Question 6), Troop Generation (rule 10, Interactions, Dependencies, Open Question 4), Rope Links (rule 14, Interactions), Rival AI (rule 11, Interactions, Dependencies, Open Question 3), Troop Marching & Clashes (rule 16, Interactions) and Unit Roster & Stats (rules 7 and 9, Interactions, Dependencies, Open Questions 5 and 7) name Factions. Faction Collection & Unlocks (rules 1, 3, 10, 15, Interactions) and Currencies & Economy (Interactions, E5) name it too. Campaign Level Data, Level HUD and Level State & Match Flow do not name it yet; the edits they need are listed under Cross-References (items 1, 10 and 11). The systems index lists Factions as depending on Unit Roster & Stats, Troop Generation and Keep Levels; Campaign Level Data should be added.
 
 ## Visual/Audio Requirements
 
@@ -194,7 +200,7 @@ Unit Roster & Stats, Keep Levels, Troop Generation, Rope Links, Troop Marching &
 ## Game Feel
 
 - **The same level plays differently under another banner.** A player who replays a level as the beast should feel the opening change within the first half-minute: a captured keep has its second rope 27.5 s after capture instead of 35 s.
-- **The beast peaks early and thins late.** Its third rope and summons come 2.5 s later, and its castle falls back to level 2 at 34 troops where a human's holds to 29: pressure on a beast castle pays off sooner.
+- **The beast peaks early and thins late.** Its third rope and summons come 2.5 s later, and its castle falls back to level 2 at 34 troops, where a human's falls only at 29: pressure on a beast castle pays off sooner.
 - **Choosing is free and never mid-fight.** There is no input during a match; the choice is made on the Collection screen, costs nothing to change, and takes effect on the next level started.
 - **You meet a race before you own it.** A region's rival shows the player what a race does, so the unlock is something they already want.
 - **Playtest questions for UAT-2** (not acceptance criteria): after two levels as the beast, can testers say what is different? Do they change race between levels at all? Does a beast rival feel unfair in its first 30 seconds?
@@ -224,7 +230,7 @@ Nothing new during a match. Outside a match:
 | design/art/art-bible.md | §3 shape language, §4 colour system | Owner marks stay; race reads from shape |
 | game-concept.md | § Army; Pillar 3; Open questions | Races as playstyles; diamonds unlock rare races; the two questions closed here |
 
-**Edits other documents need as a result of this GDD** (items 3, 5, 6, 7 and 8 applied 2026-11-25; items 1, 2, 4 and 9 are another session's documents, marked 7a, sent as wording and not yet applied):
+**Edits other documents need as a result of this GDD** (items 3, 5, 6, 7 and 8 applied 2026-11-25; items 1, 2, 4 and 9 are another session's documents, marked 7a, sent as wording and not yet applied; items 10 and 11 were added by the first review, 2026-11-25, and are not yet applied):
 
 1. `campaign-level-data.md` (7a): add `rival_race` (optional race id, default `human`) to the region record and to the level record; F3 computes a keep's starting level with its owner's effective thresholds; the Green Vale's `rival_race` is `human`; a content rule that no level requires a `diamonds` race.
 2. `keep-levels.md` (7a): rule 10's hook is no longer provisional: in UAT a race sets only `lv2_offset` and `lv3_offset`, per owner; neutrals use the baseline; Open Question 6 answered for Factions (no race exceeds 3 ropes).
@@ -234,11 +240,13 @@ Nothing new during a match. Outside a match:
 6. `unit-roster-stats.md`: Open Question 5 (two races ship) and the Factions rows are no longer "not yet designed".
 7. `game-concept.md`: close the two open questions (the rival's race; two races in the UAT build).
 8. `systems-index.md`: row 22 → designed, with the GDD link; add Campaign Level Data to its dependencies.
-9. `design/registry/entities.yaml` (7a): register `effective_thresholds` and `time_to_level` (formulas), `trait_budget` and `races_max` (constants), and add this GDD to `referenced_by` of `lv2_at`, `lv3_at`, `level_drop_margin`, `gen_interval`, `gen_amount_level_1`, `gen_amount_level_2`, `capture_troops` and `troop_cap`.
+9. `design/registry/entities.yaml` (7a): register `effective_thresholds` and `time_to_level` (formulas), `trait_budget`, `races_max`, `lv2_offset_range` and `lv3_offset_range` (constants), and add this GDD to `referenced_by` of `lv2_at`, `lv3_at`, `level_drop_margin`, `gen_interval`, `gen_amount_level_1`, `gen_amount_level_2`, `capture_troops` and `troop_cap`.
+10. `level-state-match-flow.md`: when it builds a match it resolves `race_of` for both sides (Factions rule 8) and keeps them fixed until the match ends (rule 9); a Factions row in its Interactions and Dependencies.
+11. `level-hud.md`: it reads the two races of the match to pick pawn and keep sprites; a Factions row in its Interactions and Dependencies.
 
 ## Acceptance Criteria
 
-Baseline data unless a criterion says otherwise: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `gen_interval` 2.5 s, `gen_amount_level_1` 1, `gen_amount_level_2` 2, `capture_troops` 1, `troop_cap` 60, `trait_budget` 0.10, `races_max` 5, and the two shipped races. Tags: **[Logic]** automated test in `tests/unit/`; **[Integration: X]** in `tests/integration/`; **[UI]** retained screenshot in `production/qa/evidence/`. `qa-lead` lens applied by the author (Lean mode: Section H is a high-risk section).
+Baseline data unless a criterion says otherwise: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `gen_interval` 2.5 s, `gen_amount_level_1` 1, `gen_amount_level_2` 2, `capture_troops` 1, `troop_cap` 60, `trait_budget` 0.10, `races_max` 5, `lv2_offset_range` −5 to +5, `lv3_offset_range` −5 to +10, and the two shipped races. Tags: **[Logic]** automated test in `tests/unit/`; **[Integration: X]** in `tests/integration/`; **[UI]** retained screenshot in `production/qa/evidence/`. `qa-lead` lens applied by the author (Lean mode: Section H is a high-risk section).
 
 - **AC1 [Logic] (rules 1–3, 6)**: GIVEN the shipped race data, THEN `races()` returns exactly `human` (`order` 1, `starter`, offsets 0 and 0) and `beast` (`order` 2, `diamonds`, offsets −3 and +5), in that order.
 - **AC2 [Logic] (F1)**: GIVEN the shipped data, THEN the effective thresholds are 15 and 35 for a human owner, 12 and 40 for a beast owner, and 15 and 35 for a neutral keep.
@@ -247,20 +255,23 @@ Baseline data unless a criterion says otherwise: `lv2_at` 15, `lv3_at` 35, `leve
 - **AC5 [Integration: Troop Generation, Keep Levels] (F2)**: GIVEN a keep just captured by a beast side (1 troop, timer 0) with no rope into it, THEN it becomes level 2 on its 11th beat (27.5 s after capture) and level 3 on its 25th (62.5 s); GIVEN the same keep captured by a human side, THEN on its 14th (35.0 s) and 24th (60.0 s).
 - **AC6 [Logic] (T2 boundary)**: GIVEN a race with offsets −3 and +7 (thresholds 12 and 42), THEN it validates (`time_to_l3` 65.0 s); GIVEN −3 and +8 (12 and 43), THEN it is rejected naming T2 (67.5 s against a 66 s limit).
 - **AC7 [Logic] (T3)**: GIVEN a race with offsets −3 and 0, THEN it is rejected naming T3 (27.5 s and 57.5 s, sooner to both levels) although T2 passes; GIVEN offsets 0 and 0 on a race other than the human, THEN it validates.
-- **AC8 [Logic] (T1, rule 13 order)**: GIVEN a race with `lv2_offset` −10 (threshold 5, not above the margin of 5; it would also fail T2), THEN the rule named is T1; GIVEN `lv3_offset` +30 (threshold 65, above `troop_cap`), THEN T1.
+- **AC8 [Logic] (T1, rule 13 order)**: GIVEN a race with `lv2_offset` −10 (outside its range; threshold 5, not above the margin of 5; it would also fail T2), THEN the rule named is T1; GIVEN `lv3_offset` +30 (outside its range; threshold 65, above `troop_cap`), THEN T1.
 - **AC9 [Logic] (rule 4, reserved modifiers)**: GIVEN a race whose trait sets a `max_ropes` override, a margin override, a generation modifier or a `send_interval` override, THEN it is rejected naming rule 4 and the modifier, before T1 is checked.
 - **AC10 [Logic] (rule 13, shipped fallback)**: GIVEN a shipped build and a beast trait of −3 and +8, THEN beast keeps use thresholds 15 and 35, `unit_for` still returns `beast_t1` to `beast_t3` for a beast owner, and exactly one log line names `beast` and T2; GIVEN a development build, THEN it stops with one error naming `beast`, T2 and 67.5 s.
 - **AC11 [Logic] (T0, rule 13a)**: GIVEN race data in which `human` has `lv2_offset` −1, or `human` is absent, or two races share `order` 2, THEN a development build stops naming the list rule broken (T0 for the first two); GIVEN a shipped build, THEN `races()` returns `human` alone with offsets 0 and 0, and `race_of` returns `human` for a side saved or authored as `beast`.
 - **AC12 [Logic] (rule 8, rival resolution)**: GIVEN a region with `rival_race` `beast`, THEN `race_of(rival)` is `beast` on a level with no `rival_race` and `human` on a level whose record says `human`; GIVEN a region and a level with no `rival_race`, THEN `human`; GIVEN any level, THEN `race_of` of a neutral keep's owner is none.
-- **AC13 [Logic] (rules 10, 14)**: GIVEN a save whose active race is `beast` while `is_owned(beast)` is false, THEN `race_of(player)` is `human` and one log line says so; GIVEN a region whose `rival_race` is `orc` (not loaded), THEN the rival plays `human` in a shipped build with one log line, and a development build reports the level-data error.
+- **AC13 [Logic] (rules 10, 14)**: GIVEN a save whose active race is `beast` while `is_owned(beast)` is false, THEN `race_of(player)` is `human` and one log line says so; GIVEN a region whose `rival_race` is `orc` (not loaded), THEN the rival plays `human` in a shipped build with one log line, and a development build stops with a level-data error naming the region and `orc` (Campaign Level Data rule 8).
 - **AC14 [Integration: Unit Roster & Stats] (rule 8)**: GIVEN the player's active race is `beast` and the rival's is `human`, WHEN a level 1 keep of each side launches a pawn, THEN the player's marches at 132 px/s (`beast_t1`) and the rival's at 110 px/s (`human_t1`).
 - **AC15 [Integration: Level State & Match Flow] (rule 9)**: GIVEN a running match built with the player as `human`, WHEN the active race is set to `beast`, THEN the player's keeps still rise at 15 troops and send human units until the match ends; GIVEN a retry of the level, THEN they rise at 12 and send beast units.
 - **AC16 [Integration: Troop Marching & Clashes, Keep Levels] (rule 7, capture)**: GIVEN a human rival keep at level 2 with 14 troops, WHEN a beast player captures it, THEN it is level 1 with 1 troop on that step and rises to level 2 at 12; GIVEN a beast keep captured by a human side, THEN it rises at 15; GIVEN a neutral keep with 13 troops in a match where both sides are beast, THEN it is level 1.
 - **AC17 [Integration: Campaign Level Data] (rule 7, starting level)**: GIVEN a level whose rival keeps start with 14 troops, THEN they start at level 1 when the rival is `human` and at level 2 when it is `beast`; GIVEN the shipped Green Vale with the player as `human`, THEN every keep on gv-01 to gv-05 starts at the same level as in UAT-1.
 - **AC18 [Logic] (rule 12)**: GIVEN a rival whose race is `beast`, THEN its keeps use thresholds 12 and 40 and `unit_for` returns the beast kinds, the same values a beast player gets.
 - **AC19 [UI] (UI Requirements)**: retained screenshots in `production/qa/evidence/` show the Collection screen with the human card marked active and the beast card locked, and after an unlock the beast card owned and then active; GIVEN the beast's `lv2_offset` is changed to −2 in data, THEN its trait description reads 13 troops with no other change.
+- **AC20 [Logic] (rule 13b, unknown `unlock`)**: GIVEN a shipped build and a beast record whose `unlock` is `gems`, THEN `races()` returns the beast with `unlock` `diamonds` and offsets −3 and +5, beast keeps use thresholds 12 and 40, and exactly one log line names `beast` and `gems`; GIVEN a development build, THEN it stops with one error naming `beast` and `gems`.
+- **AC21 [Logic] (rule 13a, count and ids)**: GIVEN race data with six races, or with two races that share the id `beast`, THEN a development build stops naming rule 13(a); GIVEN a shipped build, THEN `races()` returns `human` alone with offsets 0 and 0; GIVEN no race data file at all, THEN the same, from the built-in human record.
+- **AC22 [Logic] (T1, offset limits)**: GIVEN a race with offsets −6 and +10 (thresholds 9 and 45; `time_to_l2` 20.0 s, `time_to_l3` 65.0 s, so T2 and T3 would pass), THEN it is rejected naming T1 and `lv2_offset`; GIVEN offsets −5 and +10 (10 and 45; 22.5 s and 67.5 s), THEN the rule named is T2, not T1.
 
-**Coverage check.** Rules 1–3 and 6: AC1, AC2. Rule 4: AC9. Rule 5 and F2 with T1–T3: AC3, AC5–AC8. Rule 7: AC4, AC16, AC17. Rule 8: AC12, AC14. Rule 9: AC15. Rules 10 and 14: AC13. Rule 12: AC18. Rule 13: AC10, AC11. Rule 11 (owning a race) is provisional and is tested in Faction Collection & Unlocks. F1 and F2 each have a typical and a boundary case (AC2, AC3; AC4, AC6); T0–T3 each have one; cross-system: AC4, AC5, AC14–AC17. Not covered by a criterion: the count above `races_max` and duplicate ids (rule 13a, one line of AC11 covers `order` only), and hot reload (edge case). Feel statements are playtest questions in Game Feel, not criteria.
+**Coverage check.** Rules 1–3 and 6: AC1, AC2. Rule 4: AC9. Rule 5 and F2 with T1–T3: AC3, AC5–AC8. Rule 7: AC4, AC16, AC17. Rule 8: AC12, AC14. Rule 9: AC15. Rules 10 and 14: AC13. Rule 12: AC18. Rule 13: AC10, AC11, AC20, AC21. The offset limits of T1: AC22. Rule 11 (owning a race) is provisional and is tested in Faction Collection & Unlocks. F1 and F2 each have a typical and a boundary case (AC2, AC3; AC4, AC6); T0–T3 each have one; cross-system: AC4, AC5, AC14–AC17. Not covered by a criterion: hot reload (edge case). Feel statements are playtest questions in Game Feel, not criteria.
 
 ## Open Questions
 
@@ -271,7 +282,7 @@ Baseline data unless a criterion says otherwise: `lv2_at` 15, `lv3_at` 35, `leve
 | 3 | Rosters and traits for the elf, the spirit and the dragon | Factions, Unit Roster & Stats | After the UAT build |
 | 4 | Does a beast rival need its own `think` and `aggro`? Default: no change; a level's own numbers already tune it (Rival AI Open Question; Unit Roster & Stats Open Question 7) | Rival AI | First UAT-2 playtest |
 | 5 | Which races the rivals of regions 2–5 play (the beast in region 2 is the suggestion), and whether the UAT-2 build has a level with a beast rival at all, since only the Green Vale has levels and its rival is human | Campaign Level Data, the user | When UAT-2 content is planned |
-| 6 | Can the beast be unlocked in the UAT build? Diamonds come only from conquering a region, and one region is playable | Currencies & Economy, Faction Collection & Unlocks | Those GDDs |
+| 6 | Can the beast be unlocked in the UAT build? Closed 2026-11-25 by Currencies & Economy (`race_unlock_cost`, E5): yes; the beast costs 50 diamonds and conquering the Green Vale pays 50 | Currencies & Economy | Closed |
 | 7 | How a beast pawn, which has no helm, carries the owner marks in greyscale | art-director | Art bible §5; `/asset-spec` |
 | 8 | Do beast keeps get their own three silhouettes in the UAT build, or reuse the human keeps with a beast banner (6 extra keep sprites per owner colouring) | art-director, producer | `/asset-spec system:keep-levels` |
 | 9 | Should the level start panel show the rival's race and crest (UI Requirements)? | Menus & Screens, World Map & Regions | Their next revision |

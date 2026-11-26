@@ -120,3 +120,91 @@ Reviewed-Content-Hash: design/gdd/campaign-level-data.md 9ae28ab7df06f5a9268a397
 Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md 1f1b7a1eb5fa8a8cad69fa819d6f37b1ab382118
 Reviewed-Content-Hash: design/gdd/menus-screens.md 05010ff2c1d492878daf78bee5d902fdaf396835
 Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283
+
+## Review — 2026-11-26 — Verdict: NEEDS REVISION
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode)
+Blocking items: 2 | Recommended: 5
+Summary: Re-review after the 2026-11-25 veteran-mark edit. The UAT-1 design is intact: every registry value, F1/F3 example, H1 band and step count recomputes correctly. The army-layer update was only partly applied: the veteran mark had no criterion, and nothing said the HUD draws pawns by unit kind and keeps by race, which Unit Roster & Stats and Factions rely on. Both fixed the same day (user-approved); re-review pending.
+Prior verdict resolved: Yes (2026-11-22 approval; its recommended items: Level State clock wording and Troop Generation glint now resolved in those documents)
+Findings:
+- [BLOCKING] Acceptance Criteria (rule 7): the veteran mark has no criterion; coverage check claimed every rule covered. Fixed: AC23, AC18 extended
+- [BLOCKING] Core Rules (rules 7, 14) / Interactions / Dependencies: no rule picks the pawn figure by kind id and size or the keep sprite by the owner's race; Unit Roster & Stats and Factions rows missing (Factions edit 11). Fixed: rules 7 and 14, two rows each, AC24
+- [RECOMMENDED] Header / Dependencies: stale statuses (header Approved 2026-11-22; nine dependencies In Review or pending). Fixed
+- [RECOMMENDED] Visual/Audio: veteran mark missing from the event table and the asset-spec line. Fixed
+- [RECOMMENDED] Acceptance Criteria (AC1): ±1 px tolerance though F1 fixes rounding (carried over). Fixed
+- [RECOMMENDED] F3 / art bible §3: 30 px plaque vs the art bible's 28 px; art bible §7 still "[To be designed]" (carried over)
+- [RECOMMENDED] Core Rules (rule 15): pixel sizes and offsets have baselines but no safe-range table (carried over)
+Reviewed-Content-Hash: design/gdd/level-hud.md 15a4a13fbf4c272efea720d68e2a5687bf37a71c
+Reviewed-Content-Hash: design/registry/entities.yaml 2c845466a100cc35467ae5156055493f9a9b634f
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/unit-cards-upgrades.md f9ba7e081e9b782b976748b1bb35a1eacf3acdcb
+Reviewed-Content-Hash: design/gdd/unit-roster-stats.md 535aac955ca81c77e78e36ae99d5f89a9ba7d3fd
+Reviewed-Content-Hash: design/gdd/factions.md d028764ab3da2568fe469b7dcaaed798ac901cf6
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 0c3e54851a4da9ed59b5bb51815cde2a7a074b41
+Reviewed-Content-Hash: design/gdd/keep-levels.md a2d108347a1e51c7cc69b47bdbcdaa66f653f428
+Reviewed-Content-Hash: design/gdd/troop-generation.md 72af1dc0428b02c63f64581a5493a96f5511376d
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md ddff5db2a4a6a372b09ea5763d6ac22d992e43b2
+Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283
+
+## Review — 2026-11-26 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode)
+Blocking items: 0 | Recommended: 6
+Summary: Re-review, run in full, after the same-day army-layer revision. Both prior blockers are resolved: AC23 and AC18 cover the veteran mark, and rules 7 and 14 with AC24 say how pawns are drawn by kind and keeps by race, with Unit Roster & Stats and Factions rows added. Every F1, F3 and H1 number and every step count recomputes correctly, and no value conflicts with the registry. What remains is small cross-document wording and two carried items.
+Prior verdict resolved: Yes (both blockers fixed)
+Findings:
+- [RECOMMENDED] Interactions (Troop Marching row): troop-marching-clashes.md rule 15 lists pawns() as position, lane, owner, unit and omits the veteran mark this GDD reads from it (its rule 3 does say the pawn carries the mark)
+- [RECOMMENDED] Core Rules (rule 7): cites Unit Roster & Stats rule 1 for "three kinds per race"; that is its rule 2
+- [RECOMMENDED] Core Rules (rule 7): which kind id pawns() reports for a kind Unit Roster's loader replaced is undefined, so the figure drawn for a repaired kind is unknown (open in Unit Roster & Stats too)
+- [RECOMMENDED] Header / Dependencies: Unit Roster & Stats is now Approved; header still In Review, Last Verified 2026-11-22
+- [RECOMMENDED] F3 / art bible §3: 30 px plaque vs the art bible's 28 px; art bible §7 still "[To be designed]" (carried over)
+- [RECOMMENDED] Core Rules (rule 15): pixel sizes and offsets have baselines but no safe-range table (carried over)
+Receipt notes: the review read troop-marching-clashes.md (rules 3, 15) and campaign-level-data.md (B6, AC9b) by search, and the Level HUD rows of unit-roster-stats.md, factions.md and unit-cards-upgrades.md; the other dependencies were checked through the registry and are not stamped.
+Reviewed-Content-Hash: design/gdd/level-hud.md 1c6f6cc13ac9267275c72a1023e52378aaee50ca
+Reviewed-Content-Hash: design/registry/entities.yaml 2c845466a100cc35467ae5156055493f9a9b634f
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/unit-cards-upgrades.md f9ba7e081e9b782b976748b1bb35a1eacf3acdcb
+Reviewed-Content-Hash: design/gdd/unit-roster-stats.md 535aac955ca81c77e78e36ae99d5f89a9ba7d3fd
+Reviewed-Content-Hash: design/gdd/factions.md d028764ab3da2568fe469b7dcaaed798ac901cf6
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 0c3e54851a4da9ed59b5bb51815cde2a7a074b41
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 4c2d423eb2fba16a27f05ccedd4972f27f76c570
+
+## Review — 2026-11-26 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode; independent second pass, run in full in another session the same day)
+Blocking items: 0 | Recommended: 10
+Summary: Both blockers of the earlier 2026-11-26 review are resolved (AC23, AC18, rules 7 and 14, the three army-layer rows, AC24). Every registry value, the F1, F3 and H1 numbers and the step counts in AC8, AC11 and AC13 recompute correctly, and the documents changed since their last stamp (Rope Links' Cutting state, Touch & Mouse Input, Campaign Level Data, Screen Flow) still match. What remains is cross-document wording and four points to settle before the UX spec: the clock that drives HUD effects, what `size` means for drawing, the neutral colour, and the star goals' in-match readout. The header was set to Approved after this review (the stamped hash is the file with that header).
+Prior verdict resolved: Yes (both blockers fixed; agrees with the other same-day approval)
+Findings:
+- [RECOMMENDED] Interactions (Troop Marching row): troop-marching-clashes.md rule 15 lists pawns() without the veteran mark its rule 3 and this GDD rely on
+- [RECOMMENDED] Core Rules (rules 5, 7, 13): only the strip timer has a stated clock; AC8 puts the glint in match steps, and if the pop, float text and capture burst are step-driven the winning capture's burst freezes through Ending
+- [RECOMMENDED] Core Rules (rule 7): "drawn at the kind's size" does not say runtime scale or authored sprite size; scales of 0.9 to 1.3 conflict with the pixel-art, no-sub-pixel constraint (Unit Roster Open Question 3)
+- [RECOMMENDED] Core Rules (rules 3, 10) / Visual/Audio: neutral plaque edge and bar segment are grey; the art bible makes neutral keeps Monster Green and defines no neutral grey for UI
+- [RECOMMENDED] Open Questions: Stars & Rewards edit 7 not applied; its Open Question 1 (no in-match readout for the time goal) names Level HUD as an owner
+- [RECOMMENDED] F1: no tie-break when the neutral segment is forced to 1 px and both sides are equal (300 / 1 / 300); same gap in the registry expression
+- [RECOMMENDED] Cross-References: no rows for Unit Roster & Stats, Unit Cards & Upgrades or Factions
+- [RECOMMENDED] Dependencies / other documents: Unit Roster & Stats row still In Review (index: Approved); Unit Roster line 171 says the HUD does not name it; Unit Cards lists the HUD as In Review
+- [RECOMMENDED] F3 / art bible §3: 30 px plaque vs the art bible's 28 px; art bible §7 still "[To be designed]" (carried over)
+- [RECOMMENDED] Core Rules (rule 15): pixel sizes and offsets have baselines but no safe-range table (carried over)
+Reviewed-Content-Hash: design/gdd/level-hud.md 3dab75f45bb02b94181989b121b60885218cd977
+Reviewed-Content-Hash: design/registry/entities.yaml 2c845466a100cc35467ae5156055493f9a9b634f
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 0c3e54851a4da9ed59b5bb51815cde2a7a074b41
+Reviewed-Content-Hash: design/gdd/unit-roster-stats.md 535aac955ca81c77e78e36ae99d5f89a9ba7d3fd
+Reviewed-Content-Hash: design/gdd/factions.md d028764ab3da2568fe469b7dcaaed798ac901cf6
+Reviewed-Content-Hash: design/gdd/unit-cards-upgrades.md f9ba7e081e9b782b976748b1bb35a1eacf3acdcb
+Reviewed-Content-Hash: design/gdd/rope-links.md 4d5f475dd6a00d149e9ce7cc4383c8749fe07999
+Reviewed-Content-Hash: design/gdd/touch-mouse-input.md d3ae4904d175082fab9829e7ed90014c2ff6b226
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 4c2d423eb2fba16a27f05ccedd4972f27f76c570
+Reviewed-Content-Hash: design/gdd/screen-flow-scene-manager.md c0ad48dc9c713b2ebcbd10d9007be5c38a67ed6d
+Reviewed-Content-Hash: design/gdd/level-state-match-flow.md ddff5db2a4a6a372b09ea5763d6ac22d992e43b2
+Reviewed-Content-Hash: design/gdd/keep-levels.md a2d108347a1e51c7cc69b47bdbcdaa66f653f428
+Reviewed-Content-Hash: design/gdd/troop-generation.md 72af1dc0428b02c63f64581a5493a96f5511376d
+Reviewed-Content-Hash: design/gdd/stars-rewards.md 06a5508c1b64e7f454d02e5f8330a8837889e930
+Reviewed-Content-Hash: design/gdd/menus-screens.md 30785c884d3ce0887874e26e7f2fb98cda61df24
+Reviewed-Content-Hash: design/gdd/systems-index.md c1538ea6f13c15eb059833d6e70295ae1886e837
+Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283

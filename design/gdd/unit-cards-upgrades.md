@@ -1,6 +1,6 @@
 # Unit Cards & Upgrades
 
-> **Status**: Designed (pending /design-review in a fresh session)
+> **Status**: Approved (lean /design-review, 2026-11-26; 7 recommended items open, see the review log)
 > **Author**: the player + Claude Code (/design-system)
 > **Last Updated**: 2026-11-26 (revision after two lean reviews, sessions 4d and c7: statuses, `is_owned`, F2 for strength 3, baseline fallback, AC31 rewritten, AC33 to AC35 added)
 > **Last Verified**: 2026-11-25

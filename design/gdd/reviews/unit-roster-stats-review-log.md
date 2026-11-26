@@ -144,3 +144,40 @@ Reviewed-Content-Hash: design/gdd/rope-links.md fa596f387a0250b8699df3fa0f01d9fe
 Reviewed-Content-Hash: design/gdd/level-hud.md 07b2b18e2300946651f18b7a064a391e4d689ab7
 Reviewed-Content-Hash: design/gdd/game-concept.md 5f59d626512352792d034532184266656d283cde
 Reviewed-Content-Hash: design/art/art-bible.md 4f1539e1dd7e942c345b39861830a39fe77ba283
+
+## Review — 2026-11-26 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: M
+Specialists: none (lean mode)
+Blocking items: 0 | Recommended: 8
+Summary: Fifth review, run in full after the Unit Cards & Upgrades hooks were added on top of the approved text (rules 6 and 10, the Unit Cards rows, one edge case, Open Question 6). The new text agrees with Unit Cards & Upgrades (its rules 6–11, C3, C4), every number in F1, F2, the rosters, U2, U4, U5, Game Feel and the criteria recomputes correctly, and no borrowed value conflicts with the registry. The main gap is bookkeeping: five of the six cross-document edits are still unapplied, so four GDDs and the registry still treat this system as undesigned.
+Prior verdict resolved: Yes (no prior blockers; approved text changed after approval)
+Findings:
+- [RECOMMENDED] Cross-References (edits 1–5): troop-marching-clashes.md rule 7 still says "pending OQ 1" and l.288 calls this GDD undesigned; keep-levels.md Open Question 4 open, l.183 and l.249 stale; campaign-level-data.md still names Troop Marching F8 as the source of speed_min; troop-generation.md l.194 and l.259 stale; the registry has no entry from this GDD and never lists it under referenced_by
+- [RECOMMENDED] Interactions / Dependencies: Currencies & Economy reads each kind's id and tier for card costs (its l.57, l.263) and is not listed; its l.212 still cites the old card hook (U2–U4)
+- [RECOMMENDED] Dependencies: header says Approved while the index said In Review; Factions and Unit Cards & Upgrades are Approved, Level HUD is In Review; l.171 says Level HUD does not name this GDD, which it now does (its rule 7)
+- [RECOMMENDED] Core Rules (rule 11): which races speed_min covers at campaign load is unstated now that the player can lead any owned race; AC14 tests only the two match races
+- [RECOMMENDED] Acceptance Criteria (AC12, AC13): the target keep's troop count and the relaying keep's outgoing rope are still missing from the GIVENs
+- [RECOMMENDED] Formulas (F2): band_width 0–0.11 is wider than the shipped rosters tolerate (about 0.096–0.11)
+- [RECOMMENDED] Visual/Audio: sizes 1.15 and 1.3 give 18.4 and 20.8 px against the art bible's 16 px cap (Open Question 3); close before /asset-spec
+- [RECOMMENDED] Still open from earlier reviews: rule 13 details (human total in a development build, id of a replaced kind); missing ACs (rule 12 freeze, no-race owner, missing roster, band-table reset); Tuning Knobs table; Rope Links and Troop Generation in Dependencies
+Receipt notes: level-hud.md was changed by another session during this review; it is stamped with its hash at the end of the review, and the review read only its Unit Roster rows. game-concept.md and art-bible.md were not re-read and are not stamped.
+Reviewed-Content-Hash: design/gdd/unit-roster-stats.md 535aac955ca81c77e78e36ae99d5f89a9ba7d3fd
+Reviewed-Content-Hash: design/registry/entities.yaml 2c845466a100cc35467ae5156055493f9a9b634f
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md c1afa55116b1c2f752e01f9d6deb637beae8e7a9
+Reviewed-Content-Hash: design/gdd/troop-marching-clashes.md 0c3e54851a4da9ed59b5bb51815cde2a7a074b41
+Reviewed-Content-Hash: design/gdd/keep-levels.md a2d108347a1e51c7cc69b47bdbcdaa66f653f428
+Reviewed-Content-Hash: design/gdd/campaign-level-data.md 4c2d423eb2fba16a27f05ccedd4972f27f76c570
+Reviewed-Content-Hash: design/gdd/rival-ai.md a268b219681f1dd819a58406efd766d011efc2c8
+Reviewed-Content-Hash: design/gdd/troop-generation.md 72af1dc0428b02c63f64581a5493a96f5511376d
+Reviewed-Content-Hash: design/gdd/rope-links.md 4d5f475dd6a00d149e9ce7cc4383c8749fe07999
+Reviewed-Content-Hash: design/gdd/level-hud.md 1c6f6cc13ac9267275c72a1023e52378aaee50ca
+Reviewed-Content-Hash: design/gdd/factions.md d028764ab3da2568fe469b7dcaaed798ac901cf6
+Reviewed-Content-Hash: design/gdd/unit-cards-upgrades.md f9ba7e081e9b782b976748b1bb35a1eacf3acdcb
+Reviewed-Content-Hash: design/gdd/currencies-economy.md e38470508fd57de5718c1e944e0e37698a761e2c
+
+## Addendum — 2026-11-26 (a second lean review of the same file version, run in parallel; verdict also APPROVED)
+Three recommended findings the entry above does not list. No new receipt: the stamps above cover the same file version (535aac95).
+- [RECOMMENDED] Formulas (U3 margin warning): it compares the margin with the largest strength of any kind (2), but since rule 10 a veteran summon arrives with strength 3; at level_drop_margin 2 nothing is logged, yet one arrival drops a level. Unit Cards & Upgrades l.165 reads the warning as covering veteran strength. Compare against base strength + veteran_bonus for kinds that can launch veterans, and adjust AC19
+- [RECOMMENDED] Formulas (Feedback loop): "no unit is worth more than 2.2 soldiers" is stale since rule 10 (a veteran summon is strength 3; upgraded_power reaches 2.33 at baseline, 2.75 at the cap)
+- [RECOMMENDED] Summary, Formulas (F2 Output Range): "a higher tier is always the better unit" lacks the "at equal card levels" qualifier rule 6 gained

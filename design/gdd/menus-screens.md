@@ -1,6 +1,6 @@
 # Menus & Screens
 
-> **Status**: In Review (revised 2026-11-22, pending re-review)
+> **Status**: Approved (2026-11-22, lean /design-review; see its review log)
 > **Author**: user + Claude
 > **Last Updated**: 2026-11-22
 > **Last Verified**: 2026-11-22
@@ -98,9 +98,11 @@ The next_level_enabled formula is defined as:
 
 The time_format formula is defined as:
 
-`format(t) = floor(t / 60) + ":" + two-digit floor(t mod 60) + "." + one-digit tenths`
+`n = round(t × 10)` (whole tenths; exact, because Level State gives t = time_tenths / 10, so this recovers the integer even if the save file stores 60.299999…)
 
-**Variables:** `t` (float, s, to 0.1). **Output Range:** "0:00.0" upward; a 3-minute level reads "3:00.0". **Example:** 90.5 → "1:30.5"; 72.0 → "1:12.0".
+`format(t) = (n div 600) + ":" + two-digit ((n mod 600) div 10) + "." + (n mod 10)`
+
+**Variables:** `t` (float, s, to 0.1); `n` (int, whole tenths, ≥ 0). **Output Range:** "0:00.0" upward; a 3-minute level reads "3:00.0". **Example:** 90.5 → "1:30.5"; 72.0 → "1:12.0"; 60.3 → "1:00.3".
 
 ### Timings and layout (data)
 
@@ -244,6 +246,7 @@ Baseline data: the Green Vale; `overlay_fade` 0.2 s; `press_time` 0.08 s; dims 5
 - **AC13 [UI] (rules 2–8)**: retained screenshots on the minimum phone of the Title (touch controls), Pause over a mid-match table, Win on gv-03 (both buttons, empty star slot, time and best), Win on gv-05 (World Map only), Lose, the Quit confirmation, and a message box over the Title. Every button at or above the touch minimum (measured).
 - **AC14 [Playtest] (Game Feel)**: after each loss in UAT-1, note whether the tester taps Retry within 3 s; 4 of 5 testers doing so on their first loss passes. Also ask: "Did the loss screen feel fair?"
 - **AC15 [UI] (Visual/Audio)**: the Lose screenshot converted to greyscale shows Retry as the highest-contrast element; the Win screenshot shows the table's keeps legible through the dim.
+- **AC17 [Logic] (F3)**: GIVEN t 60.3, 0.1, 599.9, 90.5 and 180.0, THEN format gives "1:00.3", "0:00.1", "9:59.9", "1:30.5" and "3:00.0"; GIVEN t 60.299999999999997, THEN "1:00.3".
 - **AC16 [Logic] (rule 9)**: GIVEN every screen and overlay with a Back action, THEN a visible control performs the same action (Resume, World Map, No, Continue, Close), enumerated against Screen Flow's Back table (its AC8).
 
 **Coverage check.** Rules 1–13 each have a criterion (rule 1's scope is AC13's enumeration; rule 11's layout is AC13 and AC6; rule 12 read-only is implicit in the view-model tests never calling Save or Level State); F1–F3 each have a typical and a boundary case; cross-system: AC9, AC11, AC12.

@@ -30,7 +30,7 @@ After play: tốc độ generate của keep đang nhanh quá, làm cho lượng 
 **Intent:** —
 
 ## Look and references
-- Look: tactile tabletop diorama *(provisional)*. Mood: a war game on a table, warm and toy-like. Little stone keeps on a parchment-and-green-felt map; each level adds a visible storey and a bigger banner. Troops are tiny pawn figures marching single file along a rope-like link. Palette: player royal blue, rival crimson, neutral grey stone, ground parchment and felt, accent gold for level-ups; shadows cool, lights warm. Detail on keeps and banners; the map behind is quiet. Signature: links drawn as taut ropes pinned between keeps that sag when cut. Every figure drawn, no emoji, no plain circles.
+- Look: tactile tabletop diorama *(provisional)*. Mood: a war game on a table, using pixel art in anime style. Little stone keeps on a parchment-and-green-felt map; each level adds a visible storey and a bigger banner. Troops are tiny pawn figures marching single file along a rope-like link. Palette: player royal blue, rival crimson, neutral grey stone, ground parchment and felt, accent gold for level-ups; shadows cool, lights warm. Detail on keeps and banners; the map behind is quiet. Signature: links drawn as taut ropes pinned between keeps that sag when cut. Every figure drawn, no emoji, no plain circles.
 - References: Galcon, Mushroom Wars (the send-and-conquer loop); Tentacle Wars (persistent links).
 - View: 2D · Camera: fixed top-down, portrait phone layout, the whole map in view.
 
