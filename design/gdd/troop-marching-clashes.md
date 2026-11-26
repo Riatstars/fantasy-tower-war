@@ -2,7 +2,7 @@
 
 > **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-25 (rule 3: the veteran call at a send, from Unit Cards & Upgrades; Stars & Rewards reads `keep_captured`; added after approval, re-check pending)
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Implements Pillar**: 2. A tug-of-war you read at a glance (`design/gdd/game-concept.md` § Pillars)
@@ -41,7 +41,7 @@ banner pop. It serves Challenge and Sensation (MDA) and is the match's Competenc
 
 1. **A pawn exists from launch to its end.** Rope Links launches it (`pawn_launched(origin, target, owner, lane)`, at every send and relay; a relay also passes the pawn's unit, `hp` and `relays`, and `unit_for` is applied only at a send, rule 3); from then on it belongs to this system whatever happens to its rope or origin. It carries `seq` (launch sequence number), `owner`, `origin`, `target`, `lane`, a copy of its unit's stats, `hp` (remaining strength), `marches` and `relays`.
 2. **The owner is fixed at launch.** Friend or enemy of the target is decided only on arrival, against the target's owner at that moment.
-3. **The unit is chosen at launch**: `unit_for(owner, origin.level)` from Unit Roster & Stats (MVP: always the baseline unit). Stats are copied at launch; later changes to the keep or the data do not alter a pawn in flight. A relayed pawn keeps its unit, `hp` and `relays` (default, pending OQ 3).
+3. **The unit is chosen at launch**: `unit_for(owner, origin.level)` from Unit Roster & Stats (MVP: always the baseline unit). Stats are copied at launch; later changes to the keep or the data do not alter a pawn in flight. A relayed pawn keeps its unit, `hp` and `relays` (default, pending OQ 3). **Veterans** (from UAT-2; Unit Cards & Upgrades, decided 2026-11-25): at a send, after `unit_for`, this system calls `veteran_for_launch(owner, kind_id)` once. On yes the pawn is launched with `strength` and `hp` of the kind's strength + `veteran_bonus` (1), inside M4, and carries a veteran mark for the Level HUD; its speed and size are the kind's. A relay is not a send: the pawn keeps its strength and mark and no call is made. Sends are made in ascending `rope_id` (per-step order, phase 2), so the answer is the same on every run. The rival's sends always answer no in the UAT build.
 4. **Marching.** Each step every pawn in flight gains one march of `speed × step_dt` along the straight line between the keep centres (F1). The lane only shifts where it is drawn (F2). Pawns never stop, turn back, retarget or block each other; a faster pawn passes a slower one.
 5. **A cut rope does not recall its pawns** (Rope Links' Core Rule 8, the player's rule). They march on and act at the target.
 6. **Clashes** (the player's rule). Two pawns clash when they have different owners, march between the same two keeps in opposite directions, and have met: `d_p + d_q ≥ L` (the prototype's test). Lanes are ignored.
@@ -93,9 +93,11 @@ A relay is a new launch by Rope Links carrying the pawn's unit, `hp` and `relays
 | Keep Levels | out/in | Out: `keep_captured` (level reset). In (UAT-2): origin `level` at launch | Keep Levels |
 | Level State & Match Flow | out | `keep_captured`; `pawns_in_flight(owner)` for the loss rule | Level State (and pawns after a result, OQ 8) |
 | Rival AI | out | `incoming` (the threat to a keep) and `keep_captured` | This system (read-only) |
+| Stars & Rewards (UAT-2) | out | `keep_captured` (it counts the keeps the player lost) | This system (read-only) |
 | Level HUD | out | `pawns()` for drawing. The strength bar counts keep troops only (Level HUD F1, decided 2026-11-22), so it reads nothing else here | Level HUD draws |
 | Feedback & Juice, Tutorial & Onboarding | out | Clash, hit, reinforce and capture events; the player's first capture | This system raises |
 | Unit Roster & Stats, Factions, Unit Cards & Upgrades (UAT-2) | in | `UnitStats` records, `unit_for`, inside M1–M7 | Contract here, values there |
+| Unit Cards & Upgrades (UAT-2) | out/in | Out: `veteran_for_launch(owner, kind_id)` at each send (rule 3). In: yes or no; on yes the pawn's strength is the kind's + `veteran_bonus`, inside M4 | Unit Cards & Upgrades owns the count and the answer; this system owns the launch and the pawn |
 | Campaign Level Data | out | Must check M2 per level; "T troops falls to pawn T+1"; travel time (F1) | Campaign Level Data checks |
 
 God & Goddess Powers (Alpha) reach pawns only through hooks added here (rule 19). Pawns cannot be touched (Touch & Mouse Input).
@@ -293,7 +295,8 @@ Rope Links, Troop Generation, Keep Levels, Level State & Match Flow, Rival AI, L
 | Troop Generation | Hard | `troops`, `troop_cap`, `owner`; beat before arrivals; its Core Rules 6, 7 | Checked (edits applied 2026-11-22) |
 | Keep Levels | Soft (hard from UAT-2) | Reset on capture; origin `level` at launch from UAT-2 | Checked against its Core Rules 4, 7 (edits applied 2026-11-22) |
 | Touch & Mouse Input | Soft (a value and an invariant) | `keep_hit_radius` and invariant I2, which bound F1's L (minimum 2r) | Checked against its F1 and I2 (2026-11-22) |
-| Unit Roster & Stats (UAT-2) | Soft | `UnitStats` values, `unit_for` | Provisional |
+| Unit Roster & Stats (UAT-2) | Soft | `UnitStats` values, `unit_for` | Approved 2026-11-25 |
+| Unit Cards & Upgrades (UAT-2) | Soft | The answer of `veteran_for_launch` at each send (rule 3) | Designed 2026-11-25, pending review |
 
 ### Depended on by (downstream)
 

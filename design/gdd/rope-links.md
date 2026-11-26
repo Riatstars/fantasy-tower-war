@@ -2,7 +2,7 @@
 
 > **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-25 (rule 14: no race changes `send_interval` in the UAT build, from Factions; re-check pending)
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Implements Pillar**: 1. One verb, standing choices (`design/gdd/game-concept.md` § Pillars)
@@ -50,7 +50,7 @@ Without this system the match has no decisions: troops would grow and nothing wo
 11. **Lanes.** Two ropes between the same two keeps in opposite directions (only possible between enemies, by rule 2) are each offset `rope_lane` (8 px) to their own right, so both are visible and their pawns clash in the open (Troop Marching). A lone rope lies on the straight line.
 12. **The rival uses the same calls** (`tie`, `cut`) and gets the same refusals; Rival AI decides what to try, Rope Links decides what is allowed.
 13. **Events** for the HUD, effects and the tutorial: `rope_tied`, `rope_cut(reason: player | rival | level_drop | capture)`, `tie_refused(origin, target, reason, side)` (`side` is the side that tied, player or rival; Level HUD shows only the player's, decided 2026-11-22), `pawn_launched`, `pawn_relayed`.
-14. **Data.** `send_interval`, `rope_extend_time`, `first_send_delay`, `rope_fade_time`, `rope_lane`, `pawns_per_rope_max` and `align_tolerance` (F6) are data-file values. From UAT-2, Factions may change `send_interval` per race inside Troop Generation's invariant I3; in Alpha, God & Goddess Powers may add temporary rope effects through their own GDD.
+14. **Data.** `send_interval`, `rope_extend_time`, `first_send_delay`, `rope_fade_time`, `rope_lane`, `pawns_per_rope_max` and `align_tolerance` (F6) are data-file values. No race changes `send_interval` in the UAT build (Factions, decided 2026-11-25); a per-race value stays reserved and, if it is ever used, must hold Troop Generation's invariant I3. In Alpha, God & Goddess Powers may add temporary rope effects through their own GDD.
 
 ### States and Transitions
 
@@ -78,7 +78,7 @@ A rope is Cutting only between phase 0 (or the rival's phase 1b) and phase 2 of 
 | Feedback & Juice | out | `rope_tied`, `rope_cut`, `pawn_relayed` for the snap sound, sparks and the relay flicker | Rope Links raises |
 | Tutorial & Onboarding | out | `rope_tied` and `rope_cut` with reason player, to tell that the first tie and the first cut happened | Rope Links raises |
 | Campaign Level Data | none | Keep positions come through the keeps themselves; Rope Links never reads level files | Campaign Level Data |
-| Factions (UAT-2), God & Goddess Powers (Alpha) | in | `send_interval` override per race (inside I3); temporary rope effects | Their GDDs |
+| Factions (UAT-2), God & Goddess Powers (Alpha) | in | `send_interval` override per race (reserved: no race uses it in the UAT build; inside I3 if ever used); temporary rope effects | Their GDDs |
 
 ## Formulas
 
@@ -247,7 +247,7 @@ Free sending makes ropes cost nothing but attention, so the loop "more ropes →
 
 ## Dependencies
 
-Every system here that has a GDD (Keep Levels, Touch & Mouse Input, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Rival AI, Level HUD, Campaign Level Data) was checked in the 2026-11-22 cross-GDD review. Feedback & Juice, Tutorial & Onboarding, Factions and God & Goddess Powers have no GDD yet, so their contracts are provisional.
+Every system here that has a GDD (Keep Levels, Touch & Mouse Input, Troop Generation, Troop Marching & Clashes, Level State & Match Flow, Rival AI, Level HUD, Campaign Level Data) was checked in the 2026-11-22 cross-GDD review. Feedback & Juice, Tutorial & Onboarding and God & Goddess Powers have no GDD yet, so their contracts are provisional. Factions has one (In Review, 2026-11-25) and changes nothing here in the UAT build (rule 14).
 
 ### Depends on (upstream)
 
@@ -315,7 +315,7 @@ None open. The three edits listed here earlier (Touch & Mouse Input's hit-test p
 
 ## Cross-References
 
-Every referenced GDD that exists was checked in the 2026-11-22 cross-GDD review; Factions and God & Goddess Powers have no GDD yet, so their entries are provisional.
+Every referenced GDD that exists was checked in the 2026-11-22 cross-GDD review; God & Goddess Powers has no GDD yet, so its entry is provisional; Factions' entry was checked 2026-11-25 (no change in the UAT build).
 
 | This GDD uses | Owned by | Item |
 |---------------|----------|------|

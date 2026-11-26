@@ -2,7 +2,7 @@
 
 > **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-25 (army-layer hooks added after approval: `rival_race`, the `stars` block, F3 by owner race, rule 13; re-check pending)
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Implements Pillar**: 3. Paint the map, grow the army (`design/gdd/game-concept.md` § Pillars); its levels are tuned for Pillar 2 (2–3 minutes, one glance)
@@ -21,15 +21,16 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 
 ### Core Rules
 
-1. **Shape.** The campaign is a list of **regions**; each region has an ordered set of **levels**, possibly empty (a region with no levels is legal, never unlocks and stays fogged: World Map & Regions F2, decided 2026-11-22); each level is one **level record**. A **region record** holds `id`, `name`, `order` (its 1-based place in the campaign), and two fields World Map & Regions defines (added 2026-11-22): `fog_shape` (the art id of its silhouette under fog) and `banner_anchor` (a map-pixel point where conquest banners gather). **Campaign order** is region `order`, then level `order`. Each level's `region_id` and `order` are the one source of truth for membership and sequence (decided 2026-11-22): a region record does not list its levels, and the loader builds each region's level list from the levels that name it. A region that no level names is empty. Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
-2. **The level record** is the contract Level State (its rule 1) and Rival AI (its rule 2) consume. Every field is required unless marked optional or reserved; a missing required field, or a value of the wrong type, is a parse failure and the level is Rejected. Types: `id`, `region_id` and `name` are strings; `order` an int ≥ 1; `wait_for_first_rope` a bool; `think` and `aggro` numbers; `seed` an int; keep `id` and `troops` ints, `owner` one of the three words; keep `x`, `y` and `node` `x`, `y` whole logical pixels (ints), as in the prototype; `decor` points numbers. The fields:
+1. **Shape.** The campaign is a list of **regions**; each region has an ordered set of **levels**, possibly empty (a region with no levels is legal, never unlocks and stays fogged: World Map & Regions F2, decided 2026-11-22); each level is one **level record**. A **region record** holds `id`, `name`, `order` (its 1-based place in the campaign), and two fields World Map & Regions defines (added 2026-11-22): `fog_shape` (the art id of its silhouette under fog) and `banner_anchor` (a map-pixel point where conquest banners gather). It may also hold `rival_race` (optional: a race id string; default `human`), the race the rival plays on this region's levels (Factions, decided 2026-11-25). **Campaign order** is region `order`, then level `order`. Each level's `region_id` and `order` are the one source of truth for membership and sequence (decided 2026-11-22): a region record does not list its levels, and the loader builds each region's level list from the levels that name it. A region that no level names is empty. Ids are short stable strings (`gv` for the Green Vale, `gv-01` … `gv-05` for its levels), never renumbered and never reused once shipped: Save & Progress keeps results by id and tolerates ids it no longer knows (its rule 10), so renaming an id orphans every player's result for it.
+2. **The level record** is the contract Level State (its rule 1) and Rival AI (its rule 2) consume. Every field is required unless marked optional or reserved; a missing required field, or a value of the wrong type, is a parse failure and the level is Rejected. Types: `id`, `region_id` and `name` are strings; `order` an int ≥ 1; `wait_for_first_rope` a bool; `think` and `aggro` numbers; `seed` an int; keep `id` and `troops` ints, `owner` one of the three words; keep `x`, `y` and `node` `x`, `y` whole logical pixels (ints), as in the prototype; `decor` points numbers; `rival_race` a string; `stars.time` a number. The fields:
    - `id`, `region_id`, `name`, `order` (1-based within the region);
    - `wait_for_first_rope` (bool);
    - `rival`: `think` (s), `aggro` (0–1), `seed` (int);
    - `keeps[]`: `id` (0-based, ascending, unique within the level), `x`, `y` (logical table pixels), `owner` (`player` | `rival` | `neutral`), `troops` (int);
    - `node`: `x`, `y` on the world map image (720 × 1,280 map pixels), where World Map & Regions draws this level's node (added 2026-11-22 from that GDD);
    - `decor` (optional): `river`, a polyline of table points, drawn and nothing else;
-   - `stars` (reserved for Stars & Rewards in UAT-2: time thresholds; absent in UAT-1, where every win is `win_stars`).
+   - `rival_race` (optional): a race id that replaces the region's for this level; absent means the region's. An id that names no loaded race is a level-data error in development, naming the region or level and the id; a shipped build plays `human` and logs it (Factions, decided 2026-11-25);
+   - `stars` (optional; Stars & Rewards, decided 2026-11-25): `{ time }`, the level's star time in seconds, in whole tenths, above 0. With no block the level has no time goal. A bad value rejects the block, not the level, and is logged. A UAT-1 build has no block, and every win is `win_stars`.
 3. **The table** is 720 × 1,280 logical pixels, portrait (Touch & Mouse Input owns the table and its scaling to the screen). Every position in a record is in those units. Keep order (`id`) matters: Troop Marching resolves arrivals keep by keep in ascending id (its rule 11) and Rival AI breaks ties by lower id, so authors keep ids stable within a level too.
 4. **Starting troops are per keep**, including the player's and the rival's. The prototype's single `player_start` (10) and per-map `rival` number are written into each keep's `troops`; the baseline keeps those values. A keep's starting level follows from its troops by Keep Levels F1 (`rise_level`), with no history (its rule 8): a neutral with 16 troops starts at level 2.
 5. **The first-rope wait** (decided 2026-11-22; closes Level State Open Question 2): `wait_for_first_rope` is true on the first level of the game (`gv-01`) and false everywhere else. It is a field, not a rule, so a tutorial level may set it later. The prototype's `ai_grace` (60 s before the rival may attack on map 1) is not carried: `game-concept.md` replaces it with this first-rope rule.
@@ -40,6 +41,7 @@ Campaign Level Data is the content of the campaign: the regions, the levels in e
 10. **Decor has no effect on play.** The river polyline is drawn by the Level scene behind the keeps; ropes and pawns cross it freely, as in the prototype. Anything that affects play is a keep.
 11. **Content ships as data files**, one per level plus one per region, in the format the architecture decides (an ADR); the GDD fixes the fields and ranges, not the syntax. Development builds reload a level file on change without a restart (tools item).
 12. **UAT-1 content: one playable region.** The Green Vale, `gv`, `order` 1, holds the five prototype maps in their played order (Content below). Regions 2–5 ship as region records with an `id` (`r2` … `r5`), a placeholder `name`, `order` 2–5, their `fog_shape` and `banner_anchor`, and no level naming them (decided 2026-11-22), so World Map & Regions draws their fog from data (its rule 13). Their ids are permanent once shipped (rule 1): UAT-2 adds levels that name these regions rather than replacing the records. The difficulty ramp across them is data: `think` 3.0 → 1.4, `aggro` 0.3 → 1.0, rival keeps 1 → 3 with 10 → 18 troops, keeps 7 → 11. UAT-2 and later add regions by adding files; no rule here changes.
+13. **No level needs a rare race** (Factions, decided 2026-11-25). Every level is authored and tested to be winnable with the `human` race; none may require a `diamonds` race.
 
 ### Content: Region 1, the Green Vale (`gv`)
 
@@ -82,7 +84,9 @@ A record is re-parsed and re-validated on every request (a Retry included): vali
 | Save & Progress | out | The set of known level ids and region ids, registered at app start (its rule 10) | Save & Progress validates; this GDD supplies |
 | World Map & Regions | out | Regions, levels, their order and names (loaded levels only: one dropped at campaign load has no node, rule 7); `next(level)`; the level record's `node` (rule 2) and the region record's `fog_shape` and `banner_anchor` (rule 1), fields World Map & Regions defines | World Map draws and derives unlocks |
 | Screen Flow & Scene Manager | out | A load failure when a level's match cannot be built (an unreadable file), and "nothing playable" when nothing survives campaign load (Edge Cases), for its load-failure rule (its rule 11); a level Rejected at campaign load never reaches it (rule 7) | Screen Flow |
-| Stars & Rewards (UAT-2) | out | The reserved `stars` block per level (time thresholds) | Stars & Rewards defines it |
+| Stars & Rewards (UAT-2) | out | The `stars` block per level, `{ time }` (rule 2) | Stars & Rewards defines it; this GDD stores and checks it |
+| Factions (UAT-2) | in/out | In: the loaded race ids, to check `rival_race`. Out: `rival_race` per region and per level (rules 1, 2) | Factions owns the races; this GDD owns the field |
+| Currencies & Economy (UAT-2) | out | Level and region ids, each level's region, region `order` and the level counts, for its reward lookups | Currencies & Economy owns the amounts |
 | Tutorial & Onboarding (after UAT) | out | May add tutorial levels or set `wait_for_first_rope` and `aggro` 0 on them: all data | Tutorial |
 | Guardian Castles (Alpha) | out | A region's last level may carry a guardian block (data) | Guardian Castles |
 | Level HUD, Menus & Screens | out | Level `name` and `order` for the HUD title and the result overlays | Those GDDs |
@@ -126,15 +130,15 @@ The min_spacing formula is defined as:
 
 The start_level formula is defined as:
 
-`start_level(keep) = rise_level(keep.troops)` (Keep Levels F1: 3 if ≥ `lv3_at`, 2 if ≥ `lv2_at`, else 1)
+`start_level(keep) = rise_level(keep.troops)` (Keep Levels F1: 3 if ≥ `lv3_at`, 2 if ≥ `lv2_at`, else 1), with the thresholds of the keep's owner (Factions `effective_thresholds`, added 2026-11-25): the player's active race for a player keep, the level's `rival_race` for a rival keep, the baseline for a neutral
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | keep.troops | int | 0–`troop_cap` (60) | data file (this GDD) | Starting troops |
-| lv2_at, lv3_at | int | 15, 35 | data file (Keep Levels) | Level thresholds |
+| lv2_at, lv3_at | int | 15, 35 at baseline and for `human`; 12, 40 for `beast` | data file (Keep Levels; race offsets from Factions) | The level thresholds of the keep's owner |
 
-**Output Range:** 1–3. Green Vale: every player keep starts at level 1 (10 troops). Rival keeps of 15 or more start at level 2: gv-02's one (15), gv-04's two (16) and gv-05's three (18); gv-01's (10) and gv-03's two (14) start at level 1. Seven neutrals start at level 2 (16, 16, 25, 20, 16, 16, 24); none at level 3.
+**Output Range:** 1–3. Green Vale: every player keep starts at level 1 (10 troops). Rival keeps of 15 or more start at level 2: gv-02's one (15), gv-04's two (16) and gv-05's three (18); gv-01's (10) and gv-03's two (14) start at level 1. Seven neutrals start at level 2 (16, 16, 25, 20, 16, 16, 24); none at level 3. The Green Vale's `rival_race` is `human` (decided 2026-11-25), so these counts are unchanged. Under a `beast` rival a rival keep starting with 12 to 14 troops starts at level 2. A player keep starts with 10 troops, level 1 under either race.
 **Balance note** (decided 2026-11-22: intended). A level 2 rival keep holds 2 rope slots from step 0, so the rival opens with more slots than the player's 1: gv-02 2, gv-03 2 (two level 1 keeps), gv-04 4 and gv-05 6 at step 0. gv-03's two 14-troop keeps reach 15 on the first beat (2.5 s), before the rival's first pass, so the rival's slots at its first pass are 1 / 2 / 4 / 4 / 6 across gv-01 … gv-05. It is part of the Green Vale ramp with `think` and `aggro`; the player catches up by taking the level 2 neutrals. Playtest question for UAT-1: does gv-05's 6-slot opening read as a hard final level or as unfair? A neutral at level 2 or 3 holds more rope slots once captured, which is the reward for taking the big ones; it is authored by giving it ≥ 15 or ≥ 35 troops, never by a level field.
 **Example:** gv-03's centre neutral, 25 troops: 25 ≥ 15 and < 35 → level 2.
 
@@ -199,7 +203,9 @@ Worked at the extremes (lens: systems-designer): a two-keep level (one player, o
 | **Depended on by** | | | | |
 | World Map & Regions | Hard | out | Regions (with `fog_shape` and `banner_anchor`, empty ones included), levels, order, names, `next`; each level record's `node` | In Review |
 | Level HUD, Menus & Screens | Soft | out | Level `name`, `order` | In Review |
-| Stars & Rewards (UAT-2) | Soft | out | The reserved `stars` block | Not yet designed |
+| Stars & Rewards (UAT-2) | Soft | out | The `stars` block, `{ time }` | Designed 2026-11-25, pending review |
+| Factions (UAT-2) | Soft | in/out | `rival_race` per region and level; the loaded race ids | In Review (2026-11-25) |
+| Currencies & Economy (UAT-2) | Soft | out | Ids, region `order`, level counts | Designed 2026-11-25, pending review |
 | Tutorial & Onboarding (after UAT) | Soft | out | Tutorial levels as data | Not yet designed |
 | Guardian Castles (Alpha) | Soft | out | A guardian block on a region's last level | Not yet designed |
 
@@ -258,7 +264,10 @@ Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `s
 - **AC11b [Logic] (B8)**: GIVEN a level with 15 keeps, THEN it validates; GIVEN 16, THEN Rejected naming B8 and 16.
 - **AC12 [Logic] (rule 8, several failures)**: GIVEN a record breaching I2 and B1 at once, THEN the development error lists both before stopping.
 - **AC13 [Logic] (F4 boundary)**: GIVEN the Green Vale alone, THEN `next(gv-03)` is gv-04 and `next(gv-05)` is none; GIVEN a second region after it, THEN `next(gv-05)` is that region's order-1 level; GIVEN regions r2–r5 that no level names (the UAT-1 files), THEN `next(gv-05)` is none and the campaign loads with five region records.
-- **AC14 [Logic] (rule 3, parsing)**: GIVEN a record with an extra field `stars`, THEN it validates and one log line names the ignored field; GIVEN a record missing `keeps`, THEN it is a parse failure, not a validation failure.
+- **AC14 [Logic] (rule 3, parsing)**: GIVEN a record with an extra field `weather`, THEN it validates and one log line names the ignored field; GIVEN a record missing `keeps`, THEN it is a parse failure, not a validation failure.
+- **AC14b [Logic] (rules 1, 2: `rival_race`; added 2026-11-25)**: GIVEN a region with `rival_race` `beast` and a level that sets none, THEN the level's rival race is `beast`; GIVEN the level sets `human`, THEN it is `human`; GIVEN neither sets one, THEN it is `human`; GIVEN `rival_race` `orc` (no such race), THEN a development build reports a level-data error naming the region or level and `orc`, and a shipped build plays `human` and logs it.
+- **AC14c [Logic] (F3 with races; added 2026-11-25)**: GIVEN a rival keep with 13 troops, THEN it starts at level 1 under a `human` rival and at level 2 under a `beast` rival; GIVEN a neutral keep with 13 troops in the same level, THEN it starts at level 1.
+- **AC14d [Logic] (rule 2: `stars`; added 2026-11-25)**: GIVEN `stars: { time: 45.0 }`, THEN the level loads with a star time of 45.0; GIVEN `time` 0, −1 or 45.05, THEN the level loads with no time goal and one log line names the block; GIVEN no `stars` block, THEN the level loads with no time goal and nothing is logged.
 - **AC14b [Logic] (rule 2, types)**: GIVEN a keep with `x` 130.5, or `order` "2" as a string, THEN it is a parse failure and the level is Rejected; GIVEN a record without `decor`, THEN it validates.
 - **AC14c [Logic] (B7)**: GIVEN a region record missing `fog_shape`, or with `banner_anchor` (800, 100), THEN a development build stops naming the region and the field, and a shipped build drops the region and every level naming it with one log line each.
 - **AC14d [Logic] (B7, nothing playable)**: GIVEN a shipped build whose only region with levels, `gv`, fails B7, THEN no campaign loads, one log line names `gv`, and opening the World Map shows Screen Flow's load-failure message instead.
@@ -279,7 +288,7 @@ Baseline data: `keep_hit_radius` 78, `send_interval` 0.6, `pawn_speed` 110 (= `s
 | 2 | Closed (2026-11-22): `node {x, y}` per level and `fog_shape`, `banner_anchor` per region, defined by World Map & Regions rule 1 and carried here (rules 1, 2; bound B5) | — | — |
 | 3 | The data file format (JSON, Godot `.tres`, or a custom resource) and the editor tooling for authoring layouts | technical-director | Technical Setup (ADR) |
 | 4 | Whether UAT-2 regions reuse the 720 × 1,280 table or some levels get a scrolling table; this GDD assumes one fixed table | game-designer, technical-director | Before region 2 |
-| 5 | Per-level star time thresholds (the reserved `stars` block) | Stars & Rewards | UAT-2 |
+| 5 | ~~Per-level star time thresholds (the reserved `stars` block)~~ Answered 2026-11-25 (Stars & Rewards): one star time per level, `stars.time` (rule 2) | Stars & Rewards | Closed |
 | 6 | Whether the five Green Vale levels need re-tuning after the Godot build changes feel (Game Feel: 2–3 minutes per level) | game-designer | After UAT-1 |
 | 7 | Deferred (2026-11-22 polish pass): a playtest criterion for the Game Feel target, with a tester count and a pass rule, measured from Level State's `time` per win. Also reconcile the re-author band (under 90 s or over 4 min) with Pillar 2's 2–3 minutes | game-designer, qa-lead | UAT-1 playtest plan |
 | 8 | Deferred (2026-11-22 polish pass): B5's minimum node distance needs the World Map UX spec (`/ux-design world-map`); until then B5 checks only the map bounds and region areas | ux-designer | World Map UX spec |

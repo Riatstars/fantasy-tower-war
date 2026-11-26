@@ -2,7 +2,7 @@
 
 > **Status**: Approved (polish pass re-reviewed 2026-11-25, lean /design-review; see its review log)
 > **Author**: user + Claude
-> **Last Updated**: 2026-11-22
+> **Last Updated**: 2026-11-25 (rule 10's race hook made final after approval, from Factions; AC19b; re-check pending)
 > **Last Verified**: 2026-11-22
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Implements Pillar**: 2. A tug-of-war you read at a glance (`design/gdd/game-concept.md` § Pillars)
@@ -45,7 +45,7 @@ the end of each game step, before Troop Generation reads it. It does not own the
 7. **On capture** (Troop Marching & Clashes raises `keep_captured`; it sets the owner and `troops` to 1), the level is reset to 1 at once, in the same step, with no margin. Keep Levels raises no `level_dropped` for a capture: Rope Links cuts every outgoing rope on `keep_captured` itself (its rule 7). Troop Generation's Core Rule 7 already states the same reset.
 8. **At match start** every keep's level is the rise rule applied to its initial troops (rule 2), with no history: a neutral with 25 troops starts at level 2, the player's keep with 10 at level 1.
 9. **Events.** Keep Levels raises `level_rose(keep, old, new)` and `level_dropped(keep, old, new)` on the step the level changes (not for the capture reset, rule 7). Level HUD and Feedback & Juice react to them; Rope Links reacts to `level_dropped`.
-10. **Data.** `lv2_at`, `lv3_at`, `level_drop_margin` and `max_ropes[1..3]` come from the data file. From UAT-2, Factions may supply `LevelModifiers` (threshold offsets, a margin override, a `max_ropes` override per level); with none supplied the baseline applies. Every modified set must satisfy the invariants in Formulas.
+10. **Data.** `lv2_at`, `lv3_at`, `level_drop_margin` and `max_ropes[1..3]` come from the data file. From UAT-2, Factions supplies `LevelModifiers` per race (decided 2026-11-25). In the UAT build a race sets only `lv2_offset` and `lv3_offset`, whole troops added to `lv2_at` and `lv3_at`, applied to each keep by its current owner's race; a neutral keep uses the baseline. The margin override and the `max_ropes` override per level are reserved and unused. The beast is −3 and +5: levels at 12 and 40, drop points 7 and 35. With none supplied the baseline applies. Every modified set must satisfy the invariants in Formulas.
 11. **No other input.** Time held, kills, gold or anything else never changes a level; only troops do. This keeps the rule readable at a glance on the plaque.
 
 ### States and Transitions
@@ -189,7 +189,7 @@ Every system here that has a GDD (Troop Generation, Rope Links, Touch & Mouse In
 | Troop Generation | Hard | `troops` of every keep at the end of each step. The cycle (Troop Generation needs the level) is resolved by per-step order: Keep Levels recomputes first, Troop Generation uses the result on its next beat. Both GDDs state it | Checked: Troop Generation Core Rule 3, Interactions, Dependencies and AC11b say the same |
 | Campaign Level Data | Soft (data only) | Initial troops per keep, for the starting level | Checked 2026-11-22: its F3 applies F1 (`rise_level`) |
 | Troop Marching & Clashes | Soft | `keep_captured(keep, new_owner)`, which triggers the capture reset to level 1 (rule 7) | Checked 2026-11-22: its rule 15 and Interactions raise it; Rope Links cuts on the same event |
-| Factions (UAT-2) | Soft | `LevelModifiers`, identity by default | Provisional |
+| Factions (UAT-2) | Soft | `LevelModifiers` per race: `lv2_offset` and `lv3_offset` only in the UAT build; identity by default | In Review (2026-11-25) |
 
 ### Depended on by (downstream)
 
@@ -296,6 +296,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 - **AC18b [Logic] (K4 cap)**: GIVEN `max_ropes` `[1, 2, 5]`, THEN K4 is reported; a shipped build makes it `[1, 2, 3]` and logs it.
 - **AC18c [Logic] (K4 floor)**: GIVEN `max_ropes` `[0, 0, 3]`, THEN K4 is reported; a shipped build makes it `[1, 1, 3]` and logs it.
 - **AC19 [Logic] (rule 10)**: GIVEN a Factions `LevelModifiers` that raises `lv2_at` by 5, THEN a keep rises to level 2 at 20 troops and drops below 15, and K1–K4 are re-checked against the modified set.
+- **AC19b [Logic] (rule 10, per owner; added 2026-11-25)**: GIVEN a match with a `beast` player (offsets −3 and +5) and a `human` rival, THEN a player keep rises to level 2 at 12 troops and to level 3 at 40, and drops below 7 and below 35; a rival keep and a neutral keep in the same match rise at 15 and 35.
 
 **Cross-system, visual and feel**
 
@@ -315,7 +316,7 @@ Baseline data unless stated: `lv2_at` 15, `lv3_at` 35, `level_drop_margin` 5, `m
 | 3 | Do neutral keeps need a different level look (ruined, overgrown) so a level 2 neutral does not read as a rival keep? | art-director | Art bible |
 | 4 | Which unit kind each level produces per race (barracks soldiers, keep cavalry, castle summons) and whether a drop changes the units already marching | Unit Roster & Stats | UAT-2 |
 | 5 | Should the level-up float text appear only the first few times per session, to reduce clutter for experienced players? | ux-designer | Vertical Slice |
-| 6 | Whether `max_ropes` should ever exceed 3 for a race or a god power (the brief says max level 3, and K4 caps the table at 3; raising it would change K4, the registry range and the plaque) | Factions, God & Goddess Powers | UAT-2 (Factions); Alpha (God & Goddess Powers) |
+| 6 | Whether `max_ropes` should ever exceed 3 for a race or a god power (the brief says max level 3, and K4 caps the table at 3; raising it would change K4, the registry range and the plaque) | God & Goddess Powers | Alpha. Answered for Factions 2026-11-25: no race exceeds 3 ropes |
 | 7 | AC21 and AC22 are screenshot and playtest checks with no pass rule yet; rewrite each with a tester count and a pass threshold (for example 4 of 5 first-time testers) when the playtest plan exists | qa-lead, game-designer | First playtest plan (deferred from the 2026-11-22 polish pass) |
 | 8 | Tuning Knobs and Player Fantasy sections are not written (advisory at `standard`): knobs `lv2_at`, `lv3_at`, `level_drop_margin`, `max_ropes_table` with safe ranges; fantasy "Challenge / sensation of growth" | game-designer | Before Production, or if `modes.workflow` moves to full (deferred) |
 | 9 | Same-side arrivals that land after a capture in the same step can lift the new owner's troops past `lv2_at`; rule 7 and the "capture wins" edge case keep it at level 1 for that step. Confirm against Troop Marching & Clashes' per-step phases when implementing | gameplay-programmer | Keep Levels implementation story (deferred) |

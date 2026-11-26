@@ -300,6 +300,7 @@ formulas:
       - design/gdd/rope-links.md
       - design/gdd/menus-screens.md
       - design/gdd/save-progress.md
+      - design/gdd/stars-rewards.md
     variables:
       - deciding_step
       - start_step
@@ -558,6 +559,234 @@ formulas:
     notes: "The Win overlay's Next level button. Hidden on a region's last level even when next() crosses into the next region (revised 2026-11-22, so the map plays the conquest), and whenever World Map reports the next level locked, so a reordered campaign cannot offer a locked level."
     added: 2026-11-22
     revised: ""
+  - name: balance
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    variables:
+      - earned
+      - spent
+      - balance_cap
+    output_range: [0, 999999]
+    expression: "balance(currency) = earned(currency) - spent(currency)"
+    notes: "Currencies and Economy F1. The wallet saves four totals that only rise (gold and diamonds, earned and spent); the balance is never stored. A spend is refused unless balance >= amount; an add is cut at balance_cap."
+    added: 2026-11-25
+    revised: ""
+  - name: star_gold
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/stars-rewards.md
+    variables:
+      - region_star_gold
+    output_range: [0, 2000]
+    expression: "star_gold(level_id) = region_star_gold[order of the level's region]"
+    notes: "Currencies and Economy F2. Gold for each goal of a level the first time it is held; paid by Stars and Rewards. Defaults 100 / 150 / 200 / 250 / 300 for regions 1 to 5; a region with no entry uses the last one."
+    added: 2026-11-25
+    revised: ""
+  - name: win_gold
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/stars-rewards.md
+    variables:
+      - star_gold
+      - replay_percent
+    output_range: [0, 200]
+    expression: "win_gold(level_id) = floor(star_gold(level_id) * replay_percent / 100)"
+    notes: "Currencies and Economy F2. Gold for every win, first and replay. Defaults 10 / 15 / 20 / 25 / 30 for regions 1 to 5. Invariant E1 (the farm guard): win_gold <= star_gold / 10, true by construction while replay_percent <= 10."
+    added: 2026-11-25
+    revised: ""
+  - name: level_gold_max
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/stars-rewards.md
+    variables:
+      - star_gold
+      - win_gold
+    output_range: [0, 6200]
+    expression: "level_gold_max(level_id) = 3 * star_gold(level_id) + win_gold(level_id)"
+    notes: "Currencies and Economy F3. The most a level pays once (a first win meeting all three goals); the maximum of Stars and Rewards' win_payout. Green Vale 310 per level, 1,550 for the region. A design check, not runtime code."
+    added: 2026-11-25
+    revised: ""
+  - name: diamonds_available
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    variables:
+      - region_diamonds
+      - regions_with_levels
+    output_range: [0, 5000]
+    expression: "diamonds_available = region_diamonds * regions_with_levels"
+    notes: "Currencies and Economy F4. All the diamonds a campaign can pay; 50 with the Green Vale only, 250 with five regions. Invariant E5: the race_cost values of the loaded diamonds races sum to no more than this. A design check, not runtime code."
+    added: 2026-11-25
+    revised: ""
+  - name: card_upgrade_cost
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/unit-cards-upgrades.md
+    variables:
+      - card_cost
+      - tier_cost_percent
+      - to_level
+    output_range: [1, 300000]
+    expression: "card_upgrade_cost(card, to_level) = floor(card_cost[to_level] * tier_cost_percent[tier of card] / 100)"
+    notes: "Currencies and Economy F5. Gold to raise a card to to_level (2 to card_level_max). Defaults: soldier 100 / 200 / 400 / 800, rider 125 / 250 / 500 / 1,000, summon 150 / 300 / 600 / 1,200. Returns none outside the table; never 0."
+    added: 2026-11-25
+    revised: ""
+  - name: race_unlock_cost
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    variables:
+      - race_cost
+    output_range: [1, 1000]
+    expression: "race_unlock_cost(race_id) = race_cost[race_id]"
+    notes: "Currencies and Economy F6. Diamonds to unlock a diamonds race; none for a starter race or an unknown id. The purchase and the owned set are Faction Collection and Unlocks'."
+    added: 2026-11-25
+    revised: ""
+  - name: goals_met
+    status: active
+    source: design/gdd/stars-rewards.md
+    referenced_by:
+      - design/gdd/stars-rewards.md
+    variables:
+      - time
+      - star_time
+      - keeps_lost
+    output_range: [1, 3]
+    expression: "goals_met = {win} + {time if star_time exists and time <= star_time} + {clean if keeps_lost = 0}"
+    notes: "Stars and Rewards F1. The set of goals one win meets; the range is its count (a win always meets the win goal). star_time is per-level data (the level record's stars.time); keeps_lost counts keep_captured events where the old owner is the player."
+    added: 2026-11-25
+    revised: ""
+  - name: held_stars
+    status: active
+    source: design/gdd/stars-rewards.md
+    referenced_by:
+      - design/gdd/stars-rewards.md
+      - design/gdd/level-state-match-flow.md
+    variables:
+      - held_goals_before
+      - goals_met
+    output_range: [0, 3]
+    expression: "held_stars = count(held_goals_before union goals_met)"
+    notes: "Stars and Rewards F2. The value stored as Save and Progress' best stars and returned by score_win for the result record; it never falls. 0 only for a level never won."
+    added: 2026-11-25
+    revised: ""
+  - name: win_payout
+    status: active
+    source: design/gdd/stars-rewards.md
+    referenced_by:
+      - design/gdd/stars-rewards.md
+      - design/gdd/currencies-economy.md
+    variables:
+      - star_gold
+      - new_goals
+      - win_gold
+    output_range: [0, 6200]
+    expression: "win_payout = star_gold * count(new_goals) + win_gold"
+    notes: "Stars and Rewards F3. Gold added for one win; new_goals = goals_met minus the goals held before. star_gold and win_gold are Currencies and Economy's (its F2); the maximum is its level_gold_max. Green Vale 10 to 310; region 5 30 to 930."
+    added: 2026-11-25
+    revised: ""
+  - name: replay_ratio
+    status: active
+    source: design/gdd/stars-rewards.md
+    referenced_by:
+      - design/gdd/stars-rewards.md
+      - design/gdd/currencies-economy.md
+    variables:
+      - star_gold
+      - win_gold
+    output_range: [30, 6000]
+    expression: "replay_ratio = (3 * star_gold) / win_gold"
+    notes: "Stars and Rewards F4. How many replay wins pay as much as one level's three stars. A design check, not runtime code; not defined when win_gold is 0. Requirement: 30 or more, kept by Currencies and Economy's invariant E1 (win_gold <= star_gold / 10). 30 at the default values in every region."
+    added: 2026-11-25
+    revised: ""
+  - name: effective_thresholds
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+      - design/gdd/campaign-level-data.md
+    variables:
+      - lv2_at
+      - lv3_at
+      - lv2_offset
+      - lv3_offset
+    output_range: [10, 45]
+    expression: "lv2_at_eff = lv2_at + lv2_offset; lv3_at_eff = lv3_at + lv3_offset"
+    notes: "Factions F1. A race's keep level thresholds: lv2_at_eff 10 to 20 and lv3_at_eff 30 to 45 over the offset ranges (lv2_offset_range, lv3_offset_range). Human 15 and 35, beast 12 and 40. Applied per keep by its current owner's race (Keep Levels rule 10); Campaign Level Data F3 uses it for starting levels."
+    added: 2026-11-25
+    revised: ""
+  - name: time_to_level
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+    variables:
+      - gen_interval
+      - gen_amount_level_1
+      - gen_amount_level_2
+      - capture_troops
+      - lv2_at_eff
+      - lv3_at_eff
+    output_range: [47.5, 80.0]
+    expression: "time_to_l2 = gen_interval * beats_l1; time_to_l3 = gen_interval * (beats_l1 + beats_l2); beats_l1 = ceil((lv2_at_eff - capture_troops) / gen_amount_level_1); troops_at_l2 = capture_troops + beats_l1 * gen_amount_level_1; beats_l2 = max(0, ceil((lv3_at_eff - troops_at_l2) / gen_amount_level_2))"
+    notes: "Factions F2. Seconds for a freshly captured keep, left alone, to reach each level; the range is time_to_l3 over the offset ranges, 54 to 66 s for a legal race (T2). Human 35.0 and 60.0 s; beast 27.5 and 62.5 s."
+    added: 2026-11-25
+    revised: ""
+  - name: veteran_launch
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+      - design/gdd/troop-marching-clashes.md
+    variables:
+      - count
+      - veteran_every
+      - tier
+      - level
+    output_range: [0, 1]
+    expression: "count = count + 1; veteran_launch = (veteran_every > 0) and (count = veteran_every); when it is true, count = 0"
+    notes: "Unit Cards and Upgrades F1. True or false for one launch of a unit kind by an owner with card levels; true on exactly every Nth launch. Asked by Troop Marching at each send through veteran_for_launch (its rule 3); a relay is not a launch."
+    added: 2026-11-25
+    revised: ""
+  - name: card_power_gain
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+    variables:
+      - veteran_bonus
+      - veteran_every
+      - strength
+    output_range: [0, 0.25]
+    expression: "card_power_gain = veteran_bonus / (veteran_every * strength), and 0 when veteran_every is 0"
+    notes: "Unit Cards and Upgrades F2. The share by which the average strength of a kind's launches rises; capped by card_power_cap (invariant C3)."
+    added: 2026-11-25
+    revised: ""
+  - name: upgraded_power
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+    variables:
+      - unit_power
+      - card_power_gain
+    output_range: [0.90, 2.75]
+    expression: "upgraded_power = unit_power * (1 + card_power_gain)"
+    notes: "Unit Cards and Upgrades F3. Used only by the loader's tier-order check (C4); nothing in a match reads it. unit_power is Unit Roster and Stats' F1 (not yet registered)."
+    added: 2026-11-25
+    revised: ""
 
 constants:
   - name: troop_cap
@@ -571,6 +800,7 @@ constants:
       - design/gdd/rival-ai.md
       - design/gdd/campaign-level-data.md
       - design/gdd/level-hud.md
+      - design/gdd/factions.md
     value: 60
     unit: troops
     added: 2026-11-22
@@ -583,6 +813,7 @@ constants:
       - design/gdd/level-state-match-flow.md
       - design/gdd/rope-links.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/factions.md
     value: 2.5
     unit: seconds
     added: 2026-11-22
@@ -592,6 +823,7 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/factions.md
     value: 1
     unit: troops per beat
     notes: "Troop Generation names this knob gen_l1 in its own text and data file; the two names are the same value."
@@ -602,6 +834,7 @@ constants:
     source: design/gdd/troop-generation.md
     referenced_by:
       - design/gdd/troop-generation.md
+      - design/gdd/factions.md
     value: 2
     unit: troops per beat
     notes: "Troop Generation names this knob gen_l2 in its own text and data file; the two names are the same value."
@@ -731,6 +964,7 @@ constants:
       - design/gdd/troop-marching-clashes.md
       - design/gdd/level-state-match-flow.md
       - design/gdd/campaign-level-data.md
+      - design/gdd/factions.md
     value: 15
     unit: troops
     added: 2026-11-22
@@ -744,6 +978,7 @@ constants:
       - design/gdd/level-state-match-flow.md
       - design/gdd/campaign-level-data.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/factions.md
     value: 35
     unit: troops
     added: 2026-11-22
@@ -754,6 +989,7 @@ constants:
     referenced_by:
       - design/gdd/keep-levels.md
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/factions.md
     value: 5
     unit: troops
     added: 2026-11-22
@@ -864,8 +1100,10 @@ constants:
       - design/gdd/campaign-level-data.md
       - design/gdd/save-progress.md
       - design/gdd/world-map-regions.md
+      - design/gdd/stars-rewards.md
     value: 1
     unit: stars
+    notes: "The UAT-1 fallback: the stars of a win in a build without Stars and Rewards. From UAT-2 score_win returns held_stars instead (Level State rule 5)."
     added: 2026-11-22
     revised: ""
   - name: ai_think_scale
@@ -1040,6 +1278,7 @@ constants:
     source: design/gdd/troop-marching-clashes.md
     referenced_by:
       - design/gdd/troop-marching-clashes.md
+      - design/gdd/factions.md
     value: 1
     unit: troops
     notes: "Troops a captured keep is set to (Troop Marching rule 12, F5); surplus strength is discarded. Range 1 to lv2_at - 1 in the data file, so a capture never starts at level 2."
@@ -1064,4 +1303,158 @@ constants:
     unit: keeps
     notes: "Most keeps a level may hold (Campaign Level Data B8); Rope Links F5 and Troop Marching F9 size their worst cases on it (15 keeps x 3 ropes)."
     added: 2026-11-22
+    revised: ""
+  - name: balance_cap
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/stars-rewards.md
+    value: 999999
+    unit: gold or diamonds
+    notes: "The highest balance a currency may reach (Currencies and Economy rule 8); an add that would pass it is cut. Range 9,999 to 999,999 in the data file. Invariant E4: the campaign's once-only gold is at most half of it."
+    added: 2026-11-25
+    revised: ""
+  - name: replay_percent
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    value: 10
+    unit: percent
+    notes: "The share of a star's gold that every win pays (Currencies and Economy F2). Range 0 to 10; 0 turns replay gold off. At 10 or less the farm guard E1 holds by construction."
+    added: 2026-11-25
+    revised: ""
+  - name: region_diamonds
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+      - design/gdd/stars-rewards.md
+    value: 50
+    unit: diamonds
+    notes: "Diamonds for a region's first conquest; one value for every region (Currencies and Economy F4). Range 1 to 1,000. Read as region_diamonds(region_id); paid by Stars and Rewards."
+    added: 2026-11-25
+    revised: ""
+  - name: region_star_gold
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    value: [100, 150, 200, 250, 300]
+    unit: gold per star, by region order 1 to 5
+    notes: "A table, one entry per region order (Currencies and Economy F2). Each 0 to 2,000 and never lower than the region before."
+    added: 2026-11-25
+    revised: ""
+  - name: card_cost
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    value: [100, 200, 400, 800]
+    unit: gold, by to_level 2 to 5
+    notes: "A table: gold to raise a tier 1 card to each level (Currencies and Economy F5). Each 1 to 100,000 and never lower than the level before. card_level_max (5) is Unit Cards and Upgrades'."
+    added: 2026-11-25
+    revised: ""
+  - name: tier_cost_percent
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    value: [100, 125, 150]
+    unit: percent, by unit tier 1 to 3
+    notes: "A table: how much a card of each tier costs against card_cost (Currencies and Economy F5). Each 50 to 300 and never lower than the tier before."
+    added: 2026-11-25
+    revised: ""
+  - name: race_cost
+    status: active
+    source: design/gdd/currencies-economy.md
+    referenced_by:
+      - design/gdd/currencies-economy.md
+    value: 50
+    unit: diamonds (beast)
+    notes: "A table keyed by race id, one entry per diamonds race; the UAT build has one entry, beast = 50 (Currencies and Economy F6). Each 1 to 1,000. The elf, the spirit and the dragon get an entry when they are added as data."
+    added: 2026-11-25
+    revised: ""
+  - name: trait_budget
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+    value: 0.10
+    unit: share of the human's time_to_l3
+    notes: "How far a race's time to level 3 may differ from the human's (Factions T2): 54 to 66 s at baseline. Safe range 0.05 to 0.15."
+    added: 2026-11-25
+    revised: ""
+  - name: races_max
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+    value: 5
+    unit: races
+    notes: "The most races the structure holds (Factions rule 2); the UAT build ships two, human and beast."
+    added: 2026-11-25
+    revised: ""
+  - name: lv2_offset_range
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+    value: [-5, 5]
+    unit: troops
+    notes: "Hard limits on a trait's lv2_offset (Factions T1; decided 2026-11-25). Human 0, beast -3."
+    added: 2026-11-25
+    revised: ""
+  - name: lv3_offset_range
+    status: active
+    source: design/gdd/factions.md
+    referenced_by:
+      - design/gdd/factions.md
+    value: [-5, 10]
+    unit: troops
+    notes: "Hard limits on a trait's lv3_offset (Factions T1; decided 2026-11-25). Human 0, beast +5."
+    added: 2026-11-25
+    revised: ""
+  - name: card_level_max
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+      - design/gdd/currencies-economy.md
+    value: 5
+    unit: card levels
+    notes: "The highest card level; level 1 is the base, so a card has four purchases (Unit Cards and Upgrades). Range 2 to 10. Currencies and Economy's card_cost table has one entry per level from 2."
+    added: 2026-11-25
+    revised: ""
+  - name: veteran_bonus
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+      - design/gdd/troop-marching-clashes.md
+    value: 1
+    unit: strength
+    notes: "Strength a veteran pawn has above its unit kind's (Unit Cards and Upgrades; fixed, its invariant C2). A veteran's strength stays inside Troop Marching's M4 and Unit Roster's U3 (at most 3)."
+    added: 2026-11-25
+    revised: ""
+  - name: card_power_cap
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+    value: 0.25
+    unit: share of a unit kind's power
+    notes: "The most a card may add to a kind's power (Unit Cards and Upgrades invariant C3); the answer to Unit Roster and Stats' Open Question 6."
+    added: 2026-11-25
+    revised: ""
+  - name: veteran_every
+    status: active
+    source: design/gdd/unit-cards-upgrades.md
+    referenced_by:
+      - design/gdd/unit-cards-upgrades.md
+    value: [[0, 12, 9, 7, 5], [0, 10, 8, 6, 4], [0, 8, 6, 4, 3]]
+    unit: launches per veteran, by unit tier 1 to 3, then card level 1 to 5
+    notes: "A table: every Nth launch of a kind is a veteran; 0 means never (card level 1). Other entries are whole, 2 to 60, and never rise from one level to the next (Unit Cards and Upgrades invariant C3)."
+    added: 2026-11-25
     revised: ""
